@@ -109,6 +109,23 @@ def reload_apps(lightmode_enabled: bool, scheme: MaterialColors):
                 log.info(f"Removing config override: {config_gtk_css}")
                 config_gtk_css.unlink()
 
+    # Symlink assets folder to ~/.config/gtk-3.0/assets
+    # This is required because CSS in ~/.config/gtk-3.0/ (like gtk-dark.css) uses relative paths (url("assets/..."))
+    # Without this, pixbuf loading fails (causing DING issues)
+    if config_gtk3_dir.exists():
+        config_assets = config_gtk3_dir / "assets"
+        theme_assets = theme_dir / "assets"
+
+        if config_assets.exists() or config_assets.is_symlink():
+            config_assets.unlink()
+
+        if theme_assets.exists():
+            try:
+                os.symlink(theme_assets, config_assets)
+                log.info(f"Symlinked assets to {config_assets}")
+            except Exception as e:
+                log.error(f"Failed to symlink assets: {e}")
+
     os.system(f"gsettings set org.gnome.desktop.interface gtk-theme Adwaita")
     os.system("sleep 0.5")
     os.system(

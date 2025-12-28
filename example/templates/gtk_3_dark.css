@@ -81,22 +81,7 @@
 @define-color incognito_bg_color #1c2438;
 * { padding: 0; -GtkToolButton-icon-spacing: 4; -GtkTextView-error-underline-color: @error_bg_color; -GtkScrolledWindow-scrollbar-spacing: 0; -GtkToolItemGroup-expander-size: 11; -GtkWidget-text-handle-width: 20; -GtkWidget-text-handle-height: 24; -GtkDialog-button-spacing: 4; -GtkDialog-action-area-border: 0; outline-color: alpha(currentColor,0.3); outline-style: dashed; outline-offset: -3px; outline-width: 1px; -gtk-outline-radius: 4px; -gtk-secondary-caret-color: @accent_bg_color; }
 
-/* Desktop Icons Fix - Expanded Selectors */
-.nemo-desktop.nemo-canvas-item,
-.nemo-desktop.nemo-view,
-.desktop-icons,
-.ding-libs-window,
-.ding-desktop-window,
-#ding-window,
-.ding-window,
-.desktop-icons-window,
-window.desktop-window,
-.gjs-ding-window {
-    background-color: transparent;
-    background-image: none;
-    box-shadow: none;
-    border: none;
-}
+
 
 .background { color: @window_fg_color; background-color: @window_bg_color; }
 
@@ -3443,32 +3428,38 @@ phosh-splash.light { color: @phosh_splash_fg_color; background-color: @phosh_spl
 
 .phosh-dropicon-shadow { -gtk-icon-shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 1px 8px rgba(0, 0, 0, 0.2); }
 
-terminal-window headerbar.titlebar {
+/* terminal-window headerbar.titlebar {
     background-color: rgba(0, 0, 0, 0.1);
     background-image: none;
     box-shadow: none;
 }
+ */
 
-/* Specific sub-element targeting */
-terminal-window .titlebar {
-    background-color: rgba(0, 0, 0, 0.1);
+/* Desktop Icons Fix - Expanded Selectors (Moved to end) */
+.nemo-desktop.nemo-canvas-item,
+.nemo-desktop.nemo-view,
+.desktop-icons,
+.ding-libs-window,
+.ding-desktop-window,
+#ding-window,
+.ding-window,
+.desktop-icons-window,
+window.desktop-window,
+.gjs-ding-window {
+    background-color: transparent;
+    /* background-image: none; */
+    box-shadow: none;
+    border: none;
+}
+
+/* Desktop Icons Fix - Corrected Selector */
+.desktopwindow,
+window.desktopwindow,
+.ding-window,
+#ding-window {
+    background-color: transparent;
     background-image: none;
+    box-shadow: none;
+    border: none;
 }
 
-/* Terminal window background */
-terminal-window {
-    background-color: @window_bg_color;
-}
-
-terminal-window notebook {
-    background-color: @window_bg_color;
-}
-
-terminal-window notebook > header {
-    background-color: @headerbar_bg_color;
-}
-
-/* Force titlebar background - matches what worked in GTK Inspector */
-.titlebar {
-    background: @headerbar_bg_color;
-}

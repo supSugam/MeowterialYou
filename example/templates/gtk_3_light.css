@@ -97,22 +97,7 @@
   -gtk-secondary-caret-color: @accent_bg_color;
 }
 
-/* Desktop Icons Fix - Expanded Selectors */
-.nemo-desktop.nemo-canvas-item,
-.nemo-desktop.nemo-view,
-.desktop-icons,
-.ding-libs-window,
-.ding-desktop-window,
-#ding-window,
-.ding-window,
-.desktop-icons-window,
-window.desktop-window,
-.gjs-ding-window {
-    background-color: transparent;
-    background-image: none;
-    box-shadow: none;
-    border: none;
-}
+
 
 .background {
   color: @window_fg_color;
@@ -13556,7 +13541,7 @@ phosh-splash.light {
 .phosh-dropicon-shadow {
   -gtk-icon-shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 1px 8px rgba(0, 0, 0, 0.2);
 }
-terminal-window headerbar.titlebar {
+/* terminal-window headerbar.titlebar {
     background-color: rgba(0, 0, 0, 0.1);
     background-image: none;
     box-shadow: none;
@@ -13569,4 +13554,33 @@ terminal-window headerbar.titlebar button.titlebutton {
 
 terminal-window headerbar.titlebar button.titlebutton:hover {
     background: rgba(0, 0, 0, 0.1);
+} */
+
+/* Desktop Icons Fix - Expanded Selectors (Moved to end) */
+.nemo-desktop.nemo-canvas-item,
+.nemo-desktop.nemo-view,
+.desktop-icons,
+.ding-libs-window,
+.ding-desktop-window,
+#ding-window,
+.ding-window,
+.desktop-icons-window,
+window.desktop-window,
+.gjs-ding-window {
+    background-color: transparent;
+    /* background-image: none; */
+    box-shadow: none;
+    border: none;
 }
+
+/* Desktop Icons Fix - Corrected Selector */
+.desktopwindow,
+window.desktopwindow,
+.ding-window,
+#ding-window {
+    background-color: transparent;
+    background-image: none;
+    box-shadow: none;
+    border: none;
+}
+
