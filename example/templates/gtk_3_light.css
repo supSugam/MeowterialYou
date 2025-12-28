@@ -108,10 +108,10 @@
 .desktop-icons-window,
 window.desktop-window,
 .gjs-ding-window {
-    background-color: transparent !important;
-    background-image: none !important;
-    box-shadow: none !important;
-    border: none !important;
+    background-color: transparent;
+    background-image: none;
+    box-shadow: none;
+    border: none;
 }
 
 .background {

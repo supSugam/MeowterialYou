@@ -62,23 +62,23 @@ def reload_apps(lightmode_enabled: bool, scheme: MaterialColors):
 
     log.info(f"Restarting GTK {postfix}")
 
-    # For Light mode, force gtk-dark.css to point to gtk.css in the theme folder
-    # This ensures that apps requesting the dark variant (like Terminal sometimes does) get the light theme
-    if lightmode_enabled:
-        theme_dir = Path(
-            f"~/.local/share/themes/MeowterialYou-light/gtk-3.0"
-        ).expanduser()
-        if theme_dir.exists():
-            dark_css = theme_dir / "gtk-dark.css"
-            if dark_css.exists() or dark_css.is_symlink():
-                dark_css.unlink()
+    # Force gtk-dark.css to point to gtk.css in the theme folder
+    # This ensures that apps requesting the dark variant get the themed styles
+    # (Critical for dark mode: without this, gtk-dark.css contains hardcoded Adwaita colors)
+    theme_dir = Path(
+        f"~/.local/share/themes/MeowterialYou-{postfix}/gtk-3.0"
+    ).expanduser()
+    if theme_dir.exists():
+        dark_css = theme_dir / "gtk-dark.css"
+        if dark_css.exists() or dark_css.is_symlink():
+            dark_css.unlink()
 
-            # Create symlink
-            try:
-                os.symlink(theme_dir / "gtk.css", dark_css)
-                log.info(f"Symlinked gtk-dark.css to gtk.css in {theme_dir}")
-            except Exception as e:
-                log.error(f"Failed to symlink gtk-dark.css: {e}")
+        # Create symlink
+        try:
+            os.symlink(theme_dir / "gtk.css", dark_css)
+            log.info(f"Symlinked gtk-dark.css to gtk.css in {theme_dir}")
+        except Exception as e:
+            log.error(f"Failed to symlink gtk-dark.css: {e}")
 
     # Set color preference for Libadwaita/GTK4 apps
     color_scheme = "prefer-light" if lightmode_enabled else "prefer-dark"
@@ -86,13 +86,28 @@ def reload_apps(lightmode_enabled: bool, scheme: MaterialColors):
         f"gsettings set org.gnome.desktop.interface color-scheme '{color_scheme}'"
     )
 
-    # Cleanup global overrides that break DING and persistence
-    # We maintain gtk-4.0 override for Libadwaita apps, but clean up 3.0
-    for version in ["3.0"]:
-        config_path = Path(f"~/.config/gtk-{version}/gtk.css").expanduser()
-        if config_path.exists():
-            log.info(f"Removing global override: {config_path}")
-            config_path.unlink()
+    # In dark mode, create gtk.css symlink to gtk-dark.css in ~/.config/gtk-3.0/
+    # GTK3 loads gtk.css even when prefer-dark is set, so we need this symlink
+    # for Terminal and other GTK3 apps to apply the dark theme correctly
+    config_gtk3_dir = Path("~/.config/gtk-3.0").expanduser()
+    if config_gtk3_dir.exists():
+        config_gtk_css = config_gtk3_dir / "gtk.css"
+        config_gtk_dark_css = config_gtk3_dir / "gtk-dark.css"
+
+        if not lightmode_enabled and config_gtk_dark_css.exists():
+            # Dark mode: symlink gtk.css -> gtk-dark.css
+            if config_gtk_css.exists() or config_gtk_css.is_symlink():
+                config_gtk_css.unlink()
+            try:
+                os.symlink(config_gtk_dark_css, config_gtk_css)
+                log.info(f"Symlinked gtk.css to gtk-dark.css in {config_gtk3_dir}")
+            except Exception as e:
+                log.error(f"Failed to symlink config gtk.css: {e}")
+        elif lightmode_enabled:
+            # Light mode: remove gtk.css override (let theme handle it)
+            if config_gtk_css.exists() or config_gtk_css.is_symlink():
+                log.info(f"Removing config override: {config_gtk_css}")
+                config_gtk_css.unlink()
 
     os.system(f"gsettings set org.gnome.desktop.interface gtk-theme Adwaita")
     os.system("sleep 0.5")

@@ -1,5 +1,15 @@
 ## Description
 
+This is a fork. Here are the changes:
+- Straightforward Installation Process.
+- Fix Broken Notification Popup Issue on GNOME.
+- Better theme naming to avoid confusion.
+- Applies styles to `gnome-terminal` too.
+- New options: macos-like buttons, sleek header bar with glass effect.
+- [Coming Soon] Auto-recalculate colors on wallpaper change.
+- Removed ugly background effects from system tray icons.
+- Other UI tweaks and changes, note that I have tweaked the styles according to my design principles and basically fixing what I found "ugly".
+
 [Material Design 3](https://m3.material.io/) offers a new color system that allows for more flexible and dynamic use of color. The new system includes a wider range of colors, as well as a range of tints and shades that can be used to create subtle variations in color.
 
 ## Installation
