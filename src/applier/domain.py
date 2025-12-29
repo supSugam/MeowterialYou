@@ -19,6 +19,7 @@ class GenerationOptions(BaseModel):
     system_install: bool = False
     macbuttons_enabled: bool = False
     buttons_left_enabled: bool = False
+    chrome_gtk4_enabled: bool = False
     scheme: MaterialColors | None = None
     wallpaper_path: str | None = None
 
@@ -38,6 +39,71 @@ class ApplierDomain:
         self._conf = conf
         self._closest_folder_color_domain = ClosestFolderColorDomain()
         self._top_colors: list[str] = []
+
+    @staticmethod
+    def uninstall_theme() -> None:
+        """Completely remove all MeowterialYou theme files from the system."""
+        import shutil
+
+        home = os.path.expanduser("~")
+
+        # Paths to remove
+        paths_to_remove = [
+            # User theme directories
+            os.path.join(home, ".local/share/themes/MeowterialYou-dark"),
+            os.path.join(home, ".local/share/themes/MeowterialYou-light"),
+            os.path.join(home, ".local/share/themes/custom-dark"),
+            os.path.join(home, ".local/share/themes/custom-light"),
+            # User GTK config files
+            os.path.join(home, ".config/gtk-3.0/gtk.css"),
+            os.path.join(home, ".config/gtk-3.0/gtk-dark.css"),
+            os.path.join(home, ".config/gtk-3.0/assets"),
+            os.path.join(home, ".config/gtk-4.0/gtk.css"),
+            os.path.join(home, ".config/gtk-4.0/gtk-dark.css"),
+            os.path.join(home, ".config/gtk-4.0/assets"),
+        ]
+
+        # System paths (require sudo)
+        system_paths = [
+            "/usr/share/themes/MeowterialYou-dark",
+            "/usr/share/themes/MeowterialYou-light",
+        ]
+
+        print("Uninstalling MeowterialYou theme...")
+
+        # Remove user paths
+        for path in paths_to_remove:
+            if os.path.exists(path):
+                try:
+                    if os.path.isdir(path):
+                        shutil.rmtree(path)
+                    else:
+                        os.remove(path)
+                    print(f"Removed: {path}")
+                except OSError as e:
+                    print(f"Failed to remove {path}: {e}")
+
+        # Remove system paths (require sudo)
+        for path in system_paths:
+            if os.path.exists(path):
+                result = subprocess.run(
+                    ["sudo", "rm", "-rf", path],
+                    capture_output=True,
+                    text=True,
+                )
+                if result.returncode == 0:
+                    print(f"Removed: {path}")
+                else:
+                    print(f"Failed to remove {path}: {result.stderr}")
+
+        # Reset GTK theme to default
+        subprocess.run(
+            ["gsettings", "reset", "org.gnome.desktop.interface", "gtk-theme"],
+            capture_output=True,
+        )
+        print("Reset GTK theme to default")
+
+        print("Uninstall complete!")
 
     def set_wallpaper_path(self, path: str) -> None:
         self._generation_options.wallpaper_path = path
@@ -138,100 +204,12 @@ class ApplierDomain:
         if self._generation_options.macbuttons_enabled:
             self._apply_macbuttons_addon(dest_theme, postfix)
 
-        # 3. Generate and copy GTK4 system CSS to system theme if requested
-        # This uses a separate Chrome-focused template (not the libadwaita config CSS)
-        if self._generation_options.system_install:
-            system_theme = f"/usr/share/themes/{theme_name}"
-
-            # Determine template path based on lightmode
-            template_suffix = (
-                "light" if self._generation_options.lightmode_enabled else "dark"
-            )
-            template_path = (
-                Path(self._generation_options.parent_dir)
-                / f"example/templates/gtk_4_system_{template_suffix}.css"
-            )
-
-            if template_path.exists():
-                print(f"Generating system GTK4 CSS from {template_path.name}")
-
-                # Generate the CSS with color substitutions
-                import tempfile
-                import re
-
-                with open(template_path, "r") as f:
-                    output_data = f.read()
-
-                # Apply color substitutions (same logic as Config.generate)
-                for key, value in scheme.items():
-                    pattern_hex = f"@{{{key}.hex}}"
-                    hex_stripped = value[1:]
-                    rgb_value = f"rgb({','.join(str(c) for c in tuple(int(hex_stripped[i:i+2], 16) for i in (0, 2, 4)))})"
-                    pattern_rgb = f"@{{{key}.rgb}}"
-
-                    output_data = re.sub(f"@{{{key}}}", hex_stripped, output_data)
-                    output_data = re.sub(pattern_hex, value, output_data)
-                    output_data = re.sub(pattern_rgb, rgb_value, output_data)
-
-                # Write to temp file then copy with sudo
-                with tempfile.NamedTemporaryFile(
-                    mode="w", suffix=".css", delete=False
-                ) as tmp:
-                    tmp.write(output_data)
-                    tmp_path = tmp.name
-
-                # Create gtk-4.0 directory and copy CSS
-                print(f"Installing system GTK4 CSS to {system_theme}/gtk-4.0/")
-                result = subprocess.run(
-                    ["sudo", "mkdir", "-p", f"{system_theme}/gtk-4.0"],
-                    capture_output=True,
-                    text=True,
-                )
-                if result.returncode == 0:
-                    result = subprocess.run(
-                        ["sudo", "cp", tmp_path, f"{system_theme}/gtk-4.0/gtk.css"],
-                        capture_output=True,
-                        text=True,
-                    )
-                    if result.returncode == 0:
-                        # Fix permissions so all users can read the CSS
-                        subprocess.run(
-                            ["sudo", "chmod", "644", f"{system_theme}/gtk-4.0/gtk.css"],
-                            capture_output=True,
-                        )
-                        print(
-                            f"Successfully installed system GTK4 CSS to {system_theme}/gtk-4.0/"
-                        )
-                        # Also copy assets for title button SVGs
-                        assets_src = (
-                            Path(self._generation_options.parent_dir)
-                            / f"assets/{theme_name}/gtk-3.0/assets"
-                        )
-                        if assets_src.exists():
-                            result = subprocess.run(
-                                [
-                                    "sudo",
-                                    "cp",
-                                    "-r",
-                                    str(assets_src),
-                                    f"{system_theme}/gtk-4.0/",
-                                ],
-                                capture_output=True,
-                                text=True,
-                            )
-                            if result.returncode == 0:
-                                print(
-                                    f"Copied assets to {system_theme}/gtk-4.0/assets/"
-                                )
-                    else:
-                        print(f"Failed to copy system GTK4 CSS: {result.stderr}")
-                else:
-                    print(f"Failed to create gtk-4.0 directory: {result.stderr}")
-
-                # Cleanup temp file
-                os.unlink(tmp_path)
-            else:
-                print(f"Warning: System GTK4 template not found at {template_path}")
+        # 3. Generate and copy GTK4 system CSS to BOTH light and dark themes if --chrome-gtk4 flag is set
+        # This uses separate Chrome-focused templates from the addons/chrome_gtk4/ folder
+        if self._generation_options.chrome_gtk4_enabled:
+            # Install both themes for proper mode switching support
+            for variant in ["dark", "light"]:
+                self._install_system_gtk4_theme(variant, scheme)
 
         primary_color = scheme["primary"]
         folder_color = self._closest_folder_color_domain.get_closest_color(
@@ -348,6 +326,119 @@ class ApplierDomain:
                     log.info(f"Applied macbuttons addon to {output_file}")
                 except OSError as e:
                     log.error(f"Failed to append addon CSS to {output_file}: {e}")
+
+    def _install_system_gtk4_theme(self, variant: str, scheme: dict) -> None:
+        """Install GTK4 system theme for a specific variant (dark/light).
+
+        Args:
+            variant: "dark" or "light"
+            scheme: Color scheme dictionary with hex values (not used, regenerated per variant)
+        """
+        import tempfile
+        import re
+        from src.util import Theme, Scheme
+
+        theme_name = f"MeowterialYou-{variant}"
+        system_theme = f"/usr/share/themes/{theme_name}"
+
+        template_path = (
+            Path(self._generation_options.parent_dir)
+            / f"example/templates/addons/chrome_gtk4/gtk_4_chrome_{variant}.css"
+        )
+
+        if not template_path.exists():
+            print(f"Warning: System GTK4 template not found at {template_path}")
+            return
+
+        # Generate the correct color scheme for this variant
+        is_light = variant == "light"
+        theme_data, _ = Theme.get(self._generation_options.wallpaper_path)
+        variant_scheme = Scheme(theme=theme_data, lightmode=is_light).to_hex()
+
+        print(f"Generating system GTK4 CSS from {template_path.name} for {theme_name}")
+
+        # Read template
+        with open(template_path, "r") as f:
+            output_data = f.read()
+
+        # Apply color substitutions (same logic as Config.generate)
+        for key, value in variant_scheme.items():
+            pattern_hex = f"@{{{key}.hex}}"
+            hex_stripped = value[1:]
+            rgb_value = f"rgb({','.join(str(c) for c in tuple(int(hex_stripped[i:i+2], 16) for i in (0, 2, 4)))})"
+            pattern_rgb = f"@{{{key}.rgb}}"
+
+            output_data = re.sub(f"@{{{key}}}", hex_stripped, output_data)
+            output_data = re.sub(pattern_hex, value, output_data)
+            output_data = re.sub(pattern_rgb, rgb_value, output_data)
+
+        # Write to temp file then copy with sudo
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".css", delete=False) as tmp:
+            tmp.write(output_data)
+            tmp_path = tmp.name
+
+        # Create gtk-4.0 directory and copy CSS
+        # First ensure the base theme directory exists with assets
+        source_asset = os.path.abspath(f"assets/{theme_name}")
+        if os.path.exists(source_asset):
+            subprocess.run(
+                ["sudo", "cp", "-r", source_asset, "/usr/share/themes/"],
+                capture_output=True,
+            )
+
+        # Clean and recreate gtk-4.0 directory
+        check_dir = subprocess.run(
+            ["test", "-d", f"{system_theme}/gtk-4.0"], capture_output=True
+        )
+        if check_dir.returncode == 0:
+            subprocess.run(
+                ["sudo", "rm", "-rf", f"{system_theme}/gtk-4.0"],
+                capture_output=True,
+            )
+
+        result = subprocess.run(
+            ["sudo", "mkdir", "-p", f"{system_theme}/gtk-4.0"],
+            capture_output=True,
+            text=True,
+        )
+        if result.returncode != 0:
+            print(f"Failed to create gtk-4.0 directory: {result.stderr}")
+            os.unlink(tmp_path)
+            return
+
+        # Copy CSS as both gtk.css and gtk-dark.css
+        for css_name in ["gtk.css", "gtk-dark.css"]:
+            result = subprocess.run(
+                ["sudo", "cp", tmp_path, f"{system_theme}/gtk-4.0/{css_name}"],
+                capture_output=True,
+                text=True,
+            )
+            if result.returncode == 0:
+                subprocess.run(
+                    ["sudo", "chmod", "644", f"{system_theme}/gtk-4.0/{css_name}"],
+                    capture_output=True,
+                )
+            else:
+                print(f"Failed to copy {css_name}: {result.stderr}")
+
+        print(f"Successfully installed system GTK4 CSS to {system_theme}/gtk-4.0/")
+
+        # Copy assets for title button SVGs
+        assets_src = (
+            Path(self._generation_options.parent_dir)
+            / f"assets/{theme_name}/gtk-3.0/assets"
+        )
+        if assets_src.exists():
+            result = subprocess.run(
+                ["sudo", "cp", "-r", str(assets_src), f"{system_theme}/gtk-4.0/"],
+                capture_output=True,
+                text=True,
+            )
+            if result.returncode == 0:
+                print(f"Copied assets to {system_theme}/gtk-4.0/assets/")
+
+        # Cleanup temp file
+        os.unlink(tmp_path)
 
     def _has_config_key(self, key: str) -> bool:
         return any(key in self._conf[section].name for section in self._conf.sections())

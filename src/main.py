@@ -23,10 +23,17 @@ def main():  # sourcery skip: raise-specific-error
             system_install=arguments.system,
             macbuttons_enabled=arguments.title_buttons == "mac",
             buttons_left_enabled=arguments.title_buttons_position == "left",
+            chrome_gtk4_enabled=arguments.chrome_gtk4,
             wallpaper_path=arguments.wallpaper
             or ApplierDomain.get_current_system_wallpaper_path(),
         ),
     )
+
+    # --uninstall overrides all other operations
+    if arguments.uninstall:
+        ApplierDomain.uninstall_theme()
+        return
+
     if arguments.ui:
         app = GtkApp(
             application_id="com.picker.Mitsugen", applier_domain=applier_domain

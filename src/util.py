@@ -63,6 +63,18 @@ def parse_arguments():
         default="right",
     )
 
+    parser.add_argument(
+        "--chrome-gtk4",
+        help="install GTK4 theme for Chrome/Chromium browser support",
+        action="store_true",
+    )
+
+    parser.add_argument(
+        "--uninstall",
+        help="completely remove all MeowterialYou theme files (overrides all other args)",
+        action="store_true",
+    )
+
     args: Namespace = parser.parse_args()
     return args
 
@@ -178,6 +190,31 @@ def reload_apps(lightmode_enabled: bool, scheme: MaterialColors):
     os.system(
         f"gsettings set org.gnome.shell.extensions.user-theme name 'MeowterialYou-{postfix}'"
     )
+
+    # Set Tiling Assistant extension accent color to match theme
+    try:
+        primary_hex = scheme.primary.hex
+        # Convert hex to rgb format that Tiling Assistant expects
+        r = int(primary_hex[1:3], 16)
+        g = int(primary_hex[3:5], 16)
+        b = int(primary_hex[5:7], 16)
+        rgb_color = f"rgb({r},{g},{b})"
+        result = subprocess.run(
+            [
+                "gsettings",
+                "set",
+                "org.gnome.shell.extensions.tiling-assistant",
+                "active-window-hint-color",
+                rgb_color,
+            ],
+            capture_output=True,
+            text=True,
+        )
+        if result.returncode == 0:
+            log.info(f"Set Tiling Assistant accent color to {rgb_color}")
+    except Exception as e:
+        # Extension may not be installed, that's fine
+        pass
 
     # Set Gnome Terminal Transparency
     try:

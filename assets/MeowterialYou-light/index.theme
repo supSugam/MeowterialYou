@@ -1,6 +1,10 @@
-[X-GNOME-Metatheme]
+[Desktop Entry]
 Name=MeowterialYou-light
 Type=X-GNOME-Metatheme
-Comment=adw-gtk3 theme
+Comment=Material You dynamic theme (light variant)
 Encoding=UTF-8
+
+[X-GNOME-Metatheme]
 GtkTheme=MeowterialYou-light
+MetacityTheme=MeowterialYou-light
+IconTheme=Papirus
