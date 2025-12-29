@@ -9,7 +9,7 @@ from src.util import Config, parse_arguments
 def main():  # sourcery skip: raise-specific-error
     parent_dir = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
     arguments = parse_arguments()
-    lightmode_enabled: bool = arguments.lightmode
+    lightmode_enabled: bool = arguments.theme == "light"
 
     conf = Config.read(f"{parent_dir}/example/config.ini")
     if not conf:
@@ -20,6 +20,9 @@ def main():  # sourcery skip: raise-specific-error
         generation_options=GenerationOptions(
             parent_dir=parent_dir,
             lightmode_enabled=lightmode_enabled,
+            system_install=arguments.system,
+            macbuttons_enabled=arguments.title_buttons == "mac",
+            buttons_left_enabled=arguments.title_buttons_position == "left",
             wallpaper_path=arguments.wallpaper
             or ApplierDomain.get_current_system_wallpaper_path(),
         ),

@@ -1,6 +1,7 @@
 import logging
 import os
 import re
+import subprocess
 from argparse import ArgumentParser, Namespace
 from configparser import ConfigParser
 from pathlib import Path
@@ -23,11 +24,12 @@ def parse_arguments():
     )
 
     parser.add_argument(
-        "-l",
-        "--lightmode",
-        help="specify whether to use light mode",
-        action="store_true",
+        "--theme",
+        help="theme mode: light or dark (default: dark)",
+        choices=["light", "dark"],
+        default="dark",
     )
+
     parser.add_argument(
         "-i",
         "--ui",
@@ -40,6 +42,27 @@ def parse_arguments():
         help="start in headless monitor mode",
         action="store_true",
     )
+    parser.add_argument(
+        "-s",
+        "--system",
+        help="also install theme to /usr/share/themes/ (requires sudo)",
+        action="store_true",
+    )
+
+    parser.add_argument(
+        "--title-buttons",
+        help="window button style: mac (circular) or native (default: native)",
+        choices=["mac", "native"],
+        default="native",
+    )
+
+    parser.add_argument(
+        "--title-buttons-position",
+        help="window button position: left or right (default: right)",
+        choices=["left", "right"],
+        default="right",
+    )
+
     args: Namespace = parser.parse_args()
     return args
 
@@ -132,12 +155,44 @@ def reload_apps(lightmode_enabled: bool, scheme: MaterialColors):
         f"gsettings set org.gnome.desktop.interface gtk-theme MeowterialYou-{postfix}"
     )
 
+    # Symlink assets folder to ~/.config/gtk-4.0/assets
+    # This is required because CSS in ~/.config/gtk-4.0/ (like gtk.css) uses relative paths (url("assets/..."))
+    config_gtk4_dir = Path("~/.config/gtk-4.0").expanduser()
+    if config_gtk4_dir.exists():
+        config_assets_4 = config_gtk4_dir / "assets"
+        theme_assets = theme_dir / "assets"
+
+        if config_assets_4.exists() or config_assets_4.is_symlink():
+            config_assets_4.unlink()
+
+        if theme_assets.exists():
+            try:
+                os.symlink(theme_assets, config_assets_4)
+                log.info(f"Symlinked assets to {config_assets_4}")
+            except Exception as e:
+                log.error(f"Failed to symlink GTK4 assets: {e}")
+
     log.info("Restarting Gnome Shell theme")
     os.system(f"gsettings set org.gnome.shell.extensions.user-theme name 'Default'")
     os.system("sleep 0.5")
     os.system(
         f"gsettings set org.gnome.shell.extensions.user-theme name 'MeowterialYou-{postfix}'"
     )
+
+    # Set Gnome Terminal Transparency
+    try:
+        # Get default profile UUID
+        cmd = ["gsettings", "get", "org.gnome.Terminal.ProfilesList", "default"]
+        uuid = subprocess.check_output(cmd).decode("utf-8").strip().strip("'")
+
+        profile_path = f"org.gnome.Terminal.Legacy.Profile:/org/gnome/terminal/legacy/profiles:/:{uuid}/"
+
+        log.info(f"Setting Gnome Terminal transparency for profile {uuid}")
+        os.system(f"gsettings set {profile_path} use-transparent-background true")
+        os.system(f"gsettings set {profile_path} background-transparency-percent 30")
+
+    except Exception as e:
+        log.error(f"Failed to set terminal transparency: {e}")
 
 
 def set_wallpaper(path: str):
