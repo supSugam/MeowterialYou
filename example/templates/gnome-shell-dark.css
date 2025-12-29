@@ -1320,8 +1320,8 @@ StEntry:focus {
 
 /* Tiled window previews */
 .tile-preview {
-  background-color:  @{surfaceVariant.hex}7f;
-  border: 1px solid  @{primary.hex};
+  background-color: @{primary.rgba50};
+  border: 1px solid @{primary.hex};
 }
 
 .window-close, .screenshot-ui-close-button {

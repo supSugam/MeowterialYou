@@ -1480,7 +1480,7 @@ StEntry:focus {
 
 /* Tiled window previews */
 .tile-preview {
-  background-color: @{surfaceVariant.hex}7f;
+  background-color: @{primary.rgba50};
   border: 1px solid @{primary.hex};
 }
 

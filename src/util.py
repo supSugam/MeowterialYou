@@ -302,19 +302,25 @@ class Config:
                 pattern = f"@{{{key}}}"
                 pattern_hex = f"@{{{key}.hex}}"
                 pattern_rgb = f"@{{{key}.rgb}}"
+                pattern_rgba50 = f"@{{{key}.rgba50}}"
                 pattern_hue = f"@{{{key}.hue}}"
                 pattern_sat = f"@{{{key}.sat}}"
                 pattern_light = f"@{{{key}.light}}"
                 pattern_wallpaper = "@{wallpaper}"
 
                 hex_stripped = value[1:]  # type: ignore
-                rgb_value = f"rgb{ColorTransformer.hex_to_rgb(hex_stripped)}"
+                rgb_tuple = ColorTransformer.hex_to_rgb(hex_stripped)
+                rgb_value = f"rgb{rgb_tuple}"
+                rgba50_value = (
+                    f"rgba({rgb_tuple[0]}, {rgb_tuple[1]}, {rgb_tuple[2]}, 0.5)"
+                )
                 hue, light, saturation = ColorTransformer.hex_to_hls(hex_stripped)
                 wallpaper_value = os.path.abspath(wallpaper)
 
                 output_data = re.sub(pattern, hex_stripped, output_data)
                 output_data = re.sub(pattern_hex, value, output_data)
                 output_data = re.sub(pattern_rgb, rgb_value, output_data)
+                output_data = re.sub(pattern_rgba50, rgba50_value, output_data)
                 output_data = re.sub(pattern_wallpaper, wallpaper_value, output_data)
                 output_data = re.sub(pattern_hue, f"{hue}", output_data)
                 output_data = re.sub(pattern_sat, f"{saturation}", output_data)
