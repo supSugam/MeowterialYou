@@ -200,6 +200,17 @@ class ApplierDomain:
             parent_dir=self._generation_options.parent_dir,
         )
 
+        # 2. Copy GNOME Shell SVG assets to ~/.themes/ (where CSS is output)
+        shell_assets_src = os.path.abspath(f"assets/{theme_name}/gnome-shell")
+        shell_assets_dest = os.path.join(home, f".themes/{theme_name}/gnome-shell")
+        if os.path.exists(shell_assets_src):
+            import shutil
+            import glob
+
+            os.makedirs(shell_assets_dest, exist_ok=True)
+            for svg_file in glob.glob(os.path.join(shell_assets_src, "*.svg")):
+                shutil.copy2(svg_file, shell_assets_dest)
+
         # 2a. Apply macbuttons addon if enabled
         if self._generation_options.macbuttons_enabled:
             self._apply_macbuttons_addon(dest_theme, postfix)
