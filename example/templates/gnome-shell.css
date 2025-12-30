@@ -25,17 +25,11 @@ stage {
 /* panel */
 
 
-/* 
-   MANUAL Targeting by Index
-   This targets specific icon positions in the center panel.
-   Adjust the numbers (1, 2, 3...) to match your layout.
-*/
-
-#panelRight > * > * .panel-button, .clock {
+/* #panelRight > * > * .panel-button, .clock {
     background-color: transparent !important;
     box-shadow: none !important;
     border: none !important;
-}
+} */
 
 
 #panel {

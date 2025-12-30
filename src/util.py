@@ -2,6 +2,8 @@ import logging
 import os
 import re
 import subprocess
+import sys
+import json
 from argparse import ArgumentParser, Namespace
 from configparser import ConfigParser
 from pathlib import Path
@@ -75,7 +77,35 @@ def parse_arguments():
         action="store_true",
     )
 
+    # Path to store last arguments
+    args_file = Path.home() / ".local/share/meowterialyou/last_args.json"
+
+    # If run without arguments, try to load last used arguments
+    if len(sys.argv) == 1:
+        if args_file.exists():
+            try:
+                with open(args_file, "r") as f:
+                    stored_args = json.load(f)
+                    print(
+                        f"No arguments provided. Using last successful run: {' '.join(stored_args)}"
+                    )
+                    return parser.parse_args(stored_args)
+            except Exception as e:
+                print(f"Failed to load last args: {e}")
+
     args: Namespace = parser.parse_args()
+
+    # Save arguments for next time (unless it's an uninstall or help command)
+    # We check sys.argv again to ensure we only save if user actually provided args
+    if len(sys.argv) > 1 and not args.uninstall:
+        try:
+            args_file.parent.mkdir(parents=True, exist_ok=True)
+            with open(args_file, "w") as f:
+                json.dump(sys.argv[1:], f)
+        except Exception as e:
+            # warning but don't crash
+            print(f"Warning: Could not save arguments: {e}")
+
     return args
 
 
@@ -242,6 +272,40 @@ def set_wallpaper(path: str):
 
 
 class Config:
+    # Map template names to preference keys
+    OPTIONAL_APPS = {
+        "SPOTIFY": "THEME_SPOTIFY",
+        "DISCORD": "THEME_DISCORD",
+        "VSCODE": "THEME_VSCODE",
+        "OBSIDIAN": "THEME_OBSIDIAN",
+        "VIVALDI": "THEME_VIVALDI",
+    }
+
+    @staticmethod
+    def load_prefs() -> dict:
+        """Load user preferences from prefs.conf"""
+        prefs = {}
+        prefs_path = Path.home() / ".local/share/meowterialyou/prefs.conf"
+        if prefs_path.exists():
+            with open(prefs_path, "r") as f:
+                for line in f:
+                    line = line.strip()
+                    if line and not line.startswith("#") and "=" in line:
+                        key, value = line.split("=", 1)
+                        prefs[key.strip()] = value.strip().lower() == "true"
+        return prefs
+
+    @classmethod
+    def _should_skip_template(cls, template_name: str, prefs: dict) -> bool:
+        """Check if a template should be skipped based on user preferences"""
+        template_upper = template_name.upper()
+        for app_key, pref_key in cls.OPTIONAL_APPS.items():
+            if app_key in template_upper:
+                # Skip if preference is not set to true
+                if not prefs.get(pref_key, False):
+                    return True
+        return False
+
     @staticmethod
     def read(filename: str):
         config = ConfigParser()
@@ -272,9 +336,18 @@ class Config:
         Returns:
             dict | None: The generated config file. None if error
         """
+        # Load user preferences for optional apps
+        prefs = cls.load_prefs()
+
         for item in config.sections():
             num = 0
             template_name = config[item].name
+
+            # Skip optional app templates if not enabled
+            if cls._should_skip_template(template_name, prefs):
+                logging.debug(f"Skipping {template_name} (not enabled in preferences)")
+                continue
+
             template_path_str = config[item]["template_path"]
             if template_path_str.startswith("."):
                 template_path_str = f"{parent_dir}/{template_path_str[1:]}"

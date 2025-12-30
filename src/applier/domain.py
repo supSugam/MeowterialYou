@@ -241,15 +241,19 @@ class ApplierDomain:
         lightmode_enabled = self._generation_options.lightmode_enabled
 
         if self._has_config_key("SPOTIFY" if lightmode_enabled else "SPOTIFY-DARK"):
-            import shutil
+            prefs = Config.load_prefs()
+            if prefs.get("THEME_SPOTIFY", False):
+                import shutil
 
-            if shutil.which("spicetify"):
-                print("Setting up spotify theme")
-                os.system("spicetify config current_theme Matte")
-                os.system("spicetify config color_scheme mitsugen")
-                os.system("spicetify apply")
+                if shutil.which("spicetify"):
+                    print("Setting up spotify theme")
+                    os.system("spicetify config current_theme Matte")
+                    os.system("spicetify config color_scheme meowterialyou")
+                    os.system("spicetify apply")
+                else:
+                    print("Spicetify not found. Skipping Spotify theme application.")
             else:
-                print("Spicetify not found. Skipping Spotify theme application.")
+                print("Skipping Spotify theme (disabled in preferences)")
 
         if lightmode_enabled:
             os.system(
@@ -473,7 +477,9 @@ class ApplierDomain:
             self._generation_options.lightmode_enabled, scheme=self._get_scheme()
         )
         set_wallpaper(self._generation_options.wallpaper_path)
-        os.system("notify-send 'Theme applied! Enjoy!'")
+        os.system(
+            "notify-send -i preferences-desktop-theme 'MeowterialYou' 'Theme applied! Enjoy! 😼'"
+        )
 
     def _get_scheme(self, color: str | None = None) -> MaterialColors:
         if not color:

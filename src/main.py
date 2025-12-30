@@ -36,7 +36,7 @@ def main():  # sourcery skip: raise-specific-error
 
     if arguments.ui:
         app = GtkApp(
-            application_id="com.picker.Mitsugen", applier_domain=applier_domain
+            application_id="com.picker.MeowterialYou", applier_domain=applier_domain
         )
         app.run(None)
         import time

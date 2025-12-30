@@ -47,7 +47,7 @@ class MainWindow(Gtk.ApplicationWindow):
         self.box1.append(self.box2)
         self.box1.append(self.box3)
         self.set_default_size(600, 600)
-        self.set_title("Mitsugen")
+        self.set_title("MeowterialYou")
 
         self.box2.set_margin_start(10)
         self.box2.set_margin_end(10)

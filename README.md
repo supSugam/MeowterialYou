@@ -1,142 +1,169 @@
-## Description
+# MeowterialYou :cat:
 
-This is a fork. Here are the changes:
-- Straightforward Installation Process.
-- Fix Broken Notification Popup Issue on GNOME.
-- Better theme naming to avoid confusion.
-- Applies styles to `gnome-terminal` too.
-- New options: macos-like buttons, sleek header bar with glass effect.
-- [Coming Soon] Auto-recalculate colors on wallpaper change.
-- Removed ugly background effects from system tray icons.
-- Other UI tweaks and changes, note that I have tweaked the styles according to my design principles and basically fixing what I found "ugly".
+A fork of [Mitsugen](https://github.com/DimitrisMilonopoulos/mitsugen) by Dimitris Milonopoulos, bringing Material You theming to Linux desktops. This fork exists because the original repository is no longer actively maintained and had an ambiguous installation process.
 
-[Material Design 3](https://m3.material.io/) offers a new color system that allows for more flexible and dynamic use of color. The new system includes a wider range of colors, as well as a range of tints and shades that can be used to create subtle variations in color.
+Thanks to the original author for the foundation this project builds upon.
+
+---
+
+## What Changed in This Fork
+
+- Rewrote the installation process with an interactive TUI, automatic dependency handling, and progress indicators
+- Fixed broken notification popups in GNOME Shell
+- Removed distracting background styles from system tray icons in the panel
+- Extended theming to gnome-terminal, native gnome apps sidebars, GNOME Shell popups, and Tiling Assistant tile previews
+- Added macOS-style circular window buttons with left/right positioning options
+- Added GTK4 theme support for Chrome and Chromium on Wayland
+- Integration with GNOME Routines for automatic theme updates when wallpaper changes
+- Renamed theme consistently to `MeowterialYou` to avoid confusion
+- Added single-command uninstall that cleans up all generated files
+
+---
 
 ## Installation
 
-1. Clone the repository:
+### Quick Install (Recommended)
 
-```shell
-git clone https://github.com/DimitrisMilonopoulos/mitsugen.git
+```bash
+curl -fsSL https://raw.githubusercontent.com/supSugam/MeowterialYou/main/install.sh | bash
 ```
 
-2. Checkout to directory:
+### Manual Install
 
-```shell
-cd mitsugen
-```
-
-3. Install required assets for the project:
-
-```shell
+```bash
+git clone https://github.com/supSugam/MeowterialYou.git
+cd MeowterialYou
 chmod +x install.sh
 ./install.sh
 ```
 
-4. Assuming you already have [Poetry](https://python-poetry.org/) installed:
+The installer will guide you through configuration options and set up everything automatically.
 
-```shell
-poetry install
+### System Requirements
+
+- Python 3.10+
+- GNOME Desktop Environment
+- PyGObject (installed automatically)
+
+---
+
+## Usage
+
+### Apply Theme
+
+```bash
+# Use current wallpaper
+meowterialyou
+
+# Specify wallpaper
+meowterialyou --wallpaper ~/Pictures/wallpaper.jpg
+
+# Light theme
+meowterialyou --theme light
+
+# macOS-style buttons on left
+meowterialyou --title-buttons mac --title-buttons-position left
 ```
 
-# Templates included
+### Command Reference
 
-- [x] Gnome shell
-- [x] GTK4
-- [x] GTK3
-- [x] VSCODE custom CSS
-- [x] Obisidian Adwaita theme (Requires `Adwaita` theme)
-- [x] Vivaldi theme
-- [x] BetterDiscord theme
-- [x] Spotify theme
-- [ ] Any other theme you want me to add
+| Option | Description |
+|--------|-------------|
+| `--wallpaper PATH` | Path to wallpaper image (default: current wallpaper) |
+| `--theme [dark\|light]` | Theme mode (default: dark) |
+| `--title-buttons [mac\|native]` | Window button style (default: native) |
+| `--title-buttons-position [left\|right]` | Button position (default: right) |
+| `--chrome-gtk4` | Install GTK4 theme for Chrome (default: false) |
+| `--uninstall` | Remove all theme files |
+| `--help` | Show all options |
 
-# Usage
+---
 
-## Prerequisites
+## Chrome/Chromium Support
 
-1. Put the assets in the `assets` folder in the `config.ini` specified dirs. (Will create an installation script in the foreseeable future)
-2. Update the `example/templates/config.ini` with your paths
+Chrome on Wayland uses GTK4 for window decorations. You have two options:
 
-3. Execute the following command and enjoy your new theme :smile:
-   UI option
-
-```shell
-poetry run python src/main.py --ui
+**Option 1**: Install the GTK4 theme during setup
+```bash
+meowterialyou --chrome-gtk4
 ```
 
-For dark theme:
-
-```shell
-poetry run python src/main.py --wallpaper <wallpaper_path>
+**Option 2**: Force Chrome to use GTK3 (no additional setup needed)
+```bash
+google-chrome --gtk-version=3
 ```
 
-For light theme:
+To make Option 2 permanent, edit your Chrome `.desktop` file and add `--gtk-version=3` to the `Exec` line.
 
-```shell
-poetry run python src/main.py --wallpaper <wallpaper_path> -l
+---
+
+## Automatic Theme Updates
+
+Use [GNOME Routines](https://github.com/supSugam/gnome-routines) to automatically update your theme when the wallpaper changes:
+
+1. Install GNOME Routines from GithHub (will publish to gnome marketplace soon)
+2. Create a routine with:
+   - **Trigger**: Wallpaper changes
+   - **Action**: Run command
+   - **Command**: `meowterialyou --theme dark` (adjust options as needed)
+
+---
+
+## Supported Applications
+
+- GNOME Shell
+- GTK3 and GTK4 applications
+- VS Code (requires custom CSS extension)
+- Obsidian (with Adwaita theme)
+- Vivaldi
+- BetterDiscord
+- Spotify (via Spicetify)
+
+---
+
+## Uninstall
+
+```bash
+./install.sh --uninstall
 ```
 
-4. For adaptive folder icons make sure to install [Papirus Folders](https://github.com/PapirusDevelopmentTeam/papirus-folders) and have papirus on your `.local/share/icons` folder. Otherwise you will need admin permissions.
+Or run the installer and select "Uninstall" from the menu.
 
-![](screenshots/test.png)
+---
 
-# Screenshots
+## Troubleshooting
 
-## GTK4 WIP UI!
+### User Themes Extension Error
 
-![](screenshots/ui.png)
+If you encounter issues with the User Themes extension:
 
-## Obisidian Dark
-
-![](screenshots/obsidian-dark.png)
-
-## Obsidian Light
-
-![](screenshots/obsidian-light.png)
-
-## Gnome Theming Dark
-
-![](screenshots/gnome-dark.png)
-
-## Gnome Theming Light
-
-![](screenshots/gnome-light.png)
-
-## VSCODE themes
-
-![](screenshots/vscode-dark.png)
-
-### Note: need to set the color for the terminal background properly and patch vscode to apply css
-
-```json
-{
-  "workbench.colorCustomizations": {
-    "terminal.background": "#1f1f1f"
-  }
-}
-```
-
-## BetterDiscord
-
-Install [Material Discord](https://github.com/JustAlittleWolf/Material-You-Discord-Theme) and apply the script then enable the material you theme from the better Discord theme settings
-
-# Special Thanks
-
-- [Matugen](https://github.com/InioX/matugen)
-- [Obisidian Adwaita theme](https://github.com/birneee/obsidian-adwaita-theme)
-- [Material Color Utilities Python](https://github.com/avanisubbiah/material-color-utilities-python)
-- [FluentUI vscode](https://marketplace.visualstudio.com/items?itemName=leandro-rodrigues.fluent-ui-vscode)
-- [Spicetify Themes](https://github.com/spicetify/spicetify-themes)
-
-# Common issues
-
-User themes command error
-
-Run this:
-
-```shell
+```bash
 sudo cp $HOME/.local/share/gnome-shell/extensions/user-theme@gnome-shell-extensions.gcampax.github.com/schemas/org.gnome.shell.extensions.user-theme.gschema.xml /usr/share/glib-2.0/schemas && sudo glib-compile-schemas /usr/share/glib-2.0/schemas
 ```
 
-more info [here](https://gist.github.com/atiensivu/fcc3183e9a6fd74ec1a283e3b9ad05f0)
+See [this gist](https://gist.github.com/atiensivu/fcc3183e9a6fd74ec1a283e3b9ad05f0) for more details.
+
+---
+
+## Contributing
+
+Contributions are welcome. Please open an issue first to discuss what you would like to change.
+
+- **Bug Reports**: Use the [bug report template](.github/ISSUE_TEMPLATE/bug_report.md)
+- **Feature Requests**: Use the [feature request template](.github/ISSUE_TEMPLATE/feature_request.md)
+
+---
+
+## Credits
+
+- [Mitsugen](https://github.com/DimitrisMilonopoulos/mitsugen) by Dimitris Milonopoulos (original project)
+- [Material Color Utilities Python](https://github.com/avanisubbiah/material-color-utilities-python)
+- [Obsidian Adwaita Theme](https://github.com/birneee/obsidian-adwaita-theme)
+- [Spicetify Themes](https://github.com/spicetify/spicetify-themes)
+- [Matugen](https://github.com/InioX/matugen)
+
+---
+
+## License
+
+This project inherits the license from the original Mitsugen project.
