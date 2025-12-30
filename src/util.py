@@ -1,6 +1,9 @@
 import logging
 import os
 import re
+import subprocess
+import sys
+import json
 from argparse import ArgumentParser, Namespace
 from configparser import ConfigParser
 from pathlib import Path
@@ -23,11 +26,12 @@ def parse_arguments():
     )
 
     parser.add_argument(
-        "-l",
-        "--lightmode",
-        help="specify whether to use light mode",
-        action="store_true",
+        "--theme",
+        help="theme mode: light or dark (default: dark)",
+        choices=["light", "dark"],
+        default="dark",
     )
+
     parser.add_argument(
         "-i",
         "--ui",
@@ -40,7 +44,68 @@ def parse_arguments():
         help="start in headless monitor mode",
         action="store_true",
     )
+    parser.add_argument(
+        "-s",
+        "--system",
+        help="also install theme to /usr/share/themes/ (requires sudo)",
+        action="store_true",
+    )
+
+    parser.add_argument(
+        "--title-buttons",
+        help="window button style: mac (circular) or native (default: native)",
+        choices=["mac", "native"],
+        default="native",
+    )
+
+    parser.add_argument(
+        "--title-buttons-position",
+        help="window button position: left or right (default: right)",
+        choices=["left", "right"],
+        default="right",
+    )
+
+    parser.add_argument(
+        "--chrome-gtk4",
+        help="install GTK4 theme for Chrome/Chromium browser support",
+        action="store_true",
+    )
+
+    parser.add_argument(
+        "--uninstall",
+        help="completely remove all MeowterialYou theme files (overrides all other args)",
+        action="store_true",
+    )
+
+    # Path to store last arguments
+    args_file = Path.home() / ".local/share/meowterialyou/last_args.json"
+
+    # If run without arguments, try to load last used arguments
+    if len(sys.argv) == 1:
+        if args_file.exists():
+            try:
+                with open(args_file, "r") as f:
+                    stored_args = json.load(f)
+                    print(
+                        f"No arguments provided. Using last successful run: {' '.join(stored_args)}"
+                    )
+                    return parser.parse_args(stored_args)
+            except Exception as e:
+                print(f"Failed to load last args: {e}")
+
     args: Namespace = parser.parse_args()
+
+    # Save arguments for next time (unless it's an uninstall or help command)
+    # We check sys.argv again to ensure we only save if user actually provided args
+    if len(sys.argv) > 1 and not args.uninstall:
+        try:
+            args_file.parent.mkdir(parents=True, exist_ok=True)
+            with open(args_file, "w") as f:
+                json.dump(sys.argv[1:], f)
+        except Exception as e:
+            # warning but don't crash
+            print(f"Warning: Could not save arguments: {e}")
+
     return args
 
 
@@ -61,25 +126,186 @@ def reload_apps(lightmode_enabled: bool, scheme: MaterialColors):
     postfix = "dark" if not lightmode_enabled else "light"
 
     log.info(f"Restarting GTK {postfix}")
+
+    # Force gtk-dark.css to point to gtk.css in the theme folder
+    # This ensures that apps requesting the dark variant get the themed styles
+    # (Critical for dark mode: without this, gtk-dark.css contains hardcoded Adwaita colors)
+    theme_dir = Path(
+        f"~/.local/share/themes/MeowterialYou-{postfix}/gtk-3.0"
+    ).expanduser()
+    if theme_dir.exists():
+        dark_css = theme_dir / "gtk-dark.css"
+        if dark_css.exists() or dark_css.is_symlink():
+            dark_css.unlink()
+
+        # Create symlink
+        try:
+            os.symlink(theme_dir / "gtk.css", dark_css)
+            log.info(f"Symlinked gtk-dark.css to gtk.css in {theme_dir}")
+        except Exception as e:
+            log.error(f"Failed to symlink gtk-dark.css: {e}")
+
+    # Set color preference for Libadwaita/GTK4 apps
+    color_scheme = "prefer-light" if lightmode_enabled else "prefer-dark"
+    os.system(
+        f"gsettings set org.gnome.desktop.interface color-scheme '{color_scheme}'"
+    )
+
+    # In dark mode, create gtk.css symlink to gtk-dark.css in ~/.config/gtk-3.0/
+    # GTK3 loads gtk.css even when prefer-dark is set, so we need this symlink
+    # for Terminal and other GTK3 apps to apply the dark theme correctly
+    config_gtk3_dir = Path("~/.config/gtk-3.0").expanduser()
+    if config_gtk3_dir.exists():
+        config_gtk_css = config_gtk3_dir / "gtk.css"
+        config_gtk_dark_css = config_gtk3_dir / "gtk-dark.css"
+
+        if not lightmode_enabled and config_gtk_dark_css.exists():
+            # Dark mode: symlink gtk.css -> gtk-dark.css
+            if config_gtk_css.exists() or config_gtk_css.is_symlink():
+                config_gtk_css.unlink()
+            try:
+                os.symlink(config_gtk_dark_css, config_gtk_css)
+                log.info(f"Symlinked gtk.css to gtk-dark.css in {config_gtk3_dir}")
+            except Exception as e:
+                log.error(f"Failed to symlink config gtk.css: {e}")
+        elif lightmode_enabled:
+            # Light mode: remove gtk.css override (let theme handle it)
+            if config_gtk_css.exists() or config_gtk_css.is_symlink():
+                log.info(f"Removing config override: {config_gtk_css}")
+                config_gtk_css.unlink()
+
+    # Symlink assets folder to ~/.config/gtk-3.0/assets
+    # This is required because CSS in ~/.config/gtk-3.0/ (like gtk-dark.css) uses relative paths (url("assets/..."))
+    # Without this, pixbuf loading fails (causing DING issues)
+    if config_gtk3_dir.exists():
+        config_assets = config_gtk3_dir / "assets"
+        theme_assets = theme_dir / "assets"
+
+        if config_assets.exists() or config_assets.is_symlink():
+            config_assets.unlink()
+
+        if theme_assets.exists():
+            try:
+                os.symlink(theme_assets, config_assets)
+                log.info(f"Symlinked assets to {config_assets}")
+            except Exception as e:
+                log.error(f"Failed to symlink assets: {e}")
+
     os.system(f"gsettings set org.gnome.desktop.interface gtk-theme Adwaita")
     os.system("sleep 0.5")
-    os.system(f"gsettings set org.gnome.desktop.interface gtk-theme custom-{postfix}")
+    os.system(
+        f"gsettings set org.gnome.desktop.interface gtk-theme MeowterialYou-{postfix}"
+    )
+
+    # Symlink assets folder to ~/.config/gtk-4.0/assets
+    # This is required because CSS in ~/.config/gtk-4.0/ (like gtk.css) uses relative paths (url("assets/..."))
+    config_gtk4_dir = Path("~/.config/gtk-4.0").expanduser()
+    if config_gtk4_dir.exists():
+        config_assets_4 = config_gtk4_dir / "assets"
+        theme_assets = theme_dir / "assets"
+
+        if config_assets_4.exists() or config_assets_4.is_symlink():
+            config_assets_4.unlink()
+
+        if theme_assets.exists():
+            try:
+                os.symlink(theme_assets, config_assets_4)
+                log.info(f"Symlinked assets to {config_assets_4}")
+            except Exception as e:
+                log.error(f"Failed to symlink GTK4 assets: {e}")
 
     log.info("Restarting Gnome Shell theme")
     os.system(f"gsettings set org.gnome.shell.extensions.user-theme name 'Default'")
     os.system("sleep 0.5")
     os.system(
-        f"gsettings set org.gnome.shell.extensions.user-theme name 'Marble-blue-{postfix}'"
+        f"gsettings set org.gnome.shell.extensions.user-theme name 'MeowterialYou-{postfix}'"
     )
+
+    # Set Tiling Assistant extension accent color to match theme
+    try:
+        primary_hex = scheme.primary.hex
+        # Convert hex to rgb format that Tiling Assistant expects
+        r = int(primary_hex[1:3], 16)
+        g = int(primary_hex[3:5], 16)
+        b = int(primary_hex[5:7], 16)
+        rgb_color = f"rgb({r},{g},{b})"
+        result = subprocess.run(
+            [
+                "gsettings",
+                "set",
+                "org.gnome.shell.extensions.tiling-assistant",
+                "active-window-hint-color",
+                rgb_color,
+            ],
+            capture_output=True,
+            text=True,
+        )
+        if result.returncode == 0:
+            log.info(f"Set Tiling Assistant accent color to {rgb_color}")
+    except Exception as e:
+        # Extension may not be installed, that's fine
+        pass
+
+    # Set Gnome Terminal Transparency
+    try:
+        # Get default profile UUID
+        cmd = ["gsettings", "get", "org.gnome.Terminal.ProfilesList", "default"]
+        uuid = subprocess.check_output(cmd).decode("utf-8").strip().strip("'")
+
+        profile_path = f"org.gnome.Terminal.Legacy.Profile:/org/gnome/terminal/legacy/profiles:/:{uuid}/"
+
+        log.info(f"Setting Gnome Terminal transparency for profile {uuid}")
+        os.system(f"gsettings set {profile_path} use-transparent-background true")
+        os.system(f"gsettings set {profile_path} background-transparency-percent 30")
+
+    except Exception as e:
+        log.error(f"Failed to set terminal transparency: {e}")
 
 
 def set_wallpaper(path: str):
+    if not path.startswith("file://"):
+        path = f"file://{path}"
     log.info("Setting wallpaper in gnome")
     os.system("gsettings set org.gnome.desktop.background picture-options 'zoom'")
     os.system(f"gsettings set org.gnome.desktop.background picture-uri {path}")
+    os.system(f"gsettings set org.gnome.desktop.background picture-uri-dark {path}")
 
 
 class Config:
+    # Map template names to preference keys
+    OPTIONAL_APPS = {
+        "SPOTIFY": "THEME_SPOTIFY",
+        "DISCORD": "THEME_DISCORD",
+        "VSCODE": "THEME_VSCODE",
+        "OBSIDIAN": "THEME_OBSIDIAN",
+        "VIVALDI": "THEME_VIVALDI",
+    }
+
+    @staticmethod
+    def load_prefs() -> dict:
+        """Load user preferences from prefs.conf"""
+        prefs = {}
+        prefs_path = Path.home() / ".local/share/meowterialyou/prefs.conf"
+        if prefs_path.exists():
+            with open(prefs_path, "r") as f:
+                for line in f:
+                    line = line.strip()
+                    if line and not line.startswith("#") and "=" in line:
+                        key, value = line.split("=", 1)
+                        prefs[key.strip()] = value.strip().lower() == "true"
+        return prefs
+
+    @classmethod
+    def _should_skip_template(cls, template_name: str, prefs: dict) -> bool:
+        """Check if a template should be skipped based on user preferences"""
+        template_upper = template_name.upper()
+        for app_key, pref_key in cls.OPTIONAL_APPS.items():
+            if app_key in template_upper:
+                # Skip if preference is not set to true
+                if not prefs.get(pref_key, False):
+                    return True
+        return False
+
     @staticmethod
     def read(filename: str):
         config = ConfigParser()
@@ -110,9 +336,18 @@ class Config:
         Returns:
             dict | None: The generated config file. None if error
         """
+        # Load user preferences for optional apps
+        prefs = cls.load_prefs()
+
         for item in config.sections():
             num = 0
             template_name = config[item].name
+
+            # Skip optional app templates if not enabled
+            if cls._should_skip_template(template_name, prefs):
+                logging.debug(f"Skipping {template_name} (not enabled in preferences)")
+                continue
+
             template_path_str = config[item]["template_path"]
             if template_path_str.startswith("."):
                 template_path_str = f"{parent_dir}/{template_path_str[1:]}"
@@ -140,19 +375,25 @@ class Config:
                 pattern = f"@{{{key}}}"
                 pattern_hex = f"@{{{key}.hex}}"
                 pattern_rgb = f"@{{{key}.rgb}}"
+                pattern_rgba50 = f"@{{{key}.rgba50}}"
                 pattern_hue = f"@{{{key}.hue}}"
                 pattern_sat = f"@{{{key}.sat}}"
                 pattern_light = f"@{{{key}.light}}"
                 pattern_wallpaper = "@{wallpaper}"
 
                 hex_stripped = value[1:]  # type: ignore
-                rgb_value = f"rgb{ColorTransformer.hex_to_rgb(hex_stripped)}"
+                rgb_tuple = ColorTransformer.hex_to_rgb(hex_stripped)
+                rgb_value = f"rgb{rgb_tuple}"
+                rgba50_value = (
+                    f"rgba({rgb_tuple[0]}, {rgb_tuple[1]}, {rgb_tuple[2]}, 0.5)"
+                )
                 hue, light, saturation = ColorTransformer.hex_to_hls(hex_stripped)
                 wallpaper_value = os.path.abspath(wallpaper)
 
                 output_data = re.sub(pattern, hex_stripped, output_data)
                 output_data = re.sub(pattern_hex, value, output_data)
                 output_data = re.sub(pattern_rgb, rgb_value, output_data)
+                output_data = re.sub(pattern_rgba50, rgba50_value, output_data)
                 output_data = re.sub(pattern_wallpaper, wallpaper_value, output_data)
                 output_data = re.sub(pattern_hue, f"{hue}", output_data)
                 output_data = re.sub(pattern_sat, f"{saturation}", output_data)

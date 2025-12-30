@@ -1,0 +1,256 @@
+/* Material You color definitions for GTK4 - Light Theme */
+@define-color accent_bg_color @{primary.hex};
+@define-color accent_fg_color white;
+@define-color accent_color @{primary.hex};
+@define-color destructive_bg_color @{error.hex};
+@define-color destructive_fg_color @{onError.hex};
+@define-color destructive_color @{error.hex};
+@define-color success_bg_color @{tertiaryContainer.hex};
+@define-color success_fg_color @{onTertiaryContainer.hex};
+@define-color success_color #1b8553;
+@define-color warning_bg_color @{secondary.hex};
+@define-color warning_fg_color @{onSecondary.hex};
+@define-color warning_color @{secondary.hex};
+@define-color error_bg_color @{errorContainer.hex};
+@define-color error_fg_color @{onSurface.hex};
+@define-color error_color @{error.hex};
+@define-color window_bg_color @{surface.hex};
+@define-color window_fg_color @{onSurface.hex};
+@define-color view_bg_color @{surfaceVariant.hex};
+@define-color view_fg_color @{onSurfaceVariant.hex};
+@define-color headerbar_bg_color @{surfaceVariant.hex};
+@define-color sidebar_bg_color @{surfaceVariant.hex};
+@define-color headerbar_fg_color @{onSurfaceVariant.hex};
+@define-color headerbar_border_color rgba(0, 0, 0, 0.15);
+@define-color headerbar_backdrop_color @{surface.hex};
+@define-color card_bg_color @{surfaceVariant.hex};
+@define-color card_fg_color @{onSurfaceVariant.hex};
+@define-color popover_bg_color @{surfaceVariant.hex};
+@define-color popover_fg_color @{onSurfaceVariant.hex};
+@define-color shade_color rgba(0, 0, 0, 0.07);
+@define-color scrollbar_outline_color @{outline.hex};
+
+/* Theme compatibility variables */
+@define-color theme_bg_color @{surface.hex};
+@define-color theme_base_color @{surfaceVariant.hex};
+@define-color theme_fg_color @{onSurface.hex};
+@define-color theme_text_color @{onSurface.hex};
+@define-color theme_selected_bg_color @{primary.hex};
+@define-color theme_selected_fg_color white;
+@define-color insensitive_fg_color alpha(@{onSurface.hex}, 0.5);
+@define-color borders alpha(@{outline.hex}, 0.3);
+
+/* DING Transparency Fix for GTK4 */
+window.ding-window,
+window.gungadin-window,
+.ding-window,
+.gjs-ding-window {
+    background-color: transparent;
+}
+
+/***************
+ * Base States - Using DIRECT hex colors for Chrome compatibility
+ ***************/
+.background {
+    color: @{onSurface.hex};
+    background-color: @{surface.hex};
+}
+
+.background:backdrop {
+    text-shadow: none;
+    -gtk-icon-shadow: none;
+}
+
+dnd {
+    color: @{onSurface.hex};
+}
+
+.view, iconview,
+textview > text {
+    color: @{onSurfaceVariant.hex};
+    background-color: @{surfaceVariant.hex};
+}
+
+.view:disabled, iconview:disabled,
+textview > text:disabled {
+    color: alpha(@{onSurface.hex}, 0.5);
+    background-color: @{surfaceVariant.hex};
+}
+
+textview > text {
+    background-color: @{surface.hex};
+}
+
+/***************
+ * Headerbar - Direct colors
+ ***************/
+.titlebar:not(headerbar),
+headerbar {
+    padding: 0 6px;
+    min-height: 46px;
+    border-width: 0 0 1px;
+    border-style: solid;
+    border-color: alpha(@{outline.hex}, 0.3);
+    border-radius: 0;
+    background: @{surfaceVariant.hex};
+    color: @{onSurfaceVariant.hex};
+}
+
+.titlebar:backdrop:not(headerbar),
+headerbar:backdrop {
+    border-color: alpha(@{outline.hex}, 0.2);
+    background-color: @{surface.hex};
+    transition: 200ms ease-out;
+}
+
+.titlebar:not(headerbar) .title,
+headerbar .title {
+    padding-left: 12px;
+    padding-right: 12px;
+    font-weight: bold;
+    color: @{onSurfaceVariant.hex};
+}
+
+/***************
+ * Buttons - Minimal styling to not interfere with window buttons
+ ***************/
+/* Only style button colors, let Chrome handle the shape */
+button {
+    color: @{onSurface.hex};
+}
+
+button:hover {
+    background-color: alpha(@{onSurface.hex}, 0.08);
+}
+
+button:active, button:checked {
+    background-color: alpha(@{onSurface.hex}, 0.12);
+}
+
+button:disabled {
+    color: alpha(@{onSurface.hex}, 0.5);
+}
+
+/***************
+ * Window Controls (minimize, maximize, close buttons)
+ ***************/
+windowcontrols button {
+    border-radius: 9999px;
+    padding: 3px;
+    margin: 0 4px;
+    min-width: 0;
+    min-height: 0;
+    border: none;
+    background: alpha(@{onSurface.hex}, 0.08);
+}
+
+windowcontrols button:hover {
+    background: alpha(@{onSurface.hex}, 0.12);
+}
+
+windowcontrols button:active,
+windowcontrols button:checked {
+    background: alpha(@{onSurface.hex}, 0.18);
+}
+
+/***************
+ * Entries - Direct colors
+ ***************/
+entry {
+    color: @{onSurfaceVariant.hex};
+    background-color: @{surfaceVariant.hex};
+    border: 1px solid alpha(@{outline.hex}, 0.3);
+    border-radius: 6px;
+    padding: 4px 8px;
+}
+
+entry:focus {
+    border-color: @{primary.hex};
+}
+
+/***************
+ * Menu / Popover - Direct colors
+ ***************/
+popover,
+popover.background {
+    background-color: @{surfaceVariant.hex};
+    color: @{onSurfaceVariant.hex};
+    border: 1px solid alpha(@{outline.hex}, 0.3);
+}
+
+menu,
+.menu,
+menubar,
+.menubar {
+    background-color: @{surfaceVariant.hex};
+    color: @{onSurfaceVariant.hex};
+}
+
+menuitem,
+.menuitem {
+    color: @{onSurfaceVariant.hex};
+}
+
+menuitem:hover,
+.menuitem:hover {
+    background-color: alpha(@{primary.hex}, 0.2);
+}
+
+/***************
+ * Scrollbar
+ ***************/
+scrollbar {
+    background-color: transparent;
+}
+
+scrollbar slider {
+    background-color: alpha(@{outline.hex}, 0.4);
+    border-radius: 9999px;
+    min-width: 8px;
+    min-height: 8px;
+}
+
+scrollbar slider:hover {
+    background-color: alpha(@{outline.hex}, 0.6);
+}
+
+/***************
+ * Selection - Direct colors
+ ***************/
+selection {
+    background-color: alpha(@{primary.hex}, 0.4);
+    color: @{onSurface.hex};
+}
+
+:selected {
+    background-color: @{primary.hex};
+    color: white;
+}
+
+/***************
+ * Separators
+ ***************/
+separator {
+    background-color: alpha(@{onSurface.hex}, 0.1);
+    min-width: 1px;
+    min-height: 1px;
+}
+
+/***************
+ * Labels
+ ***************/
+label {
+    color: inherit;
+}
+
+label.dim-label {
+    color: alpha(currentColor, 0.55);
+}
+
+/***************
+ * Links
+ ***************/
+link,
+*:link {
+    color: @{primary.hex};
+}

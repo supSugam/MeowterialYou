@@ -1,0 +1,85 @@
+/* ===== macOS-Style Window Buttons (GTK3 Dark) ===== */
+button.titlebutton:not(.suggested-action):not(.destructive-action) {
+  min-height: 16px;
+  min-width: 16px;
+  padding: 0;
+  margin: 0 0px;
+}
+
+button.minimize.titlebutton:not(.suggested-action):not(.destructive-action), button.maximize.titlebutton:not(.suggested-action):not(.destructive-action), button.close.titlebutton:not(.suggested-action):not(.destructive-action) {
+  color: transparent;
+}
+
+button.minimize.titlebutton:not(.suggested-action):not(.destructive-action) image, button.maximize.titlebutton:not(.suggested-action):not(.destructive-action) image, button.close.titlebutton:not(.suggested-action):not(.destructive-action) image {
+  padding: 0;
+  -gtk-icon-source: none;
+}
+
+button.minimize.titlebutton:hover:not(.suggested-action):not(.destructive-action), button.maximize.titlebutton:hover:not(.suggested-action):not(.destructive-action), button.close.titlebutton:hover:not(.suggested-action):not(.destructive-action) {
+  box-shadow: none;
+}
+
+button.minimize.titlebutton:active:not(.suggested-action):not(.destructive-action), button.maximize.titlebutton:active:not(.suggested-action):not(.destructive-action), button.close.titlebutton:active:not(.suggested-action):not(.destructive-action) {
+  box-shadow: inset 0 0 0 9999px rgba(0, 0, 0, 0.25);
+}
+
+button.minimize.titlebutton:hover:not(.suggested-action):not(.destructive-action), button.minimize.titlebutton:active:not(.suggested-action):not(.destructive-action), button.maximize.titlebutton:hover:not(.suggested-action):not(.destructive-action), button.maximize.titlebutton:active:not(.suggested-action):not(.destructive-action), button.close.titlebutton:hover:not(.suggested-action):not(.destructive-action), button.close.titlebutton:active:not(.suggested-action):not(.destructive-action) {
+  color: rgba(250, 244, 237, 0.6);
+}
+
+button.minimize.titlebutton:backdrop:not(.suggested-action):not(.destructive-action), button.maximize.titlebutton:backdrop:not(.suggested-action):not(.destructive-action), button.close.titlebutton:backdrop:not(.suggested-action):not(.destructive-action) {
+  background-color: rgba(250, 244, 237, 0.3);
+}
+
+button.minimize.titlebutton:backdrop:hover:not(.suggested-action):not(.destructive-action), button.minimize.titlebutton:backdrop:active:not(.suggested-action):not(.destructive-action), button.maximize.titlebutton:backdrop:hover:not(.suggested-action):not(.destructive-action), button.maximize.titlebutton:backdrop:active:not(.suggested-action):not(.destructive-action), button.close.titlebutton:backdrop:hover:not(.suggested-action):not(.destructive-action), button.close.titlebutton:backdrop:active:not(.suggested-action):not(.destructive-action) {
+  color: rgba(250, 244, 237, 0.5);
+}
+
+button.minimize.titlebutton:not(.suggested-action):not(.destructive-action) {
+  background-color: #f6c177;
+}
+
+button.minimize.titlebutton:active:not(.suggested-action):not(.destructive-action) {
+  background-color: #f7ce95;
+}
+
+button.maximize.titlebutton:not(.suggested-action):not(.destructive-action) {
+  background-color: #31748f;
+}
+
+button.maximize.titlebutton:active:not(.suggested-action):not(.destructive-action) {
+  background-color: #6394a7;
+}
+
+button.close.titlebutton:not(.suggested-action):not(.destructive-action) {
+  background-color: #eb6f92;
+}
+
+button.close.titlebutton:active:not(.suggested-action):not(.destructive-action) {
+  background-color: #ef90a9;
+}
+
+.background.csd headerbar.titlebar.default-decoration button.minimize.titlebutton:not(.suggested-action):not(.destructive-action), .background.csd headerbar.titlebar.default-decoration button.maximize.titlebutton:not(.suggested-action):not(.destructive-action), .background.csd headerbar.titlebar.default-decoration button.close.titlebutton:not(.suggested-action):not(.destructive-action) {
+  background-repeat: no-repeat;
+  background-size: 16px 16px;
+  background-position: center;
+}
+
+.background.csd headerbar.titlebar.default-decoration button.minimize.titlebutton:not(.suggested-action):not(.destructive-action), .background.csd headerbar.titlebar.default-decoration button.maximize.titlebutton:not(.suggested-action):not(.destructive-action), .background.csd headerbar.titlebar.default-decoration button.close.titlebutton:not(.suggested-action):not(.destructive-action) {
+  box-shadow: none;
+  color: transparent;
+  animation: none;
+  transition: all 75ms cubic-bezier(0, 0, 0.2, 1);
+}
+
+.background.csd headerbar.titlebar.default-decoration button.minimize.titlebutton:hover:not(.suggested-action):not(.destructive-action), .background.csd headerbar.titlebar.default-decoration button.minimize.titlebutton:active:not(.suggested-action):not(.destructive-action) {
+  background-image: url("assets/scalable/minimize.svg");
+}
+
+.background.csd headerbar.titlebar.default-decoration button.maximize.titlebutton:hover:not(.suggested-action):not(.destructive-action), .background.csd headerbar.titlebar.default-decoration button.maximize.titlebutton:active:not(.suggested-action):not(.destructive-action) {
+  background-image: url("assets/scalable/maximize.svg");
+}
+
+.background.csd headerbar.titlebar.default-decoration button.close.titlebutton:hover:not(.suggested-action):not(.destructive-action), .background.csd headerbar.titlebar.default-decoration button.close.titlebutton:active:not(.suggested-action):not(.destructive-action) {
+  background-image: url("assets/scalable/close.svg");
+}

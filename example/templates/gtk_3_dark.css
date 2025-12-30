@@ -81,6 +81,8 @@
 @define-color incognito_bg_color #1c2438;
 * { padding: 0; -GtkToolButton-icon-spacing: 4; -GtkTextView-error-underline-color: @error_bg_color; -GtkScrolledWindow-scrollbar-spacing: 0; -GtkToolItemGroup-expander-size: 11; -GtkWidget-text-handle-width: 20; -GtkWidget-text-handle-height: 24; -GtkDialog-button-spacing: 4; -GtkDialog-action-area-border: 0; outline-color: alpha(currentColor,0.3); outline-style: dashed; outline-offset: -3px; outline-width: 1px; -gtk-outline-radius: 4px; -gtk-secondary-caret-color: @accent_bg_color; }
 
+
+
 .background { color: @window_fg_color; background-color: @window_bg_color; }
 
 .background:backdrop { text-shadow: none; -gtk-icon-shadow: none; }
@@ -2770,11 +2772,11 @@ scale.warmth trough { background-image: linear-gradient(to right, rgba(249, 240,
 
 scale.warmth:dir(rtl) trough { background-image: linear-gradient(to left, rgba(249, 240, 107, 0.4), rgba(229, 165, 10, 0.6)); }
 
-.terminal, .terminal text { background-color: #3d3846; color: white; font-family: monospace; }
+.terminal, .terminal text { background-color: @window_bg_color; color: @window_fg_color; font-family: monospace; }
 
 .terminal selection, .terminal text selection { background-color: @accent_bg_color; color: white; }
 
-.terminal:backdrop, .terminal text:backdrop { background-color: #5e5c64; color: white; }
+.terminal:backdrop, .terminal text:backdrop { background-color: @window_bg_color; color: @window_fg_color; }
 
 label.terminal { padding: 1em; }
 
@@ -3425,3 +3427,38 @@ phosh-osd-window levelbar trough { border: none; padding: 0; box-shadow: none; b
 phosh-splash.light { color: @phosh_splash_fg_color; background-color: @phosh_splash_bg_color; }
 
 .phosh-dropicon-shadow { -gtk-icon-shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 1px 8px rgba(0, 0, 0, 0.2); }
+
+/* terminal-window headerbar.titlebar {
+    background-color: rgba(0, 0, 0, 0.1);
+    background-image: none;
+    box-shadow: none;
+}
+ */
+
+/* Desktop Icons Fix - Expanded Selectors (Moved to end) */
+.nemo-desktop.nemo-canvas-item,
+.nemo-desktop.nemo-view,
+.desktop-icons,
+.ding-libs-window,
+.ding-desktop-window,
+#ding-window,
+.ding-window,
+.desktop-icons-window,
+window.desktop-window,
+.gjs-ding-window {
+    background-color: transparent;
+    /* background-image: none; */
+    box-shadow: none;
+    border: none;
+}
+
+/* Desktop Icons Fix - Corrected Selector */
+.desktopwindow,
+window.desktopwindow,
+.ding-window,
+#ding-window {
+    background-color: transparent;
+    background-image: none;
+    box-shadow: none;
+    border: none;
+}

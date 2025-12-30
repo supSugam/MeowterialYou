@@ -1,0 +1,10 @@
+[Desktop Entry]
+Name=MeowterialYou-dark
+Type=X-GNOME-Metatheme
+Comment=Material You dynamic theme (dark variant)
+Encoding=UTF-8
+
+[X-GNOME-Metatheme]
+GtkTheme=MeowterialYou-dark
+MetacityTheme=MeowterialYou-dark
+IconTheme=Papirus-Dark

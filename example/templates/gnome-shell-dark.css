@@ -26,11 +26,11 @@ stage {
 
 /* panel */
 
-#panelRight > * > * .panel-button, .clock {
+/* #panelRight > * > * .panel-button, .clock {
     background-color: transparent !important;
     box-shadow: none !important;
     border: none !important;
-}
+} */
 
 #panel{
   background-color: @{surface.hex};
@@ -645,6 +645,15 @@ stage {
   color: rgba(234, 243, 251, 1);
   box-shadow: inset 0 0 0 1px rgba(652, 652, 652, 0.03);
 }
+
+/* TODO: Fix quick settings panel menu exceeding screen for bottom panels */
+/* .quick-toggle-menu-container {
+  border: 1px solid red !important;
+}
+
+.quick-toggle-menu StScrollView {
+  margin-bottom: 500px !important; 
+} */
 
 /* connect / disconnect text color */
 .device-subtitle {
@@ -1320,8 +1329,8 @@ StEntry:focus {
 
 /* Tiled window previews */
 .tile-preview {
-  background-color:  @{surfaceVariant.hex}7f;
-  border: 1px solid  @{primary.hex};
+  background-color: @{primary.rgba50};
+  border: 1px solid @{primary.hex};
 }
 
 .window-close, .screenshot-ui-close-button {
