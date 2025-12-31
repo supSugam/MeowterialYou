@@ -32,9 +32,13 @@ readonly TRASH="${RED}🗑️${NC}"
 # ─────────────────────────────────────────────────────────────────────────────
 # Configuration
 # ─────────────────────────────────────────────────────────────────────────────
-INSTALL_DIR="$HOME/.local/share/meowterialyou"
+# The repo directory IS the installation - no copying needed
+# We only add a shell alias pointing to this repo
 BIN_DIR="$HOME/.local/bin"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# Config file stored in repo - tracks last installation choices
+CONFIG_FILE="$SCRIPT_DIR/.install_config"
 
 # User preferences (defaults)
 WALLPAPER=""
@@ -44,6 +48,9 @@ TITLE_BUTTONS_POSITION="right"
 CHROME_GTK4=false
 SKIP_INTERACTIVE=false
 DO_UNINSTALL=false
+DO_DEFAULTS=false
+DO_REAPPLY=false
+SILENT=false
 HAS_GUM=false
 
 # Optional app theming
@@ -52,6 +59,7 @@ THEME_DISCORD=false
 THEME_VSCODE=false
 THEME_OBSIDIAN=false
 THEME_VIVALDI=false
+
 
 # ─────────────────────────────────────────────────────────────────────────────
 # UI Functions
@@ -184,20 +192,24 @@ confirm_uninstall() {
 uninstall_meowterialyou() {
     print_section "🗑️  Uninstalling MeowterialYou"
     
-    # 1. Cleaner theme removal using Python script if available
-    echo -e "  ${DOT} Removing applied themes..."
-    if command -v meowterialyou &> /dev/null; then
-         meowterialyou --uninstall 2>/dev/null || true
+    # 1. Try Python uninstall first (handles gsettings resets)
+    echo -e "  ${DOT} Running cleanup script..."
+    if [ -f "$SCRIPT_DIR/.venv/bin/python" ] && [ -f "$SCRIPT_DIR/src/main.py" ]; then
+        cd "$SCRIPT_DIR" && "$SCRIPT_DIR/.venv/bin/python" "$SCRIPT_DIR/src/main.py" --uninstall 2>/dev/null || true
+    elif command -v meowterialyou &> /dev/null; then
+        meowterialyou --uninstall 2>/dev/null || true
     fi
 
-    # 2. Cleanup theme styling files
+    # 2. Remove theme directories
     echo -e "  ${DOT} Cleaning up theme files..."
     rm -rf ~/.local/share/themes/MeowterialYou-dark
     rm -rf ~/.local/share/themes/MeowterialYou-light
+    rm -rf ~/.local/share/themes/custom-dark
+    rm -rf ~/.local/share/themes/custom-light
     rm -rf ~/.themes/MeowterialYou-dark
     rm -rf ~/.themes/MeowterialYou-light
 
-    # 3. Cleanup config files/links
+    # 3. Cleanup GTK config files/links
     echo -e "  ${DOT} Cleaning up GTK configs..."
     rm -f ~/.config/gtk-3.0/gtk.css
     rm -f ~/.config/gtk-3.0/gtk-dark.css
@@ -206,10 +218,34 @@ uninstall_meowterialyou() {
     rm -f ~/.config/gtk-4.0/gtk-dark.css
     rm -rf ~/.config/gtk-4.0/assets
 
-    # 4. Remove executable and installation dir
-    echo -e "  ${DOT} Removing program files..."
-    rm -f "$BIN_DIR/meowterialyou"
-    rm -rf "$INSTALL_DIR"
+    # 4. Remove MeowterialYou config directory (XDG location)
+    echo -e "  ${DOT} Removing config directory..."
+    rm -rf ~/.config/meowterialyou
+
+    # 5. Remove legacy installation directory (old copy-based install)
+    echo -e "  ${DOT} Removing legacy installation..."
+    rm -rf ~/.local/share/meowterialyou
+
+    # 6. Remove alias from shell config files
+    echo -e "  ${DOT} Removing shell alias..."
+    local MARKER="# MeowterialYou"
+    sed -i "/$MARKER/d" "$HOME/.bashrc" 2>/dev/null || true
+    sed -i "/$MARKER/d" "$HOME/.zshrc" 2>/dev/null || true
+    # Also remove old symlink if it exists
+    rm -f "$BIN_DIR/meowterialyou" 2>/dev/null || true
+
+    # 7. Remove system themes (requires sudo)
+    echo -e "  ${DOT} Removing system themes (requires sudo)..."
+    sudo rm -rf /usr/share/themes/MeowterialYou-dark 2>/dev/null || true
+    sudo rm -rf /usr/share/themes/MeowterialYou-light 2>/dev/null || true
+
+    # 8. Reset all gsettings to defaults
+    echo -e "  ${DOT} Resetting GNOME settings..."
+    gsettings reset org.gnome.desktop.interface gtk-theme 2>/dev/null || true
+    gsettings reset org.gnome.desktop.interface color-scheme 2>/dev/null || true
+    gsettings reset org.gnome.desktop.interface icon-theme 2>/dev/null || true
+    gsettings reset org.gnome.shell.extensions.user-theme name 2>/dev/null || true
+    gsettings reset org.gnome.desktop.wm.preferences button-layout 2>/dev/null || true
 
     echo ""
     echo -e "${GREEN}"
@@ -221,12 +257,15 @@ uninstall_meowterialyou() {
     ╚═══════════════════════════════════════════════════════════════════════╝
 EOF
     echo -e "${NC}"
-    echo -e "  ${BOLD}Note:${NC} Your GTK theme has been reset."
+    echo -e "  ${BOLD}Note:${NC} Your GNOME settings have been reset to defaults."
     echo -e "  You may need to log out and back in to see all changes."
-    echo -e "  Or run: ${DIM}gsettings reset org.gnome.desktop.interface gtk-theme${NC}"
+    echo ""
+    echo -e "  ${DIM}The repository at $SCRIPT_DIR was not removed.${NC}"
+    echo -e "  ${DIM}You can delete it manually if you no longer need it.${NC}"
     echo ""
     exit 0
 }
+
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Interactive Configuration
@@ -460,77 +499,92 @@ check_requirements() {
 install_venv() {
     print_section "📦 Setting Up Environment"
     
-    mkdir -p "$INSTALL_DIR"
-    
-    # Create venv only if it doesn't exist
-    if [ ! -d "$INSTALL_DIR/.venv" ]; then
-        echo -e "  ${ARROW} Creating virtual environment..."
-        python3 -m venv --system-site-packages "$INSTALL_DIR/.venv"
-        print_success "Virtual environment created"
-        
-        # Install packages
-        echo -e "  ${ARROW} Installing Python packages..."
-        "$INSTALL_DIR/.venv/bin/pip" install --upgrade pip -q 2>/dev/null
-        "$INSTALL_DIR/.venv/bin/pip" install -r "$SCRIPT_DIR/requirements.txt" -q 2>/dev/null
-        print_success "Python packages installed"
-    else
-        print_success "Virtual environment exists"
-        # Check if packages need updating
-        echo -e "  ${ARROW} Checking packages..."
-        "$INSTALL_DIR/.venv/bin/pip" install -r "$SCRIPT_DIR/requirements.txt" -q 2>/dev/null || true
-        print_success "Packages up to date"
+    # Check if venv already exists and is functional
+    if [ -f "$SCRIPT_DIR/.venv/bin/python" ]; then
+        # Quick check if critical packages are installed
+        if "$SCRIPT_DIR/.venv/bin/python" -c "import rich, pydantic" 2>/dev/null; then
+            print_success "Environment ready"
+            return 0
+        fi
     fi
+    
+    # Create venv if needed
+    if [ ! -d "$SCRIPT_DIR/.venv" ]; then
+        echo -e "  ${ARROW} Creating virtual environment..."
+        python3 -m venv --system-site-packages "$SCRIPT_DIR/.venv"
+        print_success "Virtual environment created"
+    fi
+    
+    # Install packages only if needed
+    echo -e "  ${ARROW} Installing Python packages..."
+    "$SCRIPT_DIR/.venv/bin/pip" install --upgrade pip -q 2>/dev/null
+    "$SCRIPT_DIR/.venv/bin/pip" install -r "$SCRIPT_DIR/requirements.txt" -q 2>/dev/null
+    print_success "Python packages installed"
 }
 
+
 install_files() {
-    print_section "📁 Installing Files"
+    print_section "📁 Setting Up Command"
     
-    # Copy project files
-    print_progress 1 4 "Copying source files..."
-    cp -r "$SCRIPT_DIR/src" "$INSTALL_DIR/"
+    # Add alias to shell config files pointing directly to install.sh
+    local ALIAS_LINE="alias meowterialyou='$SCRIPT_DIR/install.sh'"
+    local MARKER="# MeowterialYou"
+    
+    print_progress 1 3 "Setting up shell alias..."
+    
+    # Function to add/update alias in a shell config file
+    add_alias_to_file() {
+        local config_file="$1"
+        if [ -f "$config_file" ]; then
+            # Remove old MeowterialYou alias if exists
+            sed -i "/$MARKER/d" "$config_file"
+            # Add new alias
+            echo "${ALIAS_LINE}  ${MARKER}" >> "$config_file"
+            return 0
+        fi
+        return 1
+    }
+    
+    # Add to both .bashrc and .zshrc if they exist
+    local added=false
+    if add_alias_to_file "$HOME/.bashrc"; then
+        print_success "Added alias to ~/.bashrc"
+        added=true
+    fi
+    if add_alias_to_file "$HOME/.zshrc"; then
+        print_success "Added alias to ~/.zshrc"
+        added=true
+    fi
+    
+    if [ "$added" = false ]; then
+        # Neither exists, create .bashrc
+        echo "${ALIAS_LINE}  ${MARKER}" >> "$HOME/.bashrc"
+        print_success "Created ~/.bashrc with alias"
+    fi
     echo ""
-    print_success "Source files"
     
-    print_progress 2 4 "Copying assets..."
-    cp -r "$SCRIPT_DIR/assets" "$INSTALL_DIR/"
-    echo ""
-    print_success "Theme assets"
+    # Remove old symlink if it exists (cleanup from previous install)
+    if [ -L "$BIN_DIR/meowterialyou" ] || [ -f "$BIN_DIR/meowterialyou" ]; then
+        rm -f "$BIN_DIR/meowterialyou"
+        print_info "Removed old symlink from ~/.local/bin/"
+    fi
     
-    print_progress 3 4 "Copying templates..."
-    cp -r "$SCRIPT_DIR/example" "$INSTALL_DIR/"
-    # We no longer need to copy uninstall.sh separately
-    echo ""
-    print_success "Templates & config"
-    
-    # Create command
-    print_progress 4 4 "Creating command..."
-    mkdir -p "$BIN_DIR"
-    
-    # Create wrapper that correctly handles invocation
-    cat > "$BIN_DIR/meowterialyou" << 'WRAPPER'
-#!/bin/bash
-INSTALL_DIR="$HOME/.local/share/meowterialyou"
-cd "$INSTALL_DIR" || exit 1
-export PYTHONPATH="$INSTALL_DIR:$PYTHONPATH"
-exec "$INSTALL_DIR/.venv/bin/python" "$INSTALL_DIR/src/main.py" "$@"
-WRAPPER
-    chmod +x "$BIN_DIR/meowterialyou"
-    echo ""
-    print_success "Command: ${BOLD}meowterialyou${NC}"
-    
-    # Install theme directories
-    echo -e "  ${ARROW} Setting up theme directories..."
+    # Set up theme directories (these are OUTPUT locations, not sources)
+    print_progress 2 3 "Setting up theme directories..."
     mkdir -p ~/.themes/MeowterialYou-dark/gnome-shell
     mkdir -p ~/.themes/MeowterialYou-light/gnome-shell
     mkdir -p ~/.local/share/themes
-    cp -r "$INSTALL_DIR/assets/MeowterialYou-dark" ~/.local/share/themes/
-    cp -r "$INSTALL_DIR/assets/MeowterialYou-light" ~/.local/share/themes/
-    cp "$INSTALL_DIR/assets/MeowterialYou-dark/gnome-shell/"*.svg ~/.themes/MeowterialYou-dark/gnome-shell/ 2>/dev/null || true
-    cp "$INSTALL_DIR/assets/MeowterialYou-light/gnome-shell/"*.svg ~/.themes/MeowterialYou-light/gnome-shell/ 2>/dev/null || true
+    cp -r "$SCRIPT_DIR/assets/MeowterialYou-dark" ~/.local/share/themes/
+    cp -r "$SCRIPT_DIR/assets/MeowterialYou-light" ~/.local/share/themes/
+    cp "$SCRIPT_DIR/assets/MeowterialYou-dark/gnome-shell/"*.svg ~/.themes/MeowterialYou-dark/gnome-shell/ 2>/dev/null || true
+    cp "$SCRIPT_DIR/assets/MeowterialYou-light/gnome-shell/"*.svg ~/.themes/MeowterialYou-light/gnome-shell/ 2>/dev/null || true
+    echo ""
     print_success "Theme directories configured"
     
-    # Save user preferences
-    cat > "$INSTALL_DIR/prefs.conf" << EOF
+    # Save user preferences to XDG config directory
+    print_progress 3 3 "Saving preferences..."
+    mkdir -p "$HOME/.config/meowterialyou"
+    cat > "$HOME/.config/meowterialyou/prefs.conf" << EOF
 # MeowterialYou User Preferences
 THEME_SPOTIFY=$THEME_SPOTIFY
 THEME_DISCORD=$THEME_DISCORD
@@ -538,31 +592,30 @@ THEME_VSCODE=$THEME_VSCODE
 THEME_OBSIDIAN=$THEME_OBSIDIAN
 THEME_VIVALDI=$THEME_VIVALDI
 EOF
+    echo ""
+    print_success "User preferences saved"
 }
+
 
 apply_theme() {
     print_section "🎨 Applying Theme"
     
-    local cmd="meowterialyou --theme $THEME --title-buttons $TITLE_BUTTONS --title-buttons-position $TITLE_BUTTONS_POSITION"
+    # Build command args
+    local args="--theme $THEME --title-buttons $TITLE_BUTTONS --title-buttons-position $TITLE_BUTTONS_POSITION"
+    [ -n "$WALLPAPER" ] && args="$args --wallpaper \"$WALLPAPER\""
+    [ "$CHROME_GTK4" = true ] && args="$args --chrome-gtk4"
+    { [ "$DO_REAPPLY" = true ] || [ "$SILENT" = true ]; } && args="$args --silent"
     
-    [ -n "$WALLPAPER" ] && cmd="$cmd --wallpaper \"$WALLPAPER\""
-    [ "$CHROME_GTK4" = true ] && cmd="$cmd --chrome-gtk4"
-    
-    echo -e "  ${DIM}$ $cmd${NC}"
+    echo -e "  ${DIM}$ meowterialyou $args${NC}"
     echo ""
     
-    eval "$cmd"
+    # Run Python directly
+    cd "$SCRIPT_DIR"
+    export PYTHONPATH="$SCRIPT_DIR:$PYTHONPATH"
+    eval "$SCRIPT_DIR/.venv/bin/python $SCRIPT_DIR/src/main.py $args"
 }
 
-check_path() {
-    if [[ ":$PATH:" != *":$HOME/.local/bin:"* ]]; then
-        echo ""
-        echo -e "  ${YELLOW}⚠️  Warning: ~/.local/bin is not in your PATH${NC}"
-        echo -e "     To run 'meowterialyou' from anywhere, add this to your shell config:"
-        echo -e "     ${DIM}export PATH=\"\$HOME/.local/bin:\$PATH\"${NC}"
-        echo ""
-    fi
-}
+
 
 print_finale() {
     echo ""
@@ -576,7 +629,10 @@ print_finale() {
 EOF
     echo -e "${NC}"
     
-    check_path
+    echo -e "  ${YELLOW}⚠️  To use 'meowterialyou' command, run:${NC}"
+    echo -e "     ${DIM}source ~/.bashrc${NC}  or  ${DIM}source ~/.zshrc${NC}"
+    echo -e "     ${DIM}(or open a new terminal)${NC}"
+    echo ""
 
     local routine_cmd="meowterialyou"
     
@@ -602,7 +658,7 @@ EOF
     echo -e "  2. Create a new routine with:"
     echo -e "     ${DIM}Trigger:${NC} Wallpaper changes"
     echo -e "     ${DIM}Action:${NC}  Run Command"
-    echo -e "     ${DIM}Command:${NC} ${MAGENTA}${routine_cmd}${NC}"
+    echo -e "     ${DIM}Command:${NC} ${MAGENTA}meowterialyou --reapply OR ${routine_cmd}${NC}"
     echo ""
     echo -e "  ${BOLD}Quick Commands:${NC}"
     echo -e "    ${CYAN}meowterialyou${NC}                          Apply theme with current wallpaper"
@@ -615,11 +671,42 @@ EOF
 }
 
 # ─────────────────────────────────────────────────────────────────────────────
+# Config Save/Load
+# ─────────────────────────────────────────────────────────────────────────────
+
+save_config() {
+    # Save current installation choices to repo
+    cat > "$CONFIG_FILE" << EOF
+# MeowterialYou Installation Config
+# Generated on $(date)
+THEME=$THEME
+TITLE_BUTTONS=$TITLE_BUTTONS
+TITLE_BUTTONS_POSITION=$TITLE_BUTTONS_POSITION
+CHROME_GTK4=$CHROME_GTK4
+THEME_SPOTIFY=$THEME_SPOTIFY
+THEME_DISCORD=$THEME_DISCORD
+THEME_VSCODE=$THEME_VSCODE
+THEME_OBSIDIAN=$THEME_OBSIDIAN
+THEME_VIVALDI=$THEME_VIVALDI
+EOF
+}
+
+load_config() {
+    # Load config from repo if it exists
+    if [ -f "$CONFIG_FILE" ]; then
+        # shellcheck source=/dev/null
+        source "$CONFIG_FILE"
+        return 0
+    fi
+    return 1
+}
+
+# ─────────────────────────────────────────────────────────────────────────────
 # Main
 # ─────────────────────────────────────────────────────────────────────────────
 
 main() {
-    # Parse arguments for non-interactive mode
+    # Parse arguments
     while [[ $# -gt 0 ]]; do
         case $1 in
             --wallpaper)   WALLPAPER="$2"; SKIP_INTERACTIVE=true; shift 2 ;;
@@ -628,23 +715,41 @@ main() {
             --title-buttons-position) TITLE_BUTTONS_POSITION="$2"; SKIP_INTERACTIVE=true; shift 2 ;;
             --chrome-gtk4) CHROME_GTK4=true; SKIP_INTERACTIVE=true; shift ;;
             --uninstall)   DO_UNINSTALL=true; shift ;;
+            --defaults)    DO_DEFAULTS=true; SKIP_INTERACTIVE=true; shift ;;
+            --reapply)     DO_REAPPLY=true; SKIP_INTERACTIVE=true; shift ;;
+            --silent)      SILENT=true; shift ;;
             --help|-h)
-                echo "Usage: ./install.sh [OPTIONS]"
+                echo "Usage: meowterialyou [OPTIONS]"
+                echo ""
+                echo "Modes:"
+                echo "  (no args)              Interactive installation"
+                echo "  --defaults             Install with default settings (dark, native buttons)"
+                echo "  --reapply              Reinstall using last saved configuration"
                 echo ""
                 echo "Options:"
                 echo "  --wallpaper PATH       Path to wallpaper image"
                 echo "  --theme MODE           Theme mode: dark or light"
                 echo "  --title-buttons STYLE  Button style: native or mac"
                 echo "  --title-buttons-position POS  Position: left or right"
-                echo "  --chrome-gtk4          Install Chrome GTK4 theme"
+                echo "  --chrome-gtk4          Enable Chrome/Chromium GTK4 theme"
+                echo "  --silent               Disable desktop notifications"
                 echo "  --uninstall            Uninstall MeowterialYou"
                 echo ""
-                echo "Run without options for interactive mode."
                 exit 0
                 ;;
             *) shift ;;
         esac
     done
+    
+    # Handle --reapply: load last config
+    if [ "$DO_REAPPLY" = true ]; then
+        if load_config; then
+            echo -e "  ${CHECK} Loaded last configuration from .install_config"
+        else
+            echo -e "  ${YELLOW}⚠️  No saved config found. Running with defaults.${NC}"
+            DO_DEFAULTS=true
+        fi
+    fi
     
     print_banner
     check_requirements
@@ -664,8 +769,44 @@ main() {
     
     install_venv
     install_files
+    save_config  # Save choices to repo
     apply_theme
+    
+    if [ "$SKIP_INTERACTIVE" = false ]; then
+        prompt_restart
+    fi
+    
     print_finale
+}
+
+prompt_restart() {
+    # Only prompt if we have a way to restart (X11) or just to inform user
+    # But usually killall -3 gnome-shell only works on X11
+    if [ "$XDG_SESSION_TYPE" = "wayland" ]; then
+        return
+    fi
+
+    echo ""
+    echo -e "  ${DIM}To ensure all changes apply correctly, you may want to restart GNOME Shell.${NC}"
+    echo ""
+    
+    local should_restart=false
+    
+    if check_gum; then
+        if gum confirm "Restart GNOME Shell now?"; then
+            should_restart=true
+        fi
+    else
+        read -p "  Restart GNOME Shell? [y/N] " -n 1 -r
+        echo ""
+        if [[ $REPLY =~ ^[Yy]$ ]]; then
+            should_restart=true
+        fi
+    fi
+    
+    if [ "$should_restart" = true ]; then
+        killall -3 gnome-shell 2>/dev/null || true
+    fi
 }
 
 main "$@"

@@ -77,8 +77,23 @@ def parse_arguments():
         action="store_true",
     )
 
-    # Path to store last arguments
-    args_file = Path.home() / ".local/share/meowterialyou/last_args.json"
+    parser.add_argument(
+        "--silent",
+        help="disable desktop notifications",
+        action="store_true",
+    )
+
+    # Path to store last arguments (XDG config directory)
+    config_dir = Path.home() / ".config/meowterialyou"
+    args_file = config_dir / "last_args.json"
+
+    # Migrate from old location if needed
+    old_args_file = Path.home() / ".local/share/meowterialyou/last_args.json"
+    if not args_file.exists() and old_args_file.exists():
+        config_dir.mkdir(parents=True, exist_ok=True)
+        import shutil
+
+        shutil.copy(old_args_file, args_file)
 
     # If run without arguments, try to load last used arguments
     if len(sys.argv) == 1:
@@ -283,9 +298,20 @@ class Config:
 
     @staticmethod
     def load_prefs() -> dict:
-        """Load user preferences from prefs.conf"""
+        """Load user preferences from XDG config directory."""
+        import shutil
+
         prefs = {}
-        prefs_path = Path.home() / ".local/share/meowterialyou/prefs.conf"
+        # New XDG-compliant location
+        prefs_path = Path.home() / ".config/meowterialyou/prefs.conf"
+        # Old location for migration
+        old_prefs_path = Path.home() / ".local/share/meowterialyou/prefs.conf"
+
+        # Migrate from old location if needed
+        if not prefs_path.exists() and old_prefs_path.exists():
+            prefs_path.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy(old_prefs_path, prefs_path)
+
         if prefs_path.exists():
             with open(prefs_path, "r") as f:
                 for line in f:

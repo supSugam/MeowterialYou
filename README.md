@@ -22,22 +22,18 @@ Thanks to the original author for the foundation this project builds upon.
 
 ## Installation
 
-### Quick Install (Recommended)
+### Installation
+
+Clone the repository and run the installer. The repository directory **IS** the installation, so keep it in a safe place (like `~/Repositories` or `~/MeowterialYou`).
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/supSugam/MeowterialYou/main/install.sh | bash
-```
-
-### Manual Install
-
-```bash
-git clone https://github.com/supSugam/MeowterialYou.git
-cd MeowterialYou
+git clone https://github.com/supSugam/MeowterialYou.git ~/MeowterialYou
+cd ~/MeowterialYou
 chmod +x install.sh
 ./install.sh
 ```
 
-The installer will guide you through configuration options and set up everything automatically.
+The installer will alias the `meowterialyou` command to this directory. You can move the folder later, but you'll need to re-run `./install.sh` to update the alias.
 
 ### System Requirements
 
@@ -69,12 +65,15 @@ meowterialyou --title-buttons mac --title-buttons-position left
 
 | Option | Description |
 |--------|-------------|
+| `--defaults` | Install with default settings (dark, native buttons) without prompts |
+| `--reapply` | **Reapply** using last saved configuration (silent, good for automation) |
 | `--wallpaper PATH` | Path to wallpaper image (default: current wallpaper) |
 | `--theme [dark\|light]` | Theme mode (default: dark) |
 | `--title-buttons [mac\|native]` | Window button style (default: native) |
 | `--title-buttons-position [left\|right]` | Button position (default: right) |
 | `--chrome-gtk4` | Install GTK4 theme for Chrome (default: false) |
-| `--uninstall` | Remove all theme files |
+| `--silent` | Disable desktop notifications |
+| `--uninstall` | Remove all theme files and aliases |
 | `--help` | Show all options |
 
 ---
@@ -101,11 +100,13 @@ To make Option 2 permanent, edit your Chrome `.desktop` file and add `--gtk-vers
 
 Use [GNOME Routines](https://github.com/supSugam/gnome-routines) to automatically update your theme when the wallpaper changes:
 
-1. Install GNOME Routines from GithHub (will publish to gnome marketplace soon)
+1. Install [GNOME Routines](https://github.com/supSugam/gnome-routines)
 2. Create a routine with:
    - **Trigger**: Wallpaper changes
    - **Action**: Run command
-   - **Command**: `meowterialyou --theme dark` (adjust options as needed)
+   - **Command**: `meowterialyou --reapply`
+   
+   Using `--reapply` ensures the theme updates silently using your last saved configuration (dark/light, button style, etc.).
 
 ---
 

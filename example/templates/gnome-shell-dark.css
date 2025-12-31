@@ -26,11 +26,11 @@ stage {
 
 /* panel */
 
-/* #panelRight > * > * .panel-button, .clock {
+#panelRight > * > * .panel-button {
     background-color: transparent !important;
     box-shadow: none !important;
     border: none !important;
-} */
+}
 
 #panel{
   background-color: @{surface.hex};

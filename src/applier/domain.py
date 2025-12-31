@@ -20,6 +20,7 @@ class GenerationOptions(BaseModel):
     macbuttons_enabled: bool = False
     buttons_left_enabled: bool = False
     chrome_gtk4_enabled: bool = False
+    silent: bool = False
     scheme: MaterialColors | None = None
     wallpaper_path: str | None = None
 
@@ -42,48 +43,91 @@ class ApplierDomain:
 
     @staticmethod
     def uninstall_theme() -> None:
-        """Completely remove all MeowterialYou theme files from the system."""
+        """Completely remove all MeowterialYou theme files and reset system settings."""
         import shutil
 
         home = os.path.expanduser("~")
 
-        # Paths to remove
+        print("╔═══════════════════════════════════════════════════════════════════╗")
+        print("║              🗑️  Uninstalling MeowterialYou                       ║")
+        print("╚═══════════════════════════════════════════════════════════════════╝")
+        print("")
+
+        # 1. User theme directories
         paths_to_remove = [
-            # User theme directories
+            # GTK3 themes in ~/.local/share/themes/
             os.path.join(home, ".local/share/themes/MeowterialYou-dark"),
             os.path.join(home, ".local/share/themes/MeowterialYou-light"),
             os.path.join(home, ".local/share/themes/custom-dark"),
             os.path.join(home, ".local/share/themes/custom-light"),
-            # User GTK config files
+            # GNOME Shell themes in ~/.themes/
+            os.path.join(home, ".themes/MeowterialYou-dark"),
+            os.path.join(home, ".themes/MeowterialYou-light"),
+            # User GTK3 config overrides
             os.path.join(home, ".config/gtk-3.0/gtk.css"),
             os.path.join(home, ".config/gtk-3.0/gtk-dark.css"),
             os.path.join(home, ".config/gtk-3.0/assets"),
+            # User GTK4 config overrides
             os.path.join(home, ".config/gtk-4.0/gtk.css"),
             os.path.join(home, ".config/gtk-4.0/gtk-dark.css"),
             os.path.join(home, ".config/gtk-4.0/assets"),
+            # MeowterialYou config directory
+            os.path.join(home, ".config/meowterialyou"),
+            # Legacy installation directory (old copy-based install)
+            os.path.join(home, ".local/share/meowterialyou"),
         ]
 
-        # System paths (require sudo)
+        # 2. System paths (require sudo)
         system_paths = [
             "/usr/share/themes/MeowterialYou-dark",
             "/usr/share/themes/MeowterialYou-light",
         ]
 
-        print("Uninstalling MeowterialYou theme...")
-
-        # Remove user paths
-        for path in paths_to_remove:
-            if os.path.exists(path):
+        # 3. Remove alias from shell config files
+        print("")
+        print("  Removing shell alias...")
+        marker = "# MeowterialYou"
+        for config_file in [".bashrc", ".zshrc"]:
+            config_path = os.path.join(home, config_file)
+            if os.path.exists(config_path):
                 try:
-                    if os.path.isdir(path):
+                    with open(config_path, "r") as f:
+                        lines = f.readlines()
+                    with open(config_path, "w") as f:
+                        for line in lines:
+                            if marker not in line:
+                                f.write(line)
+                    print(f"  ✓ Removed alias from ~/{config_file}")
+                except OSError as e:
+                    print(f"  ✗ Failed to update ~/{config_file}: {e}")
+
+        # Also remove old symlink if it exists
+        symlink_path = os.path.join(home, ".local/bin/meowterialyou")
+        if os.path.exists(symlink_path):
+            try:
+                os.remove(symlink_path)
+            except OSError:
+                pass
+
+        # 4. Remove user paths
+        print("")
+        print("  Removing theme files...")
+        for path in paths_to_remove:
+            if os.path.exists(path) or os.path.islink(path):
+                try:
+                    if os.path.islink(path):
+                        os.unlink(path)
+                    elif os.path.isdir(path):
                         shutil.rmtree(path)
                     else:
                         os.remove(path)
-                    print(f"Removed: {path}")
+                    print(f"  ✓ Removed: {path}")
                 except OSError as e:
-                    print(f"Failed to remove {path}: {e}")
+                    print(f"  ✗ Failed to remove {path}: {e}")
 
-        # Remove system paths (require sudo)
+        # 5. Remove system paths (require sudo)
+        print("")
+        print("  Removing system theme files (requires sudo)...")
         for path in system_paths:
             if os.path.exists(path):
                 result = subprocess.run(
@@ -92,18 +136,46 @@ class ApplierDomain:
                     text=True,
                 )
                 if result.returncode == 0:
-                    print(f"Removed: {path}")
+                    print(f"  ✓ Removed: {path}")
                 else:
-                    print(f"Failed to remove {path}: {result.stderr}")
+                    print(f"  ✗ Failed to remove {path}: {result.stderr}")
 
-        # Reset GTK theme to default
-        subprocess.run(
-            ["gsettings", "reset", "org.gnome.desktop.interface", "gtk-theme"],
-            capture_output=True,
+        # 6. Reset ALL gsettings to defaults
+        print("")
+        print("  Resetting GNOME settings to defaults...")
+        gsettings_resets = [
+            ("org.gnome.desktop.interface", "gtk-theme", "GTK theme"),
+            ("org.gnome.desktop.interface", "color-scheme", "Color scheme"),
+            ("org.gnome.desktop.interface", "icon-theme", "Icon theme"),
+            ("org.gnome.shell.extensions.user-theme", "name", "Shell theme"),
+            ("org.gnome.desktop.wm.preferences", "button-layout", "Button layout"),
+        ]
+
+        for schema, key, description in gsettings_resets:
+            result = subprocess.run(
+                ["gsettings", "reset", schema, key],
+                capture_output=True,
+                text=True,
+            )
+            if result.returncode == 0:
+                print(f"  ✓ Reset {description}")
+            else:
+                # Schema might not exist (e.g., user-theme extension not installed)
+                pass
+
+        # Send uninstall notification
+        os.system(
+            "notify-send --app-name='MeowterialYou' -i user-trash 'Theme Uninstalled 😿' 'Optional but recommended: Restart your GNOME shell for fresher start.'"
         )
-        print("Reset GTK theme to default")
 
-        print("Uninstall complete!")
+        print("")
+        print("╔═══════════════════════════════════════════════════════════════════╗")
+        print("║              ✨ Uninstall Complete!                               ║")
+        print("╚═══════════════════════════════════════════════════════════════════╝")
+        print("")
+        print("  Your system has been reset to default GNOME themes.")
+        print("  You may need to log out and back in to see all changes.")
+        print("")
 
     def set_wallpaper_path(self, path: str) -> None:
         self._generation_options.wallpaper_path = path
@@ -477,9 +549,10 @@ class ApplierDomain:
             self._generation_options.lightmode_enabled, scheme=self._get_scheme()
         )
         set_wallpaper(self._generation_options.wallpaper_path)
-        os.system(
-            "notify-send -i preferences-desktop-theme 'MeowterialYou' 'Theme applied! Enjoy! 😼'"
-        )
+        if not self._generation_options.silent:
+            os.system(
+                "notify-send --app-name='MeowterialYou' -i preferences-desktop-theme 'Theme Applied 😼' 'Please restart your GNOME shell for fresher start 🐾'"
+            )
 
     def _get_scheme(self, color: str | None = None) -> MaterialColors:
         if not color:

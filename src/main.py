@@ -26,6 +26,7 @@ def main():  # sourcery skip: raise-specific-error
             chrome_gtk4_enabled=arguments.chrome_gtk4,
             wallpaper_path=arguments.wallpaper
             or ApplierDomain.get_current_system_wallpaper_path(),
+            silent=arguments.silent,
         ),
     )
 
