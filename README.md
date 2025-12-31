@@ -4,6 +4,8 @@ A fork of [Mitsugen](https://github.com/DimitrisMilonopoulos/mitsugen) by Dimitr
 
 Thanks to the original author for the foundation this project builds upon.
 
+![alt text](screenshots/image.png)
+
 ---
 
 ## What Changed in This Fork
