@@ -1405,8 +1405,3 @@ StEntry:focus {
 
 /* Targets the container for app indicators only */
 /* Target the St_Bin wrappers that are NOT the last one in the right panel */
-/* #panelRight > St_Bin:not(:last-child) .panel-button {
-    background-color: transparent !important;
-    border: none !important;
-    box-shadow: none !important;
-} */
