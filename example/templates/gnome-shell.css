@@ -22,16 +22,6 @@ stage {
   border: 1px solid rgba(0, 0, 0, 0.03);
 }
 
-/* panel */
-
-
-/* #panelRight > * > * .panel-button, .clock {
-    background-color: transparent !important;
-    box-shadow: none !important;
-    border: none !important;
-} */
-
-
 #panel {
   background-color: @{surface.hex};
   height: 38px;
@@ -1572,3 +1562,24 @@ StEntry:focus {
 .usage-level StIcon {
   width: 1.29em;
 }
+
+
+/* panel */
+/* Logic: 
+   1. Go to the Right Panel Box (#panel .panel-right)
+   2. Select all children (wrappers) EXCEPT the last one (:not(:last-child))
+   3. Inside those selected wrappers, target the .panel-button
+*/
+
+#panel .panel-right > *:not(:last-child) .panel-button {
+    /* Your styles for generic items (r(1)) go here */
+    background-color: rgba(255, 0, 0, 0.2); /* Example red tint */
+    border-radius: 20px;
+}
+
+/* #panelRight > * > * .panel-button, .clock {
+    background-color: transparent !important;
+    box-shadow: none !important;
+    border: none !important;
+} */
+

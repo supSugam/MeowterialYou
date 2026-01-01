@@ -26,12 +26,6 @@ stage {
 
 /* panel */
 
-#panelRight > * > * .panel-button {
-    background-color: transparent !important;
-    box-shadow: none !important;
-    border: none !important;
-}
-
 #panel{
   background-color: @{surface.hex};
   height: 38px;
@@ -1400,3 +1394,19 @@ StEntry:focus {
 .quick-settings.adjusted .quick-toggle .quick-toggle-arrow:rtl { border-radius: 36px 0 0 36px; }
 
 .usage-level StIcon{ width: 1.29em; }
+
+
+/* panel */
+/* Logic: 
+   1. Go to the Right Panel Box (#panel .panel-right)
+   2. Select all children (wrappers) EXCEPT the last one (:not(:last-child))
+   3. Inside those selected wrappers, target the .panel-button
+*/
+
+/* Targets the container for app indicators only */
+/* Target the St_Bin wrappers that are NOT the last one in the right panel */
+/* #panelRight > St_Bin:not(:last-child) .panel-button {
+    background-color: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+} */

@@ -271,7 +271,7 @@ def reload_apps(lightmode_enabled: bool, scheme: MaterialColors):
 
         log.info(f"Setting Gnome Terminal transparency for profile {uuid}")
         os.system(f"gsettings set {profile_path} use-transparent-background true")
-        os.system(f"gsettings set {profile_path} background-transparency-percent 30")
+        os.system(f"gsettings set {profile_path} background-transparency-percent 50")
 
     except Exception as e:
         log.error(f"Failed to set terminal transparency: {e}")
