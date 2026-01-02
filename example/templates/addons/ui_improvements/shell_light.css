@@ -1,0 +1,32 @@
+/* 
+   UI Improvements - System Tray Styling (Light)
+   ==============================================
+   Makes extension tray icons (AppIndicator, PiE battery, etc.) transparent
+   while preserving the Quick Settings button styling.
+*/
+
+/* Remove background from ALL panel buttons in the right panel area */
+#panelRight .panel-button {
+    background-color: transparent !important;
+    box-shadow: none !important;
+    border: none !important;
+}
+
+/* Quick Settings button - restore the pill background */
+/* Quick Settings is always the last child in #panelRight */
+#panelRight > *:last-child .panel-button {
+    background-color: @{surfaceVariant.hex} !important;
+    box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.03) !important;
+    border: 4px solid transparent !important;
+    border-radius: 14px !important;
+}
+
+#panelRight > *:last-child .panel-button:hover {
+    background-color: @{inverseOnSurface.hex} !important;
+    border-radius: 14px !important;
+}
+
+/* Tray icons stay transparent even on hover */
+#panelRight .panel-button:hover {
+    background-color: transparent !important;
+}

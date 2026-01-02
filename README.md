@@ -74,6 +74,7 @@ meowterialyou --title-buttons mac --title-buttons-position left
 | `--title-buttons [mac\|native]` | Window button style (default: native) |
 | `--title-buttons-position [left\|right]` | Button position (default: right) |
 | `--chrome-gtk4` | Install GTK4 theme for Chrome (default: false) |
+| `--ui-improvements` | Enable UI improvements addon (transparent tray icons) |
 | `--silent` | Disable desktop notifications |
 | `--uninstall` | Remove all theme files and aliases |
 | `--help` | Show all options |

@@ -83,37 +83,7 @@ stage {
   font-size: 12px;
 }
 
-/* 
-   AppIndicator / Legacy Tray "Mock Merge" 
-   Since these are separate widgets in the DOM, we cannot wrap them in one pill.
-   Instead, we remove their background to make them look like a cohesive group of icons.
-*/
-.panel-button.app-indicator,
-.panel-button.status-notifier-item,
-.panel-button.legacy-tray-icon,
-.panel-button.libappindicator-item,
-.panel-button.ka-tray-icon,
-.panel-button.tray-item,
-.panel-button.panel-status-button,
-#appIndicator-box .panel-button,
-.appIndicator-box .panel-button {
-    background-color: transparent !important;
-    box-shadow: none !important;
-    border: none !important;
-    margin: 0 2px !important;
-    border-radius: 6px;
-}
-.panel-button.app-indicator:hover,
-.panel-button.status-notifier-item:hover,
-.panel-button.legacy-tray-icon:hover,
-.panel-button.libappindicator-item:hover,
-.panel-button.ka-tray-icon:hover,
-.panel-button.tray-item:hover,
-.panel-button.panel-status-button:hover,
-#appIndicator-box .panel-button:hover,
-.appIndicator-box .panel-button:hover {
-    background-color: @{surfaceVariant.hex} !important;
-}
+/* System Tray styling moved to addons/ui_improvements/ */
 
 /* date-menu-mod */
 .clock-display {
@@ -1565,19 +1535,8 @@ StEntry:focus {
 
 
 /* panel */
-/* Logic: 
-   1. Go to the Right Panel Box (#panel .panel-right)
-   2. Select all children (wrappers) EXCEPT the last one (:not(:last-child))
-   3. Inside those selected wrappers, target the .panel-button
-*/
 
-#panel .panel-right > *:not(:last-child) .panel-button {
-    /* Your styles for generic items (r(1)) go here */
-    background-color: rgba(255, 0, 0, 0.2); /* Example red tint */
-    border-radius: 20px;
-}
-
-/* #panelRight > * > * .panel-button, .clock {
+/* #panelRight > * > * .panel-button {
     background-color: transparent !important;
     box-shadow: none !important;
     border: none !important;

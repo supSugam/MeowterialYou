@@ -46,6 +46,7 @@ THEME="dark"
 TITLE_BUTTONS="native"
 TITLE_BUTTONS_POSITION="right"
 CHROME_GTK4=false
+UI_IMPROVEMENTS=false
 SKIP_INTERACTIVE=false
 DO_UNINSTALL=false
 DO_DEFAULTS=false
@@ -329,8 +330,22 @@ run_interactive() {
         fi
         echo ""
         
+        # ─── UI Improvements ───
+        echo -e "  ${BOLD}6. UI Improvements${NC}"
+        echo -e "     ${DIM}Transparent tray icons, improved system tray styling${NC}"
+        if gum confirm --affirmative="  Yes, enable  " --negative="  No, disable  " \
+            --prompt.foreground="255" --selected.background="212" --default=false \
+            "     Enable UI improvements?"; then
+            UI_IMPROVEMENTS=true
+            echo -e "     ${CHECK} UI Improvements: ${BOLD}${GREEN}enabled${NC}"
+        else
+            UI_IMPROVEMENTS=false
+            echo -e "     ${CHECK} UI Improvements: ${DIM}disabled${NC}"
+        fi
+        echo ""
+        
         # ─── Wallpaper ───
-        echo -e "  ${BOLD}6. Wallpaper${NC}"
+        echo -e "  ${BOLD}7. Wallpaper${NC}"
         echo -e "     ${DIM}Press Enter to use your current wallpaper${NC}"
         WALLPAPER=$(gum input --placeholder="Path to wallpaper (or press Enter for current)" \
             --prompt="     ▸ " --cursor.foreground="212" --width=50)
@@ -347,7 +362,7 @@ run_interactive() {
         echo ""
         
         # ─── Optional App Theming ───
-        echo -e "  ${BOLD}7. Additional Apps${NC} ${DIM}(detected apps only)${NC}"
+        echo -e "  ${BOLD}8. Additional Apps${NC} ${DIM}(detected apps only)${NC}"
         
         # Spicetify (Spotify)
         if command -v spicetify &> /dev/null; then
@@ -413,6 +428,11 @@ run_interactive() {
         [[ "$input" =~ ^[Yy]$ ]] && CHROME_GTK4=true
         echo ""
         
+        echo -e "  ${BOLD}UI Improvements${NC} (transparent tray icons, etc.) [y/N]"
+        read -rp "     ▸ " input
+        [[ "$input" =~ ^[Yy]$ ]] && UI_IMPROVEMENTS=true
+        echo ""
+        
         echo -e "  ${BOLD}Wallpaper Path${NC} (Enter for current)"
         read -rp "     ▸ " WALLPAPER
     fi
@@ -423,6 +443,7 @@ run_interactive() {
     echo -e "  ${DOT} Button Style:    ${BOLD}$TITLE_BUTTONS${NC}"
     echo -e "  ${DOT} Button Position: ${BOLD}$TITLE_BUTTONS_POSITION${NC}"
     echo -e "  ${DOT} Chrome GTK4:     ${BOLD}$([ "$CHROME_GTK4" = true ] && echo "enabled" || echo "disabled")${NC}"
+    echo -e "  ${DOT} UI Improvements: ${BOLD}$([ "$UI_IMPROVEMENTS" = true ] && echo "enabled" || echo "disabled")${NC}"
     echo -e "  ${DOT} Wallpaper:       ${BOLD}${WALLPAPER:-"Current system wallpaper"}${NC}"
     
     # Show optional apps if any enabled
@@ -604,6 +625,7 @@ apply_theme() {
     local args="--theme $THEME --title-buttons $TITLE_BUTTONS --title-buttons-position $TITLE_BUTTONS_POSITION"
     [ -n "$WALLPAPER" ] && args="$args --wallpaper \"$WALLPAPER\""
     [ "$CHROME_GTK4" = true ] && args="$args --chrome-gtk4"
+    [ "$UI_IMPROVEMENTS" = true ] && args="$args --ui-improvements"
     { [ "$DO_REAPPLY" = true ] || [ "$SILENT" = true ]; } && args="$args --silent"
     
     echo -e "  ${DIM}$ meowterialyou $args${NC}"
@@ -683,6 +705,7 @@ THEME=$THEME
 TITLE_BUTTONS=$TITLE_BUTTONS
 TITLE_BUTTONS_POSITION=$TITLE_BUTTONS_POSITION
 CHROME_GTK4=$CHROME_GTK4
+UI_IMPROVEMENTS=$UI_IMPROVEMENTS
 THEME_SPOTIFY=$THEME_SPOTIFY
 THEME_DISCORD=$THEME_DISCORD
 THEME_VSCODE=$THEME_VSCODE

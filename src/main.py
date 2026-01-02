@@ -24,6 +24,7 @@ def main():  # sourcery skip: raise-specific-error
             macbuttons_enabled=arguments.title_buttons == "mac",
             buttons_left_enabled=arguments.title_buttons_position == "left",
             chrome_gtk4_enabled=arguments.chrome_gtk4,
+            ui_improvements_enabled=arguments.ui_improvements,
             wallpaper_path=arguments.wallpaper
             or ApplierDomain.get_current_system_wallpaper_path(),
             silent=arguments.silent,
