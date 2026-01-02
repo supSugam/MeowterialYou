@@ -65,7 +65,7 @@
 @define-color headerbar_bg_color @{surfaceVariant.hex};
 @define-color headerbar_fg_color @{onSurfaceVariant.hex};
 @define-color headerbar_border_color rgba(0, 0, 0, 0.8);
-@define-color headerbar_backdrop_color @window_bg_color;
+@define-color headerbar_backdrop_color @headerbar_bg_color;
 @define-color headerbar_shade_color rgba(0, 0, 0, 0.07);
 @define-color card_bg_color @{surface.hex};
 @define-color card_fg_color @{onSurface.hex};

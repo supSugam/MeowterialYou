@@ -633,7 +633,9 @@ class ApplierDomain:
         )
 
         reload_apps(
-            self._generation_options.lightmode_enabled, scheme=self._get_scheme()
+            self._generation_options.lightmode_enabled,
+            scheme=self._get_scheme(),
+            wallpaper_path=self._generation_options.wallpaper_path,
         )
         set_wallpaper(self._generation_options.wallpaper_path)
         if not self._generation_options.silent:

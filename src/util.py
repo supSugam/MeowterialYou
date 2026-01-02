@@ -138,7 +138,172 @@ def setup_logging():
 log = setup_logging()
 
 
-def reload_apps(lightmode_enabled: bool, scheme: MaterialColors):
+def _get_image_stats(image_path: str) -> tuple[float, float, float]:
+    """
+    Analyze image to get brightness, variance (complexity), and saturation.
+    Returns: (avg_brightness 0-255, variance 0-1, avg_saturation 0-1)
+    """
+    try:
+        img = Image.open(image_path)
+        img = img.resize((64, 64), Image.Resampling.LANCZOS)
+        img = img.convert("RGB")
+
+        pixels = list(img.getdata())
+
+        brightnesses = []
+        saturations = []
+
+        for r, g, b in pixels:
+            # Perceived brightness using luminosity formula
+            brightness = 0.299 * r + 0.587 * g + 0.114 * b
+            brightnesses.append(brightness)
+
+            # Calculate saturation (how colorful vs gray)
+            max_c = max(r, g, b)
+            min_c = min(r, g, b)
+            if max_c > 0:
+                saturation = (max_c - min_c) / max_c
+            else:
+                saturation = 0
+            saturations.append(saturation)
+
+        avg_brightness = sum(brightnesses) / len(brightnesses)
+        avg_saturation = sum(saturations) / len(saturations)
+
+        # Variance measures image complexity (busy patterns)
+        mean = avg_brightness
+        variance = sum((b - mean) ** 2 for b in brightnesses) / len(brightnesses)
+        # Normalize variance to 0-1 (max theoretical variance is ~16256)
+        normalized_variance = min(variance / 5000, 1.0)
+
+        return avg_brightness, normalized_variance, avg_saturation
+    except Exception as e:
+        log.warning(f"Could not analyze image: {e}")
+        return 128, 0.5, 0.5  # Defaults
+
+
+def _calculate_contrast_ratio(color1: str, color2_rgb: tuple) -> float:
+    """
+    Calculate WCAG contrast ratio between a hex color and RGB tuple.
+    Returns ratio from 1 (identical) to 21 (max contrast).
+    """
+
+    def hex_to_rgb(hex_color: str) -> tuple:
+        hex_color = hex_color.lstrip("#")
+        return tuple(int(hex_color[i : i + 2], 16) for i in (0, 2, 4))
+
+    def relative_luminance(rgb: tuple) -> float:
+        def channel(c):
+            c = c / 255.0
+            return c / 12.92 if c <= 0.03928 else ((c + 0.055) / 1.055) ** 2.4
+
+        r, g, b = rgb
+        return 0.2126 * channel(r) + 0.7152 * channel(g) + 0.0722 * channel(b)
+
+    try:
+        rgb1 = hex_to_rgb(color1)
+        lum1 = relative_luminance(rgb1)
+        lum2 = relative_luminance(color2_rgb)
+
+        lighter = max(lum1, lum2)
+        darker = min(lum1, lum2)
+        return (lighter + 0.05) / (darker + 0.05)
+    except:
+        return 10  # Default mid-range contrast
+
+
+def _calculate_terminal_transparency(
+    wallpaper_path: str, lightmode_enabled: bool, surface_color: str = None
+) -> int:
+    """
+    Calculate optimal terminal transparency using multiple factors:
+
+    1. Contrast Ratio: How much the terminal bg contrasts with wallpaper
+       - High contrast = can use more transparency
+       - Low contrast = need more opacity for readability
+
+    2. Image Variance: How "busy" the wallpaper is
+       - High variance/busy = need less transparency (distracting)
+       - Low variance/solid = can use more transparency
+
+    3. Saturation: How colorful the wallpaper is
+       - High saturation = slightly less transparency
+       - Low saturation = can blend better
+    """
+    brightness, variance, saturation = _get_image_stats(wallpaper_path)
+
+    # Calculate average wallpaper color for contrast comparison
+    try:
+        img = Image.open(wallpaper_path)
+        img = img.resize((32, 32), Image.Resampling.LANCZOS)
+        img = img.convert("RGB")
+        pixels = list(img.getdata())
+        avg_r = sum(p[0] for p in pixels) // len(pixels)
+        avg_g = sum(p[1] for p in pixels) // len(pixels)
+        avg_b = sum(p[2] for p in pixels) // len(pixels)
+        avg_wallpaper_rgb = (avg_r, avg_g, avg_b)
+    except:
+        avg_wallpaper_rgb = (128, 128, 128)
+
+    # Use actual surface color if provided, otherwise estimate
+    if surface_color:
+        contrast = _calculate_contrast_ratio(surface_color, avg_wallpaper_rgb)
+    else:
+        # Estimate based on mode
+        estimated_surface = "#1a1c1a" if not lightmode_enabled else "#fdfdf5"
+        contrast = _calculate_contrast_ratio(estimated_surface, avg_wallpaper_rgb)
+
+    # Normalize factors to 0-1 range
+    normalized_brightness = brightness / 255.0
+    contrast_factor = min(contrast / 21.0, 1.0)  # WCAG max is ~21
+
+    # === Calculate base transparency ===
+    if lightmode_enabled:
+        # Light mode: generally needs less transparency
+        base_min, base_max = 5, 35
+
+        # Higher contrast = can use more transparency
+        base = base_min + contrast_factor * (base_max - base_min) * 0.6
+
+        # Dark wallpapers with light terminal: increase transparency
+        if normalized_brightness < 0.4:
+            base += 10
+    else:
+        # Dark mode: can generally use more transparency
+        base_min, base_max = 20, 65
+
+        # Higher contrast = can use more transparency
+        base = base_min + contrast_factor * (base_max - base_min) * 0.7
+
+        # Bright wallpapers with dark terminal: reduce transparency for readability
+        if normalized_brightness > 0.6:
+            base -= 15
+
+    # === Apply modifiers ===
+
+    # High variance (busy wallpaper) = reduce transparency
+    variance_penalty = variance * 20  # Up to -20% for very busy images
+    base -= variance_penalty
+
+    # High saturation = slight reduction (colorful backgrounds distract)
+    saturation_penalty = saturation * 8  # Up to -8% for very colorful
+    base -= saturation_penalty
+
+    # Clamp to reasonable range
+    if lightmode_enabled:
+        transparency = max(0, min(40, int(base)))
+    else:
+        transparency = max(15, min(70, int(base)))
+
+    log.debug(
+        f"Transparency calc: brightness={brightness:.0f}, variance={variance:.2f}, "
+        f"saturation={saturation:.2f}, contrast={contrast:.1f} -> {transparency}%"
+    )
+
+    return transparency
+
+
+def reload_apps(lightmode_enabled: bool, scheme: MaterialColors, wallpaper_path: str):
     postfix = "dark" if not lightmode_enabled else "light"
 
     log.info(f"Restarting GTK {postfix}")
@@ -262,7 +427,7 @@ def reload_apps(lightmode_enabled: bool, scheme: MaterialColors):
         # Extension may not be installed, that's fine
         pass
 
-    # Set Gnome Terminal Transparency
+    # Set Gnome Terminal Transparency (adaptive based on wallpaper brightness)
     try:
         # Get default profile UUID
         cmd = ["gsettings", "get", "org.gnome.Terminal.ProfilesList", "default"]
@@ -270,10 +435,23 @@ def reload_apps(lightmode_enabled: bool, scheme: MaterialColors):
 
         profile_path = f"org.gnome.Terminal.Legacy.Profile:/org/gnome/terminal/legacy/profiles:/:{uuid}/"
 
-        log.info(f"Setting Gnome Terminal transparency for profile {uuid}")
+        # Calculate adaptive transparency based on wallpaper analysis and scheme colors
+        # Get surface color from scheme for accurate contrast calculation
+        surface_color = (
+            scheme.get("surface", None)
+            if isinstance(scheme, dict)
+            else getattr(scheme, "surface", None)
+        )
+        transparency = _calculate_terminal_transparency(
+            wallpaper_path, lightmode_enabled, surface_color=surface_color
+        )
+
+        log.info(
+            f"Setting Gnome Terminal transparency for profile {uuid} to {transparency}%"
+        )
         os.system(f"gsettings set {profile_path} use-transparent-background true")
         os.system(
-            f"gsettings set {profile_path} background-transparency-percent {20 if lightmode_enabled else 55}"
+            f"gsettings set {profile_path} background-transparency-percent {transparency}"
         )
 
     except Exception as e:

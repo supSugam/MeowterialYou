@@ -22,7 +22,7 @@
 @define-color sidebar_bg_color @{surfaceVariant.hex};
 @define-color headerbar_fg_color @{onSurfaceVariant.hex};
 @define-color headerbar_border_color rgba(0, 0, 0, 0.15);
-@define-color headerbar_backdrop_color @{surface.hex};
+@define-color headerbar_backdrop_color @{surfaceVariant.hex};
 @define-color card_bg_color @{surfaceVariant.hex};
 @define-color card_fg_color @{onSurfaceVariant.hex};
 @define-color popover_bg_color @{surfaceVariant.hex};
