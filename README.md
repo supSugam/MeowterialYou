@@ -35,6 +35,11 @@ chmod +x install.sh
 ./install.sh
 ```
 
+> [!CAUTION]
+> **Do NOT delete this repository folder after installation!**
+> 
+> The theme regenerates from this repo every time your wallpaper changes. Deleting it will break theme updates. Only delete it if you want to completely uninstall MeowterialYou.
+
 The installer will alias the `meowterialyou` command to this directory. You can move the folder later, but you'll need to re-run `./install.sh` to update the alias.
 
 ### System Requirements
