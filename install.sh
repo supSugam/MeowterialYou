@@ -656,23 +656,6 @@ EOF
     echo -e "     ${DIM}(or open a new terminal)${NC}"
     echo ""
 
-    local routine_cmd="meowterialyou"
-    
-    # Construct the command based on user preferences
-    # We include all options explicitly so the routine enforces the user's preferred style
-    routine_cmd="$routine_cmd --theme $THEME"
-    
-    if [ "$TITLE_BUTTONS" != "native" ]; then
-        routine_cmd="$routine_cmd --title-buttons $TITLE_BUTTONS"
-        if [ "$TITLE_BUTTONS_POSITION" != "right" ]; then
-            routine_cmd="$routine_cmd --title-buttons-position $TITLE_BUTTONS_POSITION"
-        fi
-    fi
-    
-    if [ "$CHROME_GTK4" = true ]; then
-        routine_cmd="$routine_cmd --chrome-gtk4"
-    fi
-
     echo -e "  ${BOLD}Next Steps:${NC}"
     echo -e "  To make your theme automatically update when you change your wallpaper:"
     echo ""
@@ -680,7 +663,7 @@ EOF
     echo -e "  2. Create a new routine with:"
     echo -e "     ${DIM}Trigger:${NC} Wallpaper changes"
     echo -e "     ${DIM}Action:${NC}  Run Command"
-    echo -e "     ${DIM}Command:${NC} ${MAGENTA}meowterialyou --reapply OR ${routine_cmd}${NC}"
+    echo -e "     ${DIM}Command:${NC} ${MAGENTA}meowterialyou --reapply${NC}"
     echo ""
     echo -e "  ${BOLD}Quick Commands:${NC}"
     echo -e "    ${CYAN}meowterialyou${NC}                          Apply theme with current wallpaper"

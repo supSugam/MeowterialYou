@@ -30,3 +30,18 @@
 #panelRight .panel-button:hover {
     background-color: transparent !important;
 }
+
+
+/* Remove margin gap when checked to prevent visible line */
+.quick-menu-toggle .quick-toggle-arrow:checked:ltr {
+  margin-left: 0;
+  border-left: none !important;
+}
+.quick-menu-toggle .quick-toggle-arrow:checked:rtl {
+  margin-right: 0;
+  border-right: none !important;
+}
+
+/* NOTE: Dash to Panel window preview title color cannot be styled via CSS
+   (DTP uses inline styles). Use dconf/gsettings instead:
+   dconf write /org/gnome/shell/extensions/dash-to-panel/window-preview-title-font-color "'#1a1c1e'" */

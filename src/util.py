@@ -38,12 +38,7 @@ def parse_arguments():
         help="use ui",
         action="store_true",
     )
-    parser.add_argument(
-        "-m",
-        "--monitor",
-        help="start in headless monitor mode",
-        action="store_true",
-    )
+
     parser.add_argument(
         "-s",
         "--system",
@@ -167,7 +162,7 @@ def reload_apps(lightmode_enabled: bool, scheme: MaterialColors):
             log.error(f"Failed to symlink gtk-dark.css: {e}")
 
     # Set color preference for Libadwaita/GTK4 apps
-    color_scheme = "prefer-light" if lightmode_enabled else "prefer-dark"
+    color_scheme = "default" if lightmode_enabled else "prefer-dark"
     os.system(
         f"gsettings set org.gnome.desktop.interface color-scheme '{color_scheme}'"
     )
@@ -277,7 +272,9 @@ def reload_apps(lightmode_enabled: bool, scheme: MaterialColors):
 
         log.info(f"Setting Gnome Terminal transparency for profile {uuid}")
         os.system(f"gsettings set {profile_path} use-transparent-background true")
-        os.system(f"gsettings set {profile_path} background-transparency-percent 50")
+        os.system(
+            f"gsettings set {profile_path} background-transparency-percent {20 if lightmode_enabled else 55}"
+        )
 
     except Exception as e:
         log.error(f"Failed to set terminal transparency: {e}")

@@ -30,3 +30,16 @@
 #panelRight .panel-button:hover {
     background-color: transparent !important;
 }
+
+/* Remove margin gap when checked to prevent maroon line */
+.quick-menu-toggle .quick-toggle-arrow:checked:ltr {
+  margin-left: 0;
+  border-left: none !important;
+}
+.quick-menu-toggle .quick-toggle-arrow:checked:rtl {
+  margin-right: 0;
+  border-right: none !important;
+}
+
+/* NOTE: Dash to Panel window preview title color is set via dconf in domain.py
+   (DTP uses inline styles which CSS can't override) */

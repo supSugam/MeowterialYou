@@ -477,6 +477,30 @@ class ApplierDomain:
         except OSError as e:
             log.error(f"Failed to append UI improvements addon to {output_file}: {e}")
 
+        # Set Dash to Panel window preview title color based on theme mode
+        # DTP uses inline styles which CSS can't override, so we use dconf
+        try:
+            import subprocess
+
+            title_color = scheme.get(
+                "onBackground", "#1a1c1e" if lightmode_enabled else "#e2e2e6"
+            )
+            subprocess.run(
+                [
+                    "dconf",
+                    "write",
+                    "/org/gnome/shell/extensions/dash-to-panel/window-preview-title-font-color",
+                    f"'{title_color}'",
+                ],
+                check=False,
+                capture_output=True,
+            )
+            log.info(f"Set DTP window preview title color to {title_color}")
+        except Exception as e:
+            log.warning(
+                f"Failed to set DTP title color (extension may not be installed): {e}"
+            )
+
     def _install_system_gtk4_theme(self, variant: str, scheme: dict) -> None:
         """Install GTK4 system theme for a specific variant (dark/light).
 

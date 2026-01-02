@@ -578,7 +578,7 @@ stage {
 }
 
 .icon-button:hover {
-  background-color: @{surfaceVariant.hex};
+  background-color: rgba(0, 0, 0, 0.15);
 }
 
 .quick-toggle,
@@ -606,10 +606,19 @@ stage {
   border-radius: 15px 0 0 15px;
 }
 
+/* Base style for arrow button */
+.quick-menu-toggle .quick-toggle-arrow {
+  background-color: @{surfaceVariant.hex};
+  transition-duration: 100ms;
+}
+
+/* Hover effect for all quick toggle elements */
 .quick-toggle:hover,
+.quick-toggle.button:hover,
+.quick-menu-toggle:hover .quick-toggle,
 .quick-menu-toggle .quick-toggle:hover,
 .quick-menu-toggle .quick-toggle-arrow:hover {
-  background-color: @{surfaceVariant.hex};
+  background-color: rgba(0, 0, 0, 0.15);
 }
 
 .quick-toggle:checked,
@@ -622,7 +631,9 @@ stage {
 .quick-toggle:checked:hover,
 .quick-menu-toggle .quick-toggle:checked:hover,
 .quick-menu-toggle .quick-toggle-arrow:checked:hover {
-  background-color: @{secondary.hex};
+  background-color: @{primary.hex};
+  color: @{onPrimary.hex};
+  box-shadow: inset 0 0 0 100px rgba(0, 0, 0, 0.15);
 }
 
 .quick-menu-toggle .quick-toggle-arrow:ltr {
@@ -644,7 +655,7 @@ stage {
 .icon-button:focus,
 .quick-toggle:focus,
 .slider-bin:focus {
-  box-shadow: inset 0 0 0 2px @{secondary.hex} !important;
+  box-shadow: inset 0 0 0 2px @{primary.hex} !important;
 }
 
 .quick-toggle .quick-toggle-label {
@@ -1533,12 +1544,12 @@ StEntry:focus {
   width: 1.29em;
 }
 
+#panelActivities.panel-button {
+  /* inner border 1px */
+  box-shadow: inset 0 0 0 1px @{primary.hex};
+}
 
-/* panel */
-
-/* #panelRight > * > * .panel-button {
-    background-color: transparent !important;
-    box-shadow: none !important;
-    border: none !important;
-} */
-
+#panelActivities.panel-button .workspace-dot {
+    background-color: @{primary.hex};
+}
+    

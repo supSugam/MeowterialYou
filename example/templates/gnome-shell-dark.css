@@ -532,7 +532,7 @@ stage {
 }
 
 .icon-button:hover {
-	background-color:  @{surfaceVariant.hex};
+	background-color: rgba(255, 255, 255, 0.15);
 }
 
 
@@ -554,8 +554,19 @@ stage {
 .quick-menu-toggle .quick-toggle-arrow:ltr { border-radius: 0 15px 15px 0; }
 .quick-menu-toggle .quick-toggle-arrow:rtl { border-radius: 15px 0 0 15px; }
 
-.quick-toggle:hover, .quick-menu-toggle .quick-toggle:hover, .quick-menu-toggle .quick-toggle-arrow:hover {
-  background-color:  @{surfaceVariant.hex};
+/* Base style for arrow button */
+.quick-menu-toggle .quick-toggle-arrow {
+  background-color: @{surfaceVariant.hex};
+  transition-duration: 100ms;
+}
+
+/* Hover effect for all quick toggle elements */
+.quick-toggle:hover,
+.quick-toggle.button:hover,
+.quick-menu-toggle:hover .quick-toggle,
+.quick-menu-toggle .quick-toggle:hover,
+.quick-menu-toggle .quick-toggle-arrow:hover {
+  background-color: rgba(255, 255, 255, 0.15);
 }
 
 .quick-toggle:checked, .quick-menu-toggle .quick-toggle:checked, .quick-menu-toggle .quick-toggle-arrow:checked { 
@@ -564,7 +575,9 @@ stage {
 }
 
 .quick-toggle:checked:hover, .quick-menu-toggle .quick-toggle:checked:hover, .quick-menu-toggle .quick-toggle-arrow:checked:hover {
-	background-color:  @{secondary.hex};
+	background-color: @{primary.hex};
+	color: @{onPrimary.hex};
+	box-shadow: inset 0 0 0 100px rgba(0, 0, 0, 0.15);
 }
 
 .quick-menu-toggle .quick-toggle-arrow:ltr {
@@ -583,7 +596,7 @@ stage {
   background-color:  @{surfaceVariant.hex};
 }
 
-.icon-button:focus, .quick-toggle:focus, .slider-bin:focus { box-shadow: inset 0 0 0 2px  @{secondary.hex} !important; }
+.icon-button:focus, .quick-toggle:focus, .slider-bin:focus { box-shadow: inset 0 0 0 2px @{primary.hex} !important; }
 
 .quick-toggle .quick-toggle-label {
   font-weight: 600;
@@ -1375,3 +1388,8 @@ StEntry:focus {
 
 /* Targets the container for app indicators only */
 /* Target the St_Bin wrappers that are NOT the last one in the right panel */
+
+.quick-toggle-menu .header .icon { 
+	color: @{onPrimary.hex};
+	background-color:  @{primary.hex};
+}
