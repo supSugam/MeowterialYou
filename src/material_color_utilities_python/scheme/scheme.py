@@ -124,35 +124,38 @@ class Scheme:
     #  * @param argb ARGB representation of a color.
     #  * @return Light Material color scheme, based on the color's hue.
     #  */
+    # Official Google Material Color Utilities tone values
     @staticmethod
     def light(argb):
         core = CorePalette.of(argb)
         return Scheme(
             {
-                "primary": core.a1.tone(80),
-                "onPrimary": core.a1.tone(20),
+                "primary": core.a1.tone(40),
+                "onPrimary": core.a1.tone(100),
                 "primaryContainer": core.a1.tone(90),
                 "onPrimaryContainer": core.a1.tone(10),
                 "secondary": core.a2.tone(40),
                 "onSecondary": core.a2.tone(100),
-                "secondaryContainer": core.a2.tone(98),
+                "secondaryContainer": core.a2.tone(90),
                 "onSecondaryContainer": core.a2.tone(10),
                 "tertiary": core.a3.tone(40),
                 "onTertiary": core.a3.tone(100),
                 "tertiaryContainer": core.a3.tone(90),
                 "onTertiaryContainer": core.a3.tone(10),
-                "error": core.error.tone(60),
+                "error": core.error.tone(40),
                 "onError": core.error.tone(100),
                 "errorContainer": core.error.tone(90),
                 "onErrorContainer": core.error.tone(10),
-                "background": core.n1.tone(97),
+                "background": core.n1.tone(99),
                 "onBackground": core.n1.tone(10),
-                "surface": core.n1.tone(97),
+                "surface": core.n1.tone(99),
                 "onSurface": core.n1.tone(10),
                 "surfaceVariant": core.n2.tone(90),
                 "onSurfaceVariant": core.n2.tone(30),
                 "outline": core.n2.tone(50),
+                "outlineVariant": core.n2.tone(80),
                 "shadow": core.n1.tone(0),
+                "scrim": core.n1.tone(0),
                 "inverseSurface": core.n1.tone(20),
                 "inverseOnSurface": core.n1.tone(95),
                 "inversePrimary": core.a1.tone(80),
@@ -163,6 +166,7 @@ class Scheme:
     #  * @param argb ARGB representation of a color.
     #  * @return Dark Material color scheme, based on the color's hue.
     #  */
+    # Official Google Material Color Utilities tone values
     @staticmethod
     def dark(argb):
         core = CorePalette.of(argb)
@@ -188,11 +192,12 @@ class Scheme:
                 "onBackground": core.n1.tone(90),
                 "surface": core.n1.tone(10),
                 "onSurface": core.n1.tone(90),
-                # "surfaceVariant": core.n2.tone(20),
-                "surfaceVariant": core.n2.tone(15),
+                "surfaceVariant": core.n2.tone(30),
                 "onSurfaceVariant": core.n2.tone(80),
                 "outline": core.n2.tone(60),
+                "outlineVariant": core.n2.tone(30),
                 "shadow": core.n1.tone(0),
+                "scrim": core.n1.tone(0),
                 "inverseSurface": core.n1.tone(90),
                 "inverseOnSurface": core.n1.tone(20),
                 "inversePrimary": core.a1.tone(40),
