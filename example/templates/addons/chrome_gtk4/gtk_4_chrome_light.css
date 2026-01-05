@@ -65,6 +65,58 @@ dnd {
     color: @{onSurface.hex};
 }
 
+/***************
+ * Accent Color & Focus Ring Overrides
+ * Override default blue focus colors with Material You primary
+ ***************/
+*,
+*:focus,
+*:focus-visible,
+*:focus-within {
+    outline-color: @{primary.hex};
+    caret-color: @{primary.hex};
+    -gtk-secondary-caret-color: @{primary.hex};
+}
+
+/* Override GTK focus ring */
+:focus {
+    outline: 2px solid @{primary.hex};
+    outline-offset: -2px;
+}
+
+:focus:not(:focus-visible) {
+    outline: none;
+}
+
+:focus-visible {
+    outline: 2px solid @{primary.hex};
+    outline-offset: 2px;
+}
+
+/* Selection colors */
+selection,
+*::selection {
+    background-color: alpha(@{primary.hex}, 0.3);
+    color: @{onSurface.hex};
+}
+
+/* Link colors */
+link,
+*:link,
+.link {
+    color: @{primary.hex};
+}
+
+link:visited,
+*:visited {
+    color: alpha(@{primary.hex}, 0.7);
+}
+
+link:hover,
+*:link:hover {
+    color: @{primary.hex};
+}
+
 .view, iconview,
 textview > text {
     color: @{onSurfaceVariant.hex};
@@ -82,64 +134,137 @@ textview > text {
 }
 
 /***************
- * Headerbar - Direct colors
+ * Headerbar / Toolbar - Comprehensive Chrome selectors
+ * Chrome uses various containers for its titlebar area
  ***************/
 .titlebar:not(headerbar),
-headerbar {
+headerbar,
+window.csd headerbar,
+window.chromium headerbar,
+window.background headerbar,
+window.background.csd headerbar,
+box.titlebar,
+box.horizontal.titlebar,
+.default-decoration,
+.solid-csd headerbar,
+.ssd headerbar {
     padding: 0 6px;
     min-height: 46px;
     border-width: 0 0 1px;
     border-style: solid;
-    border-color: alpha(@{outline.hex}, 0.3);
+    border-color: alpha(@{outline.hex}, 0.15);
     border-radius: 0;
-    background: @{surfaceVariant.hex};
-    color: @{onSurfaceVariant.hex};
+    background: @{surface.hex};
+    background-color: @{surface.hex};
+    color: @{onSurface.hex};
+    box-shadow: none;
 }
 
+/* Toolbar box inside headerbar */
+headerbar box,
+headerbar box.horizontal,
+headerbar box.vertical,
+headerbar > box,
+box.titlebar box,
+box.titlebar > box {
+    background: transparent;
+    background-color: transparent;
+}
+
+/* Backdrop state */
 .titlebar:backdrop:not(headerbar),
-headerbar:backdrop {
-    border-color: alpha(@{outline.hex}, 0.2);
+headerbar:backdrop,
+window.csd headerbar:backdrop,
+window.background.csd headerbar:backdrop,
+box.titlebar:backdrop,
+.default-decoration:backdrop {
+    border-color: alpha(@{outline.hex}, 0.1);
+    background: @{surface.hex};
     background-color: @{surface.hex};
+    box-shadow: none;
     transition: 200ms ease-out;
 }
 
+/* Title text */
 .titlebar:not(headerbar) .title,
-headerbar .title {
+headerbar .title,
+headerbar label.title,
+box.titlebar .title,
+box.titlebar label.title,
+windowtitle label.title {
     padding-left: 12px;
     padding-right: 12px;
     font-weight: bold;
-    color: @{onSurfaceVariant.hex};
-}
-
-/***************
- * Buttons - Minimal styling to not interfere with window buttons
- ***************/
-/* Only style button colors, let Chrome handle the shape */
-button {
     color: @{onSurface.hex};
 }
 
-button:hover {
+/***************
+ * Navigation / Toolbar Buttons
+ ***************/
+headerbar button,
+headerbar button.flat,
+headerbar button.image-button,
+headerbar button.text-button,
+headerbar button.circular,
+box.titlebar button,
+.toolbar button {
+    color: @{onSurface.hex};
+    background: transparent;
+    background-color: transparent;
+    border: none;
+    box-shadow: none;
+    min-width: 24px;
+    min-height: 24px;
+}
+
+headerbar button:hover,
+box.titlebar button:hover,
+.toolbar button:hover {
+    background: alpha(@{onSurface.hex}, 0.08);
     background-color: alpha(@{onSurface.hex}, 0.08);
 }
 
-button:active, button:checked {
+headerbar button:active,
+headerbar button:checked,
+box.titlebar button:active,
+box.titlebar button:checked,
+.toolbar button:active,
+.toolbar button:checked {
+    background: alpha(@{onSurface.hex}, 0.12);
     background-color: alpha(@{onSurface.hex}, 0.12);
 }
 
-button:disabled {
-    color: alpha(@{onSurface.hex}, 0.5);
+headerbar button:disabled,
+box.titlebar button:disabled,
+.toolbar button:disabled {
+    color: alpha(@{onSurface.hex}, 0.38);
+}
+
+/* Button images/icons */
+headerbar button image,
+box.titlebar button image,
+.toolbar button image {
+    color: inherit;
+    -gtk-icon-style: symbolic;
 }
 
 /***************
  * Window Controls (minimize, maximize, close buttons)
  ***************/
-windowcontrols button {
+windowcontrols,
+headerbar windowcontrols,
+box.titlebar windowcontrols {
+    border-spacing: 6px;
+}
+
+windowcontrols button,
+headerbar windowcontrols button,
+box.titlebar windowcontrols button {
     border-radius: 9999px;
     padding: 3px;
-    margin: 0 4px;
-    min-width: 0;
-    min-height: 0;
+    margin: 0 2px;
+    min-width: 16px;
+    min-height: 16px;
     border: none;
     background: alpha(@{onSurface.hex}, 0.08);
 }
@@ -154,46 +279,146 @@ windowcontrols button:checked {
 }
 
 /***************
- * Entries - Direct colors
+ * Entry / Address Bar / Search Box - Comprehensive
  ***************/
-entry {
+entry,
+.entry,
+text,
+searchentry,
+.search,
+.location-bar,
+.url-bar,
+.omnibox,
+headerbar entry,
+headerbar searchentry,
+box.titlebar entry,
+box.titlebar searchentry,
+.toolbar entry,
+.toolbar searchentry {
     color: @{onSurfaceVariant.hex};
+    background: @{surfaceVariant.hex};
     background-color: @{surfaceVariant.hex};
-    border: 1px solid alpha(@{outline.hex}, 0.3);
-    border-radius: 6px;
-    padding: 4px 8px;
+    border: 1px solid alpha(@{outline.hex}, 0.2);
+    border-radius: 20px;
+    padding: 6px 12px;
+    min-height: 32px;
+    box-shadow: none;
+    transition: border-color 150ms ease, background-color 150ms ease;
 }
 
-entry:focus {
+entry:hover,
+searchentry:hover,
+headerbar entry:hover,
+box.titlebar entry:hover {
+    background: alpha(@{surfaceVariant.hex}, 0.85);
+    background-color: alpha(@{surfaceVariant.hex}, 0.85);
+    border-color: alpha(@{outline.hex}, 0.4);
+}
+
+entry:focus,
+entry:focus-within,
+searchentry:focus,
+searchentry:focus-within,
+headerbar entry:focus,
+headerbar entry:focus-within,
+box.titlebar entry:focus,
+box.titlebar entry:focus-within {
+    background: @{surfaceVariant.hex};
+    background-color: @{surfaceVariant.hex};
     border-color: @{primary.hex};
+    border-width: 2px;
+    outline: none;
+    box-shadow: none;
+}
+
+entry:disabled,
+searchentry:disabled {
+    color: alpha(@{onSurfaceVariant.hex}, 0.38);
+    background: alpha(@{surfaceVariant.hex}, 0.5);
+    background-color: alpha(@{surfaceVariant.hex}, 0.5);
+}
+
+/* Entry placeholder text */
+entry placeholder,
+entry > text > block,
+searchentry placeholder {
+    color: alpha(@{onSurfaceVariant.hex}, 0.6);
+}
+
+/* Entry icons (search, clear buttons) */
+entry image,
+entry image.left,
+entry image.right,
+searchentry image {
+    color: @{onSurfaceVariant.hex};
+    min-width: 16px;
+    min-height: 16px;
+    padding: 0 4px;
+}
+
+/* Selection in entries */
+entry selection,
+entry > text selection,
+searchentry selection {
+    background-color: alpha(@{primary.hex}, 0.3);
+    color: @{onSurface.hex};
 }
 
 /***************
- * Menu / Popover - Direct colors
+ * Menu / Popover - Direct colors with Chrome-specific selectors
  ***************/
 popover,
-popover.background {
+popover.background,
+popover.menu,
+popover contents {
     background-color: @{surfaceVariant.hex};
     color: @{onSurfaceVariant.hex};
     border: 1px solid alpha(@{outline.hex}, 0.3);
+    border-radius: 8px;
 }
 
 menu,
 .menu,
+.context-menu,
 menubar,
 .menubar {
     background-color: @{surfaceVariant.hex};
     color: @{onSurfaceVariant.hex};
+    padding: 4px;
+    border-radius: 8px;
 }
 
 menuitem,
-.menuitem {
+.menuitem,
+modelbutton,
+.modelbutton {
     color: @{onSurfaceVariant.hex};
+    padding: 6px 10px;
+    border-radius: 6px;
+    transition: background-color 150ms ease;
 }
 
+/* M3 State Layer: Hover = 8% opacity, Focus/Pressed = 10% */
 menuitem:hover,
-.menuitem:hover {
-    background-color: alpha(@{primary.hex}, 0.2);
+.menuitem:hover,
+modelbutton:hover {
+    background-color: alpha(@{onSurfaceVariant.hex}, 0.08);
+}
+
+menuitem:focus,
+menuitem:active,
+.menuitem:focus,
+.menuitem:active,
+modelbutton:focus,
+modelbutton:active {
+    background-color: alpha(@{onSurfaceVariant.hex}, 0.10);
+}
+
+menuitem:selected,
+.menuitem:selected,
+modelbutton:selected {
+    background-color: alpha(@{primary.hex}, 0.12);
+    color: @{primary.hex};
 }
 
 /***************

@@ -42,7 +42,7 @@ CONFIG_FILE="$SCRIPT_DIR/.install_config"
 
 # User preferences (defaults)
 WALLPAPER=""
-THEME="dark"
+THEME="system"
 TITLE_BUTTONS="native"
 TITLE_BUTTONS_POSITION="right"
 CHROME_GTK4=false
@@ -55,6 +55,7 @@ SILENT=false
 HAS_GUM=false
 
 # Optional app theming
+THEME_GNOME_TERMINAL=true
 THEME_SPOTIFY=false
 THEME_DISCORD=false
 THEME_VSCODE=false
@@ -296,8 +297,9 @@ run_interactive() {
         # ─── Theme Mode ───
         echo -e "  ${BOLD}2. Theme Mode${NC}"
         THEME=$(gum choose --cursor="  ▸ " --cursor.foreground="212" \
-            --selected.foreground="212" --height=3 \
-            "dark" "light")
+            --selected.foreground="212" --height=4 \
+            "system (Auto-detect from system)" "dark" "light")
+        THEME=$(echo "$THEME" | cut -d' ' -f1)
         echo -e "     ${CHECK} Selected: ${BOLD}${MAGENTA}$THEME${NC}"
         echo ""
         
@@ -361,8 +363,22 @@ run_interactive() {
         fi
         echo ""
         
+        # ─── GNOME Terminal Theming ───
+        echo -e "  ${BOLD}8. GNOME Terminal Theming${NC}"
+        echo -e "     ${DIM}Apply Material You colors to terminal (background, cursor, highlight, palette)${NC}"
+        if gum confirm --affirmative="  Yes, enable  " --negative="  No, skip  " \
+            --prompt.foreground="255" --selected.background="212" --default=true \
+            "     Theme GNOME Terminal?"; then
+            THEME_GNOME_TERMINAL=true
+            echo -e "     ${CHECK} GNOME Terminal: ${BOLD}${GREEN}enabled${NC}"
+        else
+            THEME_GNOME_TERMINAL=false
+            echo -e "     ${CHECK} GNOME Terminal: ${DIM}disabled${NC}"
+        fi
+        echo ""
+        
         # ─── Optional App Theming ───
-        echo -e "  ${BOLD}8. Additional Apps${NC} ${DIM}(detected apps only)${NC}"
+        echo -e "  ${BOLD}9. Additional Apps${NC} ${DIM}(detected apps only)${NC}"
         
         # Spicetify (Spotify)
         if command -v spicetify &> /dev/null; then
@@ -408,9 +424,9 @@ run_interactive() {
             exit 0
         fi
 
-        echo -e "  ${BOLD}Theme Mode${NC} [dark/light] (default: dark)"
+        echo -e "  ${BOLD}Theme Mode${NC} [system/dark/light] (default: system)"
         read -rp "     ▸ " input
-        THEME=${input:-dark}
+        THEME=${input:-system}
         echo ""
         
         echo -e "  ${BOLD}Window Button Style${NC} [native/mac] (default: native)"
@@ -433,6 +449,15 @@ run_interactive() {
         [[ "$input" =~ ^[Yy]$ ]] && UI_IMPROVEMENTS=true
         echo ""
         
+        echo -e "  ${BOLD}GNOME Terminal Theming${NC} [Y/n] (default: yes)"
+        read -rp "     ▸ " input
+        if [[ "$input" =~ ^[Nn]$ ]]; then
+            THEME_GNOME_TERMINAL=false
+        else
+            THEME_GNOME_TERMINAL=true
+        fi
+        echo ""
+        
         echo -e "  ${BOLD}Wallpaper Path${NC} (Enter for current)"
         read -rp "     ▸ " WALLPAPER
     fi
@@ -444,6 +469,7 @@ run_interactive() {
     echo -e "  ${DOT} Button Position: ${BOLD}$TITLE_BUTTONS_POSITION${NC}"
     echo -e "  ${DOT} Chrome GTK4:     ${BOLD}$([ "$CHROME_GTK4" = true ] && echo "enabled" || echo "disabled")${NC}"
     echo -e "  ${DOT} UI Improvements: ${BOLD}$([ "$UI_IMPROVEMENTS" = true ] && echo "enabled" || echo "disabled")${NC}"
+    echo -e "  ${DOT} Terminal Theme:  ${BOLD}$([ "$THEME_GNOME_TERMINAL" = true ] && echo "enabled" || echo "disabled")${NC}"
     echo -e "  ${DOT} Wallpaper:       ${BOLD}${WALLPAPER:-"Current system wallpaper"}${NC}"
     
     # Show optional apps if any enabled
@@ -607,6 +633,7 @@ install_files() {
     mkdir -p "$HOME/.config/meowterialyou"
     cat > "$HOME/.config/meowterialyou/prefs.conf" << EOF
 # MeowterialYou User Preferences
+THEME_GNOME_TERMINAL=$THEME_GNOME_TERMINAL
 THEME_SPOTIFY=$THEME_SPOTIFY
 THEME_DISCORD=$THEME_DISCORD
 THEME_VSCODE=$THEME_VSCODE
@@ -693,6 +720,7 @@ TITLE_BUTTONS=$TITLE_BUTTONS
 TITLE_BUTTONS_POSITION=$TITLE_BUTTONS_POSITION
 CHROME_GTK4=$CHROME_GTK4
 UI_IMPROVEMENTS=$UI_IMPROVEMENTS
+THEME_GNOME_TERMINAL=$THEME_GNOME_TERMINAL
 THEME_SPOTIFY=$THEME_SPOTIFY
 THEME_DISCORD=$THEME_DISCORD
 THEME_VSCODE=$THEME_VSCODE
@@ -738,7 +766,7 @@ main() {
                 echo ""
                 echo "Options:"
                 echo "  --wallpaper PATH       Path to wallpaper image"
-                echo "  --theme MODE           Theme mode: dark or light"
+                echo "  --theme MODE           Theme mode: system (auto-detect), dark, or light"
                 echo "  --title-buttons STYLE  Button style: native or mac"
                 echo "  --title-buttons-position POS  Position: left or right"
                 echo "  --chrome-gtk4          Enable Chrome/Chromium GTK4 theme"

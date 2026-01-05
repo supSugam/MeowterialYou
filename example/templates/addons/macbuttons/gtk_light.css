@@ -49,7 +49,20 @@ windowcontrols > button.maximize:hover:not(.suggested-action):not(.destructive-a
 windowcontrols > button.maximize:active:not(.suggested-action):not(.destructive-action),
 windowcontrols > button.close:hover:not(.suggested-action):not(.destructive-action),
 windowcontrols > button.close:active:not(.suggested-action):not(.destructive-action) {
-  color: rgba(250, 244, 237, 0.6);
+  color: #ffffff;
+  -gtk-icon-style: symbolic;
+}
+
+/* Explicit image styling for hover - solid dark */
+windowcontrols > button.minimize:hover:not(.suggested-action):not(.destructive-action) > image,
+windowcontrols > button.minimize:active:not(.suggested-action):not(.destructive-action) > image,
+windowcontrols > button.maximize:hover:not(.suggested-action):not(.destructive-action) > image,
+windowcontrols > button.maximize:active:not(.suggested-action):not(.destructive-action) > image,
+windowcontrols > button.close:hover:not(.suggested-action):not(.destructive-action) > image,
+windowcontrols > button.close:active:not(.suggested-action):not(.destructive-action) > image {
+  color: #ffffff;
+  -gtk-icon-style: symbolic;
+  -gtk-icon-filter: none;
 }
 
 windowcontrols > button.minimize:backdrop:not(.suggested-action):not(.destructive-action) > image,
@@ -64,7 +77,7 @@ windowcontrols > button.maximize:backdrop:hover:not(.suggested-action):not(.dest
 windowcontrols > button.maximize:backdrop:active:not(.suggested-action):not(.destructive-action),
 windowcontrols > button.close:backdrop:hover:not(.suggested-action):not(.destructive-action),
 windowcontrols > button.close:backdrop:active:not(.suggested-action):not(.destructive-action) {
-  color: rgba(250, 244, 237, 0.5);
+  color: #ffffff;
 }
 
 /* Colors */
@@ -95,4 +108,69 @@ windowcontrols > button.close:active:not(.suggested-action):not(.destructive-act
 windowcontrols > button:not(.suggested-action):not(.destructive-action) > image {
   border-radius: 100%;
   padding: 0;
+}
+
+/* ===== Chrome GTK4 Compatibility (using .titlebutton selectors) ===== */
+button.titlebutton:not(.suggested-action):not(.destructive-action) {
+  min-height: 16px;
+  min-width: 16px;
+  padding: 0;
+  margin: 0 0px;
+  border-radius: 100%;
+}
+
+button.minimize.titlebutton:not(.suggested-action):not(.destructive-action),
+button.maximize.titlebutton:not(.suggested-action):not(.destructive-action),
+button.close.titlebutton:not(.suggested-action):not(.destructive-action) {
+  color: transparent;
+  background: none;
+}
+
+/* Hide the icon image by default, rely on background color */
+button.titlebutton:not(.suggested-action):not(.destructive-action) image {
+  padding: 0;
+  -gtk-icon-source: none;
+}
+
+button.minimize.titlebutton:not(.suggested-action):not(.destructive-action) {
+  background-color: #f6c177;
+}
+
+button.minimize.titlebutton:active:not(.suggested-action):not(.destructive-action) {
+  background-color: #f7ce95;
+}
+
+button.maximize.titlebutton:not(.suggested-action):not(.destructive-action) {
+  background-color: #31748f;
+}
+
+button.maximize.titlebutton:active:not(.suggested-action):not(.destructive-action) {
+  background-color: #6394a7;
+}
+
+button.close.titlebutton:not(.suggested-action):not(.destructive-action) {
+  background-color: #eb6f92;
+}
+
+button.close.titlebutton:active:not(.suggested-action):not(.destructive-action) {
+  background-color: #ef90a9;
+}
+
+/* Hover state - solid dark color for icons in light mode */
+button.titlebutton:hover:not(.suggested-action):not(.destructive-action),
+button.titlebutton:active:not(.suggested-action):not(.destructive-action) {
+  box-shadow: none;
+  color: #ffffff;
+}
+
+/* Explicit image styling for titlebutton hover */
+button.titlebutton:hover:not(.suggested-action):not(.destructive-action) image,
+button.titlebutton:active:not(.suggested-action):not(.destructive-action) image {
+  color: #ffffff;
+  -gtk-icon-style: symbolic;
+  -gtk-icon-filter: none;
+}
+
+button.titlebutton:backdrop:not(.suggested-action):not(.destructive-action) {
+  background-color: rgba(0, 0, 0, 0.3);
 }

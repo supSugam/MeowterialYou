@@ -6,3 +6,8 @@
 
 run with last args when just `meowterialyou` is run.
 spotify is still being themed even when i choose no.
+
+context menu background not themed
+
+[Low Priority]
+- Material You theme for `bat` syntax highlighting (generate .tmTheme file)

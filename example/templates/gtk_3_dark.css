@@ -3428,13 +3428,6 @@ phosh-splash.light { color: @phosh_splash_fg_color; background-color: @phosh_spl
 
 .phosh-dropicon-shadow { -gtk-icon-shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 1px 8px rgba(0, 0, 0, 0.2); }
 
-/* terminal-window headerbar.titlebar {
-    background-color: rgba(0, 0, 0, 0.1);
-    background-image: none;
-    box-shadow: none;
-}
- */
-
 /* Desktop Icons Fix - Expanded Selectors (Moved to end) */
 .nemo-desktop.nemo-canvas-item,
 .nemo-desktop.nemo-view,

@@ -546,6 +546,19 @@ class ApplierDomain:
             output_data = re.sub(pattern_hex, value, output_data)
             output_data = re.sub(pattern_rgb, rgb_value, output_data)
 
+        # Append macbuttons CSS if enabled
+        if self._generation_options.macbuttons_enabled:
+            macbuttons_file = (
+                Path(self._generation_options.parent_dir)
+                / f"example/templates/addons/macbuttons/gtk_{variant}.css"
+            )
+            if macbuttons_file.exists():
+                with open(macbuttons_file, "r") as f:
+                    macbuttons_css = f.read()
+                output_data += "\n\n/* ===== macOS Window Buttons Addon ===== */\n"
+                output_data += macbuttons_css
+                print(f"Applied macbuttons addon to system GTK4 theme ({variant})")
+
         # Write to temp file then copy with sudo
         with tempfile.NamedTemporaryFile(mode="w", suffix=".css", delete=False) as tmp:
             tmp.write(output_data)

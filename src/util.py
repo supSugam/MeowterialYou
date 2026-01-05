@@ -27,9 +27,9 @@ def parse_arguments():
 
     parser.add_argument(
         "--theme",
-        help="theme mode: light or dark (default: dark)",
-        choices=["light", "dark"],
-        default="dark",
+        help="theme mode: system (auto-detect), light, or dark (default: system)",
+        choices=["system", "light", "dark"],
+        default="system",
     )
 
     parser.add_argument(
@@ -350,9 +350,10 @@ def reload_apps(lightmode_enabled: bool, scheme: MaterialColors, wallpaper_path:
             except Exception as e:
                 log.error(f"Failed to symlink config gtk.css: {e}")
         elif lightmode_enabled:
-            # Light mode: remove gtk.css override (let theme handle it)
-            if config_gtk_css.exists() or config_gtk_css.is_symlink():
-                log.info(f"Removing config override: {config_gtk_css}")
+            # Light mode: we now generate gtk.css via config.ini, so just remove any stale symlink
+            # that might point to gtk-dark.css from a previous dark mode run
+            if config_gtk_css.is_symlink():
+                log.info(f"Removing stale symlink: {config_gtk_css}")
                 config_gtk_css.unlink()
 
     # Symlink assets folder to ~/.config/gtk-3.0/assets
@@ -427,35 +428,428 @@ def reload_apps(lightmode_enabled: bool, scheme: MaterialColors, wallpaper_path:
         # Extension may not be installed, that's fine
         pass
 
-    # Set Gnome Terminal Transparency (adaptive based on wallpaper brightness)
-    try:
-        # Get default profile UUID
-        cmd = ["gsettings", "get", "org.gnome.Terminal.ProfilesList", "default"]
-        uuid = subprocess.check_output(cmd).decode("utf-8").strip().strip("'")
+    # Set Gnome Terminal with full Material You theming (if enabled in preferences)
+    # Load preferences to check if terminal theming is enabled (default: true)
+    prefs = Config.load_prefs()
+    if not prefs.get("THEME_GNOME_TERMINAL", True):
+        log.info("Skipping GNOME Terminal theming (disabled in preferences)")
+    else:
+        try:
+            # Get default profile UUID
+            cmd = ["gsettings", "get", "org.gnome.Terminal.ProfilesList", "default"]
+            uuid = subprocess.check_output(cmd).decode("utf-8").strip().strip("'")
 
-        profile_path = f"org.gnome.Terminal.Legacy.Profile:/org/gnome/terminal/legacy/profiles:/:{uuid}/"
+            profile_path = f"org.gnome.Terminal.Legacy.Profile:/org/gnome/terminal/legacy/profiles:/:{uuid}/"
 
-        # Calculate adaptive transparency based on wallpaper analysis and scheme colors
-        # Get surface color from scheme for accurate contrast calculation
-        surface_color = (
-            scheme.get("surface", None)
-            if isinstance(scheme, dict)
-            else getattr(scheme, "surface", None)
-        )
-        transparency = _calculate_terminal_transparency(
-            wallpaper_path, lightmode_enabled, surface_color=surface_color
+            # Helper to get scheme color
+            def get_color(key: str, fallback: str = "#000000") -> str:
+                if isinstance(scheme, dict):
+                    return scheme.get(key, fallback)
+                return getattr(scheme, key, fallback)
+
+            # Disable use-theme-colors to allow custom Material You colors
+            os.system(f"gsettings set {profile_path} use-theme-colors false")
+
+            # Calculate adaptive transparency based on wallpaper analysis
+            surface_color = get_color("surface")
+            transparency = _calculate_terminal_transparency(
+                wallpaper_path, lightmode_enabled, surface_color=surface_color
+            )
+
+            log.info(f"Setting Gnome Terminal theme for profile {uuid}")
+
+            # === Background & Foreground ===
+            background = get_color(
+                "surface", "#1a1c1a" if not lightmode_enabled else "#fdfdf5"
+            )
+            foreground = get_color(
+                "onSurface", "#e2e2e6" if not lightmode_enabled else "#1a1c18"
+            )
+            os.system(f"gsettings set {profile_path} background-color '{background}'")
+            os.system(f"gsettings set {profile_path} foreground-color '{foreground}'")
+
+            # === Transparency ===
+            os.system(f"gsettings set {profile_path} use-transparent-background true")
+            os.system(
+                f"gsettings set {profile_path} background-transparency-percent {transparency}"
+            )
+
+            # === Bold Color ===
+            bold_color = get_color("primary", foreground)
+            os.system(f"gsettings set {profile_path} bold-color-same-as-fg false")
+            os.system(f"gsettings set {profile_path} bold-color '{bold_color}'")
+
+            # === Cursor Colors ===
+            cursor_bg = get_color("primary", foreground)
+            cursor_fg = get_color("onPrimary", background)
+            os.system(f"gsettings set {profile_path} cursor-colors-set true")
+            os.system(
+                f"gsettings set {profile_path} cursor-background-color '{cursor_bg}'"
+            )
+            os.system(
+                f"gsettings set {profile_path} cursor-foreground-color '{cursor_fg}'"
+            )
+
+            # === Highlight/Selection Colors ===
+            highlight_bg = get_color("primaryContainer")
+            highlight_fg = get_color("onPrimaryContainer")
+            os.system(f"gsettings set {profile_path} highlight-colors-set true")
+            os.system(
+                f"gsettings set {profile_path} highlight-background-color '{highlight_bg}'"
+            )
+            os.system(
+                f"gsettings set {profile_path} highlight-foreground-color '{highlight_fg}'"
+            )
+
+            # === 16-Color Palette ===
+            # Standard terminal palette: 8 normal + 8 bright colors
+            # ANSI order: black, red, green, yellow, blue, magenta, cyan, white (then bright variants)
+            #
+            # Design principles:
+            # - Normal colors: Primary/accent colors for visibility
+            # - Bright colors: Lighter/more vibrant versions
+            # - Red/Magenta: Use error colors for consistency
+            # - Green: Use primary (matches Material You accent)
+            # - Yellow: Use inversePrimary/tertiary for warmth
+            # - Blue: Keep traditional blue for familiarity
+            # - Cyan: Use tertiary
+            if lightmode_enabled:
+                # Light mode: darker normal colors, lighter bright colors
+                palette = [
+                    get_color("outline", "#74796d"),  # 0: Black (gray)
+                    get_color("error", "#ba1b1b"),  # 1: Red
+                    get_color("primary", "#496636"),  # 2: Green
+                    "#7c6f00",  # 3: Yellow (warm)
+                    "#0061a4",  # 4: Blue (classic blue)
+                    "#9a4057",  # 5: Magenta
+                    get_color("tertiary", "#386666"),  # 6: Cyan
+                    get_color("onSurface", "#1a1c18"),  # 7: White (actually dark text)
+                    get_color("outlineVariant", "#c4c8bb"),  # 8: Bright Black
+                    get_color("errorContainer", "#ffdad4"),  # 9: Bright Red
+                    get_color("primaryContainer", "#cbedb0"),  # 10: Bright Green
+                    "#fff0c3",  # 11: Bright Yellow
+                    "#d1e4ff",  # 12: Bright Blue
+                    "#ffd8e4",  # 13: Bright Magenta
+                    get_color("tertiaryContainer", "#bbeceb"),  # 14: Bright Cyan
+                    get_color("surface", "#fdfdf5"),  # 15: Bright White
+                ]
+            else:
+                # Dark mode: visible normal colors, brighter bright colors
+                palette = [
+                    get_color("outlineVariant", "#43483e"),  # 0: Black (dark gray)
+                    get_color("error", "#ffb4a9"),  # 1: Red
+                    get_color("primary", "#afd096"),  # 2: Green
+                    "#e4c54a",  # 3: Yellow (warm, visible)
+                    "#aac7ff",  # 4: Blue (light blue)
+                    "#ffafd0",  # 5: Magenta (pink)
+                    get_color("tertiary", "#a0cfce"),  # 6: Cyan
+                    get_color("onSurface", "#e3e3dc"),  # 7: White
+                    get_color("outline", "#8e9386"),  # 8: Bright Black (lighter gray)
+                    get_color(
+                        "errorContainer", "#930006"
+                    ),  # 9: Bright Red (darker for contrast)
+                    get_color(
+                        "primaryContainer", "#334e21"
+                    ),  # 10: Bright Green (container)
+                    "#635000",  # 11: Bright Yellow (darker)
+                    "#0061a4",  # 12: Bright Blue (darker)
+                    "#9a4057",  # 13: Bright Magenta (darker)
+                    get_color(
+                        "tertiaryContainer", "#1e4e4e"
+                    ),  # 14: Bright Cyan (container)
+                    get_color("surface", "#1a1c18"),  # 15: Bright White (surface)
+                ]
+
+            palette_str = "[" + ", ".join(f"'{c}'" for c in palette) + "]"
+            os.system(f'gsettings set {profile_path} palette "{palette_str}"')
+
+            log.info(
+                f"Applied full Material You terminal theme (transparency: {transparency}%)"
+            )
+
+            # Generate themed terminal prompt (PS1)
+            generate_terminal_prompt(scheme)
+
+        except Exception as e:
+            log.error(f"Failed to set terminal settings: {e}")
+
+
+def generate_terminal_prompt(scheme: dict):
+    """
+    Generate a comprehensive Material You themed terminal environment.
+    Creates ~/.config/meowterialyou/prompt.sh with:
+    - Colored PS1 prompt (username, hostname, path, git branch, exit status)
+    - LS_COLORS for file listings (ls, tree, etc.)
+    - GCC_COLORS for compiler output
+    - GREP_COLORS for search highlighting
+    - Man page colors
+    """
+
+    def hex_to_rgb(hex_color: str) -> tuple:
+        """Convert hex color to RGB tuple."""
+        hex_color = hex_color.lstrip("#")
+        return tuple(int(hex_color[i : i + 2], 16) for i in (0, 2, 4))
+
+    def hex_to_ansi256(hex_color: str) -> int:
+        """Convert hex to closest ANSI 256 color for compatibility."""
+        r, g, b = hex_to_rgb(hex_color)
+        # Use 6x6x6 color cube (16-231)
+        return (
+            16
+            + (36 * round(r / 255 * 5))
+            + (6 * round(g / 255 * 5))
+            + round(b / 255 * 5)
         )
 
-        log.info(
-            f"Setting Gnome Terminal transparency for profile {uuid} to {transparency}%"
-        )
-        os.system(f"gsettings set {profile_path} use-transparent-background true")
-        os.system(
-            f"gsettings set {profile_path} background-transparency-percent {transparency}"
-        )
+    # Get Material You colors from scheme
+    primary = scheme.get("primary", "#496636")
+    on_primary = scheme.get("onPrimary", "#ffffff")
+    primary_container = scheme.get("primaryContainer", "#cbedb0")
+    on_primary_container = scheme.get("onPrimaryContainer", "#082100")
+    secondary = scheme.get("secondary", "#56624b")
+    on_secondary = scheme.get("onSecondary", "#ffffff")
+    secondary_container = scheme.get("secondaryContainer", "#d9e7ca")
+    tertiary = scheme.get("tertiary", "#386666")
+    on_tertiary = scheme.get("onTertiary", "#ffffff")
+    tertiary_container = scheme.get("tertiaryContainer", "#bbeceb")
+    error = scheme.get("error", "#ba1b1b")
+    error_container = scheme.get("errorContainer", "#ffdad4")
+    surface = scheme.get("surface", "#fdfdf5")
+    on_surface = scheme.get("onSurface", "#1a1c18")
+    surface_variant = scheme.get("surfaceVariant", "#e0e4d6")
+    on_surface_variant = scheme.get("onSurfaceVariant", "#43483e")
+    outline = scheme.get("outline", "#74796d")
+    outline_variant = scheme.get("outlineVariant", "#c4c8bb")
 
-    except Exception as e:
-        log.error(f"Failed to set terminal transparency: {e}")
+    # Convert to RGB for 24-bit ANSI
+    primary_rgb = hex_to_rgb(primary)
+    secondary_rgb = hex_to_rgb(secondary)
+    tertiary_rgb = hex_to_rgb(tertiary)
+    error_rgb = hex_to_rgb(error)
+    outline_rgb = hex_to_rgb(outline)
+    on_surface_rgb = hex_to_rgb(on_surface)
+    primary_container_rgb = hex_to_rgb(primary_container)
+
+    # ANSI 256 colors for LS_COLORS compatibility
+    primary_256 = hex_to_ansi256(primary)
+    secondary_256 = hex_to_ansi256(secondary)
+    tertiary_256 = hex_to_ansi256(tertiary)
+    error_256 = hex_to_ansi256(error)
+    outline_256 = hex_to_ansi256(outline)
+
+    prompt_script = f"""#!/bin/bash
+# ╔═══════════════════════════════════════════════════════════════════════════╗
+# ║  MeowterialYou - Material You Terminal Theme                              ║
+# ║  Auto-generated - do not edit, will be overwritten on theme change        ║
+# ╚═══════════════════════════════════════════════════════════════════════════╝
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# COLOR DEFINITIONS (24-bit True Color)
+# ═══════════════════════════════════════════════════════════════════════════════
+
+# Material You palette (using $'...' for proper escape interpretation)
+_MY_PRIMARY=$'\\e[38;2;{primary_rgb[0]};{primary_rgb[1]};{primary_rgb[2]}m'
+_MY_SECONDARY=$'\\e[38;2;{secondary_rgb[0]};{secondary_rgb[1]};{secondary_rgb[2]}m'
+_MY_TERTIARY=$'\\e[38;2;{tertiary_rgb[0]};{tertiary_rgb[1]};{tertiary_rgb[2]}m'
+_MY_ERROR=$'\\e[38;2;{error_rgb[0]};{error_rgb[1]};{error_rgb[2]}m'
+_MY_OUTLINE=$'\\e[38;2;{outline_rgb[0]};{outline_rgb[1]};{outline_rgb[2]}m'
+_MY_TEXT=$'\\e[38;2;{on_surface_rgb[0]};{on_surface_rgb[1]};{on_surface_rgb[2]}m'
+_MY_PRIMARY_BG=$'\\e[48;2;{primary_rgb[0]};{primary_rgb[1]};{primary_rgb[2]}m'
+_MY_ERROR_BG=$'\\e[48;2;{error_rgb[0]};{error_rgb[1]};{error_rgb[2]}m'
+_MY_RESET=$'\\e[0m'
+_MY_BOLD=$'\\e[1m'
+_MY_DIM=$'\\e[2m'
+_MY_ITALIC=$'\\e[3m'
+_MY_UNDERLINE=$'\\e[4m'
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# GIT BRANCH FUNCTION
+# ═══════════════════════════════════════════════════════════════════════════════
+
+__meowterialyou_git_info() {{
+    local branch status_color
+    branch=$(git symbolic-ref --short HEAD 2>/dev/null || git describe --tags --exact-match 2>/dev/null)
+    
+    if [ -n "$branch" ]; then
+        # Check for uncommitted changes
+        if git diff --quiet 2>/dev/null && git diff --staged --quiet 2>/dev/null; then
+            status_color="${{_MY_PRIMARY}}"  # Clean
+        else
+            status_color="${{_MY_ERROR}}"    # Dirty (uncommitted changes)
+        fi
+        echo -e " ${{status_color}}($branch)${{_MY_RESET}}"
+    fi
+}}
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# EXIT STATUS INDICATOR
+# ═══════════════════════════════════════════════════════════════════════════════
+
+__meowterialyou_exit_status() {{
+    local exit_code=$?
+    if [ $exit_code -ne 0 ]; then
+        echo -e " ${{_MY_ERROR}}✗$exit_code${{_MY_RESET}}"
+    fi
+}}
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# BASH PROMPT (PS1)
+# ═══════════════════════════════════════════════════════════════════════════════
+
+if [ -n "$BASH_VERSION" ]; then
+    # Prompt: username@hostname:path (branch) [exitcode]$
+    # Using \\[ \\] for readline non-printing character markers
+    PS1="\\[${{_MY_PRIMARY}}\\]\\u\\[${{_MY_OUTLINE}}\\]@\\[${{_MY_TERTIARY}}\\]\\h\\[${{_MY_RESET}}\\]:\\[${{_MY_SECONDARY}}\\]\\w\\[${{_MY_RESET}}\\]\\$(__meowterialyou_git_info)\\$(__meowterialyou_exit_status)\\$ "
+fi
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# ZSH PROMPT
+# ═══════════════════════════════════════════════════════════════════════════════
+
+if [ -n "$ZSH_VERSION" ]; then
+    setopt PROMPT_SUBST 2>/dev/null
+    PROMPT="%F{{{primary}}}%n%F{{{outline}}}@%F{{{tertiary}}}%m%f:%F{{{secondary}}}%~%f\\$(__meowterialyou_git_info)\\$(__meowterialyou_exit_status)%# "
+fi
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# LS_COLORS - File Type Colors for ls, tree, fd, etc.
+# ═══════════════════════════════════════════════════════════════════════════════
+
+export LS_COLORS="\\
+di=38;5;{primary_256};1:\\
+ln=38;5;{tertiary_256}:\\
+so=38;5;{secondary_256}:\\
+pi=38;5;{outline_256}:\\
+ex=38;5;{primary_256};1:\\
+bd=38;5;{outline_256};1:\\
+cd=38;5;{outline_256}:\\
+su=38;5;{error_256};1:\\
+sg=38;5;{error_256}:\\
+tw=38;5;{primary_256};4:\\
+ow=38;5;{primary_256};4:\\
+*.tar=38;5;{tertiary_256}:\\
+*.gz=38;5;{tertiary_256}:\\
+*.zip=38;5;{tertiary_256}:\\
+*.7z=38;5;{tertiary_256}:\\
+*.rar=38;5;{tertiary_256}:\\
+*.jpg=38;5;{secondary_256}:\\
+*.jpeg=38;5;{secondary_256}:\\
+*.png=38;5;{secondary_256}:\\
+*.gif=38;5;{secondary_256}:\\
+*.svg=38;5;{secondary_256}:\\
+*.webp=38;5;{secondary_256}:\\
+*.mp3=38;5;{tertiary_256}:\\
+*.mp4=38;5;{tertiary_256}:\\
+*.mkv=38;5;{tertiary_256}:\\
+*.pdf=38;5;{error_256}:\\
+*.md=38;5;{primary_256}:\\
+*.txt=38;5;{outline_256}:\\
+*.py=38;5;{primary_256}:\\
+*.js=38;5;{secondary_256}:\\
+*.ts=38;5;{tertiary_256}:\\
+*.json=38;5;{outline_256}:\\
+*.yaml=38;5;{outline_256}:\\
+*.yml=38;5;{outline_256}:\\
+*.sh=38;5;{primary_256}:\\
+*.css=38;5;{tertiary_256}:\\
+*.html=38;5;{secondary_256}:\\
+"
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# GCC_COLORS - Compiler Output Colors
+# ═══════════════════════════════════════════════════════════════════════════════
+
+export GCC_COLORS="\\
+error=38;5;{error_256};1:\\
+warning=38;5;{secondary_256};1:\\
+note=38;5;{tertiary_256}:\\
+caret=38;5;{primary_256};1:\\
+locus=38;5;{outline_256}:\\
+quote=38;5;{primary_256}\\
+"
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# GREP_COLORS - Search Result Highlighting
+# ═══════════════════════════════════════════════════════════════════════════════
+
+export GREP_COLORS="\\
+ms=38;5;{primary_256};1:\\
+mc=38;5;{primary_256};1:\\
+sl=:\\
+cx=38;5;{outline_256}:\\
+fn=38;5;{secondary_256}:\\
+ln=38;5;{tertiary_256}:\\
+bn=38;5;{tertiary_256}:\\
+se=38;5;{outline_256}\\
+"
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# MAN PAGE COLORS (using less)
+# ═══════════════════════════════════════════════════════════════════════════════
+
+export LESS_TERMCAP_mb=$'\\E[1;38;5;{primary_256}m'      # Begin blinking
+export LESS_TERMCAP_md=$'\\E[1;38;5;{primary_256}m'      # Begin bold
+export LESS_TERMCAP_me=$'\\E[0m'                          # End mode
+export LESS_TERMCAP_se=$'\\E[0m'                          # End standout
+export LESS_TERMCAP_so=$'\\E[38;5;{tertiary_256};48;5;{outline_256}m'  # Standout
+export LESS_TERMCAP_ue=$'\\E[0m'                          # End underline
+export LESS_TERMCAP_us=$'\\E[4;38;5;{secondary_256}m'    # Underline
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# ALIASES WITH COLORS
+# ═══════════════════════════════════════════════════════════════════════════════
+
+alias ls='ls --color=auto'
+alias ll='ls -lah --color=auto'
+alias la='ls -A --color=auto'
+alias l='ls -CF --color=auto'
+alias grep='grep --color=auto'
+alias fgrep='fgrep --color=auto'
+alias egrep='egrep --color=auto'
+alias diff='diff --color=auto'
+alias ip='ip --color=auto'
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# COLORED OUTPUT FUNCTIONS
+# ═══════════════════════════════════════════════════════════════════════════════
+
+# Success message
+_my_success() {{ echo -e "${{_MY_PRIMARY}}✓ $1${{_MY_RESET}}"; }}
+
+# Error message  
+_my_error() {{ echo -e "${{_MY_ERROR}}✗ $1${{_MY_RESET}}"; }}
+
+# Warning message
+_my_warn() {{ echo -e "${{_MY_SECONDARY}}⚠ $1${{_MY_RESET}}"; }}
+
+# Info message
+_my_info() {{ echo -e "${{_MY_TERTIARY}}ℹ $1${{_MY_RESET}}"; }}
+
+# Header/title
+_my_header() {{ echo -e "${{_MY_BOLD}}${{_MY_PRIMARY}}══ $1 ══${{_MY_RESET}}"; }}
+"""
+
+    # Write prompt.sh to config directory
+    config_dir = Path.home() / ".config/meowterialyou"
+    config_dir.mkdir(parents=True, exist_ok=True)
+    prompt_file = config_dir / "prompt.sh"
+
+    with open(prompt_file, "w") as f:
+        f.write(prompt_script)
+
+    prompt_file.chmod(0o755)
+    log.info(f"Generated Material You terminal theme at {prompt_file}")
+
+    # Add source line to shell configs
+    source_line = "[ -f ~/.config/meowterialyou/prompt.sh ] && source ~/.config/meowterialyou/prompt.sh"
+
+    for shell_rc in [Path.home() / ".bashrc", Path.home() / ".zshrc"]:
+        if shell_rc.exists():
+            content = shell_rc.read_text()
+            if "meowterialyou/prompt.sh" not in content:
+                with open(shell_rc, "a") as f:
+                    f.write(f"\n# MeowterialYou themed prompt\n{source_line}\n")
+                log.info(f"Added prompt source to {shell_rc}")
 
 
 def set_wallpaper(path: str):

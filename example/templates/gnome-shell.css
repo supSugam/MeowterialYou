@@ -688,7 +688,9 @@ stage {
   color: rgba(7, 25, 43, 0.6);
 }
 
+/* Quick toggle menu header icon - themed for contrast on primary background */
 .quick-toggle-menu .header .icon {
+  color: @{onPrimary.hex};
   background-color: @{primary.hex};
   border-radius: 12px;
   icon-size: 1.4em;
@@ -1272,12 +1274,15 @@ StEntry:focus {
   color: rgba(7, 25, 43, 0.87);
 }
 
+/* Primary action button - themed for contrast on primary background */
 .modal-dialog-linked-button:last-child {
+  color: @{onPrimary.hex};
   background-color: @{primary.hex};
 }
 
 .modal-dialog-linked-button:last-child:hover,
 .modal-dialog-linked-button:last-child:focus {
+  color: @{onPrimary.hex};
   background-color: @{secondary.hex};
 }
 

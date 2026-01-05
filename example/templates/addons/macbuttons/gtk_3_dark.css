@@ -24,7 +24,13 @@ button.minimize.titlebutton:active:not(.suggested-action):not(.destructive-actio
 }
 
 button.minimize.titlebutton:hover:not(.suggested-action):not(.destructive-action), button.minimize.titlebutton:active:not(.suggested-action):not(.destructive-action), button.maximize.titlebutton:hover:not(.suggested-action):not(.destructive-action), button.maximize.titlebutton:active:not(.suggested-action):not(.destructive-action), button.close.titlebutton:hover:not(.suggested-action):not(.destructive-action), button.close.titlebutton:active:not(.suggested-action):not(.destructive-action) {
-  color: rgba(250, 244, 237, 0.6);
+  color: #ffffff;
+  -gtk-icon-style: symbolic;
+}
+
+button.minimize.titlebutton:hover:not(.suggested-action):not(.destructive-action) image, button.minimize.titlebutton:active:not(.suggested-action):not(.destructive-action) image, button.maximize.titlebutton:hover:not(.suggested-action):not(.destructive-action) image, button.maximize.titlebutton:active:not(.suggested-action):not(.destructive-action) image, button.close.titlebutton:hover:not(.suggested-action):not(.destructive-action) image, button.close.titlebutton:active:not(.suggested-action):not(.destructive-action) image {
+  color: #ffffff;
+  -gtk-icon-style: symbolic;
 }
 
 button.minimize.titlebutton:backdrop:not(.suggested-action):not(.destructive-action), button.maximize.titlebutton:backdrop:not(.suggested-action):not(.destructive-action), button.close.titlebutton:backdrop:not(.suggested-action):not(.destructive-action) {
@@ -32,7 +38,7 @@ button.minimize.titlebutton:backdrop:not(.suggested-action):not(.destructive-act
 }
 
 button.minimize.titlebutton:backdrop:hover:not(.suggested-action):not(.destructive-action), button.minimize.titlebutton:backdrop:active:not(.suggested-action):not(.destructive-action), button.maximize.titlebutton:backdrop:hover:not(.suggested-action):not(.destructive-action), button.maximize.titlebutton:backdrop:active:not(.suggested-action):not(.destructive-action), button.close.titlebutton:backdrop:hover:not(.suggested-action):not(.destructive-action), button.close.titlebutton:backdrop:active:not(.suggested-action):not(.destructive-action) {
-  color: rgba(250, 244, 237, 0.5);
+  color: #ffffff;
 }
 
 button.minimize.titlebutton:not(.suggested-action):not(.destructive-action) {

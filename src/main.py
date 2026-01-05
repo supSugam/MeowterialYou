@@ -1,14 +1,37 @@
 import os
+import subprocess
 
 from src.applier.domain import ApplierDomain, GenerationOptions
 from src.ui.app import GtkApp
 from src.util import Config, parse_arguments
 
 
+def get_system_color_scheme() -> str:
+    """Detect the current system color scheme from gsettings."""
+    try:
+        result = subprocess.run(
+            ["gsettings", "get", "org.gnome.desktop.interface", "color-scheme"],
+            capture_output=True,
+            text=True,
+        )
+        scheme = result.stdout.strip().strip("'")
+        # prefer-dark or default (light)
+        return "dark" if "dark" in scheme else "light"
+    except Exception:
+        return "dark"  # Default to dark if detection fails
+
+
 def main():  # sourcery skip: raise-specific-error
     parent_dir = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
     arguments = parse_arguments()
-    lightmode_enabled: bool = arguments.theme == "light"
+
+    # Resolve 'system' theme to actual light/dark based on current system setting
+    theme = arguments.theme
+    if theme == "system":
+        theme = get_system_color_scheme()
+        print(f"Detected system color scheme: {theme}")
+
+    lightmode_enabled: bool = theme == "light"
 
     conf = Config.read(f"{parent_dir}/example/config.ini")
     if not conf:

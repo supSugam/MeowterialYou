@@ -75,7 +75,7 @@ meowterialyou --title-buttons mac --title-buttons-position left
 | `--defaults` | Install with default settings (dark, native buttons) without prompts |
 | `--reapply` | **Reapply** using last saved configuration (silent, good for automation) |
 | `--wallpaper PATH` | Path to wallpaper image (default: current wallpaper) |
-| `--theme [dark\|light]` | Theme mode (default: dark) |
+| `--theme [system\|dark\|light]` | Theme mode (default: system, auto-detects from system) |
 | `--title-buttons [mac\|native]` | Window button style (default: native) |
 | `--title-buttons-position [left\|right]` | Button position (default: right) |
 | `--chrome-gtk4` | Install GTK4 theme for Chrome (default: false) |
@@ -126,7 +126,11 @@ Use [GNOME Routines](https://github.com/supSugam/gnome-routines) to automaticall
 - Obsidian (with Adwaita theme)
 - Vivaldi
 - BetterDiscord
-- Spotify (via Spicetify)
+- BetterDiscord (Experimental)
+
+### Known Issues / Experimental
+
+- **Spotify (Spicetify)**: Theming is currently **broken** or provides inconsistent results (washed out colors, poor contrast). It is **not recommended** to enable Spotify theming at this time unless you are willing to manually fix the configuration.
 
 ---
 
