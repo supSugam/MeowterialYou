@@ -1554,7 +1554,6 @@ StEntry:focus {
   box-shadow: inset 0 0 0 1px @{primary.hex};
 }
 
-#panelActivities.panel-button .workspace-dot {
-    background-color: @{primary.hex};
+#panelRight .panel-button .panel-status-indicators-box .system-status-icon {
+  color: @{primary.hex};
 }
-    

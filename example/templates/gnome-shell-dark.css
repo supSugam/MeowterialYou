@@ -1168,11 +1168,13 @@ StEntry:focus {
 
 .modal-dialog-linked-button:last-child {
   background-color:  @{primary.hex};
+  color: @{onPrimary.hex}; /* Themed contrast color for primary action */
 }
 
 .modal-dialog-linked-button:last-child:hover,
 .modal-dialog-linked-button:last-child:focus {
   background-color:  @{secondary.hex};
+  color: @{onPrimary.hex}; /* Keep contrast on hover/focus */
 }
 
 .modal-dialog .modal-dialog-linked-button:focus, .hotplug-notification-item:focus, .notification-banner .notification-button:focus {
@@ -1392,4 +1394,13 @@ StEntry:focus {
 .quick-toggle-menu .header .icon { 
 	color: @{onPrimary.hex};
 	background-color:  @{primary.hex};
+}
+
+
+#panelActivities.panel-button .workspace-dot {
+    background-color: @{primary.hex};
+}
+
+#panelRight .panel-button .panel-status-indicators-box .system-status-icon {
+  color: @{primary.hex};
 }
