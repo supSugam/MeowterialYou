@@ -45,3 +45,11 @@
 /* NOTE: Dash to Panel window preview title color cannot be styled via CSS
    (DTP uses inline styles). Use dconf/gsettings instead:
    dconf write /org/gnome/shell/extensions/dash-to-panel/window-preview-title-font-color "'#1a1c1e'" */
+
+/* Fix tiny weather icon in clock display - remove padding that clips the icon */
+/* The main theme sets padding: 8px on .clock-display StIcon which crops the weather icon (extension: weatheroclock) */
+.clock-display-box .clock StIcon {
+    padding: 0 !important;
+    margin: 0 !important;
+    icon-size: 16px !important;
+}

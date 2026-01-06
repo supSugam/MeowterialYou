@@ -47,6 +47,7 @@ TITLE_BUTTONS="native"
 TITLE_BUTTONS_POSITION="right"
 CHROME_GTK4=false
 UI_IMPROVEMENTS=false
+DESKTOP_WIDGET=false
 SKIP_INTERACTIVE=false
 DO_UNINSTALL=false
 DO_DEFAULTS=false
@@ -346,8 +347,22 @@ run_interactive() {
         fi
         echo ""
         
+        # ─── Desktop Widget ───
+        echo -e "  ${BOLD}7. Desktop Widget${NC}"
+        echo -e "     ${DIM}Clock + weather widget on desktop (requires Conky)${NC}"
+        if gum confirm --affirmative="  Yes, enable  " --negative="  No, skip  " \
+            --prompt.foreground="255" --selected.background="212" --default=false \
+            "     Enable desktop widget?"; then
+            DESKTOP_WIDGET=true
+            echo -e "     ${CHECK} Desktop Widget: ${BOLD}${GREEN}enabled${NC}"
+        else
+            DESKTOP_WIDGET=false
+            echo -e "     ${CHECK} Desktop Widget: ${DIM}disabled${NC}"
+        fi
+        echo ""
+        
         # ─── Wallpaper ───
-        echo -e "  ${BOLD}7. Wallpaper${NC}"
+        echo -e "  ${BOLD}8. Wallpaper${NC}"
         echo -e "     ${DIM}Press Enter to use your current wallpaper${NC}"
         WALLPAPER=$(gum input --placeholder="Path to wallpaper (or press Enter for current)" \
             --prompt="     ▸ " --cursor.foreground="212" --width=50)
@@ -364,7 +379,7 @@ run_interactive() {
         echo ""
         
         # ─── GNOME Terminal Theming ───
-        echo -e "  ${BOLD}8. GNOME Terminal Theming${NC}"
+        echo -e "  ${BOLD}9. GNOME Terminal Theming${NC}"
         echo -e "     ${DIM}Apply Material You colors to terminal (background, cursor, highlight, palette)${NC}"
         if gum confirm --affirmative="  Yes, enable  " --negative="  No, skip  " \
             --prompt.foreground="255" --selected.background="212" --default=true \
@@ -378,7 +393,7 @@ run_interactive() {
         echo ""
         
         # ─── Optional App Theming ───
-        echo -e "  ${BOLD}9. Additional Apps${NC} ${DIM}(detected apps only)${NC}"
+        echo -e "  ${BOLD}10. Additional Apps${NC} ${DIM}(detected apps only)${NC}"
         
         # Spicetify (Spotify)
         if command -v spicetify &> /dev/null; then
@@ -449,6 +464,11 @@ run_interactive() {
         [[ "$input" =~ ^[Yy]$ ]] && UI_IMPROVEMENTS=true
         echo ""
         
+        echo -e "  ${BOLD}Desktop Widget${NC} (clock + weather, requires Conky) [y/N]"
+        read -rp "     ▸ " input
+        [[ "$input" =~ ^[Yy]$ ]] && DESKTOP_WIDGET=true
+        echo ""
+        
         echo -e "  ${BOLD}GNOME Terminal Theming${NC} [Y/n] (default: yes)"
         read -rp "     ▸ " input
         if [[ "$input" =~ ^[Nn]$ ]]; then
@@ -469,6 +489,7 @@ run_interactive() {
     echo -e "  ${DOT} Button Position: ${BOLD}$TITLE_BUTTONS_POSITION${NC}"
     echo -e "  ${DOT} Chrome GTK4:     ${BOLD}$([ "$CHROME_GTK4" = true ] && echo "enabled" || echo "disabled")${NC}"
     echo -e "  ${DOT} UI Improvements: ${BOLD}$([ "$UI_IMPROVEMENTS" = true ] && echo "enabled" || echo "disabled")${NC}"
+    echo -e "  ${DOT} Desktop Widget:  ${BOLD}$([ "$DESKTOP_WIDGET" = true ] && echo "enabled" || echo "disabled")${NC}"
     echo -e "  ${DOT} Terminal Theme:  ${BOLD}$([ "$THEME_GNOME_TERMINAL" = true ] && echo "enabled" || echo "disabled")${NC}"
     echo -e "  ${DOT} Wallpaper:       ${BOLD}${WALLPAPER:-"Current system wallpaper"}${NC}"
     
@@ -653,6 +674,7 @@ apply_theme() {
     [ -n "$WALLPAPER" ] && args="$args --wallpaper \"$WALLPAPER\""
     [ "$CHROME_GTK4" = true ] && args="$args --chrome-gtk4"
     [ "$UI_IMPROVEMENTS" = true ] && args="$args --ui-improvements"
+    [ "$DESKTOP_WIDGET" = true ] && args="$args --desktop-widget"
     { [ "$DO_REAPPLY" = true ] || [ "$SILENT" = true ]; } && args="$args --silent"
     
     echo -e "  ${DIM}$ meowterialyou $args${NC}"
@@ -720,6 +742,7 @@ TITLE_BUTTONS=$TITLE_BUTTONS
 TITLE_BUTTONS_POSITION=$TITLE_BUTTONS_POSITION
 CHROME_GTK4=$CHROME_GTK4
 UI_IMPROVEMENTS=$UI_IMPROVEMENTS
+DESKTOP_WIDGET=$DESKTOP_WIDGET
 THEME_GNOME_TERMINAL=$THEME_GNOME_TERMINAL
 THEME_SPOTIFY=$THEME_SPOTIFY
 THEME_DISCORD=$THEME_DISCORD
@@ -752,6 +775,8 @@ main() {
             --title-buttons) TITLE_BUTTONS="$2"; SKIP_INTERACTIVE=true; shift 2 ;;
             --title-buttons-position) TITLE_BUTTONS_POSITION="$2"; SKIP_INTERACTIVE=true; shift 2 ;;
             --chrome-gtk4) CHROME_GTK4=true; SKIP_INTERACTIVE=true; shift ;;
+            --ui-improvements) UI_IMPROVEMENTS=true; SKIP_INTERACTIVE=true; shift ;;
+            --desktop-widget) DESKTOP_WIDGET=true; SKIP_INTERACTIVE=true; shift ;;
             --uninstall)   DO_UNINSTALL=true; shift ;;
             --defaults)    DO_DEFAULTS=true; SKIP_INTERACTIVE=true; shift ;;
             --reapply)     DO_REAPPLY=true; SKIP_INTERACTIVE=true; shift ;;
@@ -770,6 +795,8 @@ main() {
                 echo "  --title-buttons STYLE  Button style: native or mac"
                 echo "  --title-buttons-position POS  Position: left or right"
                 echo "  --chrome-gtk4          Enable Chrome/Chromium GTK4 theme"
+                echo "  --ui-improvements      Enable UI improvements (transparent tray icons)"
+                echo "  --desktop-widget       Enable desktop widget (clock + weather, requires Conky)"
                 echo "  --silent               Disable desktop notifications"
                 echo "  --uninstall            Uninstall MeowterialYou"
                 echo ""

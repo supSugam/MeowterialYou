@@ -43,3 +43,11 @@
 
 /* NOTE: Dash to Panel window preview title color is set via dconf in domain.py
    (DTP uses inline styles which CSS can't override) */
+
+/* Fix tiny weather icon in clock display - remove padding that clips the icon */
+/* The main theme sets padding: 8px on .clock-display StIcon which crops the weather icon (extension: weatheroclock) */
+.clock-display-box .clock StIcon {
+    padding: 0 !important;
+    margin: 0 !important;
+    icon-size: 16px !important;
+}

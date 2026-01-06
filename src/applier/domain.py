@@ -21,6 +21,7 @@ class GenerationOptions(BaseModel):
     buttons_left_enabled: bool = False
     chrome_gtk4_enabled: bool = False
     ui_improvements_enabled: bool = False  # Disabled by default
+    desktop_widget_enabled: bool = False  # Conky desktop widget
     silent: bool = False
     scheme: MaterialColors | None = None
     wallpaper_path: str | None = None
@@ -76,7 +77,17 @@ class ApplierDomain:
             os.path.join(home, ".config/meowterialyou"),
             # Legacy installation directory (old copy-based install)
             os.path.join(home, ".local/share/meowterialyou"),
+            # Desktop widget (Conky) files
+            os.path.join(home, ".config/conky/meowterialyou.conf"),
+            os.path.join(home, ".config/conky/meowterialyou_weather.sh"),
+            os.path.join(home, ".cache/meowterialyou_weather"),
         ]
+
+        # Kill any running Conky widget
+        subprocess.run(
+            ["pkill", "-f", "conky.*meowterialyou"],
+            capture_output=True,
+        )
 
         # 2. System paths (require sudo)
         system_paths = [
@@ -292,6 +303,10 @@ class ApplierDomain:
         if self._generation_options.ui_improvements_enabled:
             self._apply_ui_improvements_addon(postfix)
 
+        # 2c. Apply desktop widget addon if enabled (Conky clock + weather)
+        if self._generation_options.desktop_widget_enabled:
+            self._apply_desktop_widget_addon(postfix)
+
         # 3. Generate and copy GTK4 system CSS to BOTH light and dark themes if --chrome-gtk4 flag is set
         # This uses separate Chrome-focused templates from the addons/chrome_gtk4/ folder
         if self._generation_options.chrome_gtk4_enabled:
@@ -500,6 +515,92 @@ class ApplierDomain:
             log.warning(
                 f"Failed to set DTP title color (extension may not be installed): {e}"
             )
+
+    def _apply_desktop_widget_addon(self, postfix: str) -> None:
+        """Apply Material You desktop widget (Conky clock + weather)."""
+        import re
+        import shutil
+        from src.util import log, Theme, Scheme
+
+        parent_dir = self._generation_options.parent_dir
+        addon_dir = os.path.join(parent_dir, "example/templates/addons/desktop_widget")
+        home = os.path.expanduser("~")
+        lightmode_enabled = self._generation_options.lightmode_enabled
+
+        # Check if conky is installed
+        if not shutil.which("conky"):
+            log.warning(
+                "Conky not found. Install it with: sudo apt install conky-all (or equivalent)"
+            )
+            log.warning("Skipping desktop widget addon")
+            return
+
+        # Select the appropriate template based on theme mode
+        template_file = os.path.join(
+            addon_dir, "conky_light.conf" if lightmode_enabled else "conky_dark.conf"
+        )
+
+        if not os.path.exists(template_file):
+            log.warning(f"Desktop widget template not found: {template_file}")
+            return
+
+        # Read template
+        try:
+            with open(template_file, "r") as f:
+                conky_config = f.read()
+        except OSError as e:
+            log.error(f"Failed to read widget template {template_file}: {e}")
+            return
+
+        # Process template placeholders (replace @{colorName.hex} etc.)
+        theme_data, _ = Theme.get(self._generation_options.wallpaper_path)
+        scheme = Scheme(theme=theme_data, lightmode=lightmode_enabled).to_hex()
+
+        for key, value in scheme.items():
+            pattern_hex = f"@{{{key}.hex}}"
+            hex_stripped = value[1:]  # Remove leading #
+
+            conky_config = re.sub(f"@{{{key}}}", hex_stripped, conky_config)
+            conky_config = re.sub(pattern_hex, value, conky_config)
+
+        # Create output directory
+        conky_dir = os.path.join(home, ".config/conky")
+        os.makedirs(conky_dir, exist_ok=True)
+
+        # Write processed config
+        output_file = os.path.join(conky_dir, "meowterialyou.conf")
+        try:
+            with open(output_file, "w") as f:
+                f.write(conky_config)
+            log.info(f"Created desktop widget config: {output_file}")
+        except OSError as e:
+            log.error(f"Failed to write widget config: {e}")
+            return
+
+        # Copy weather helper script
+        weather_script_src = os.path.join(addon_dir, "weather.sh")
+        weather_script_dest = os.path.join(conky_dir, "meowterialyou_weather.sh")
+        if os.path.exists(weather_script_src):
+            try:
+                shutil.copy2(weather_script_src, weather_script_dest)
+                os.chmod(weather_script_dest, 0o755)  # Make executable
+                log.info(f"Installed weather helper script: {weather_script_dest}")
+            except OSError as e:
+                log.warning(f"Failed to copy weather script: {e}")
+
+        # Kill any existing conky with our config and restart
+        subprocess.run(
+            ["pkill", "-f", "conky.*meowterialyou"],
+            capture_output=True,
+        )
+
+        # Start conky in background
+        subprocess.Popen(
+            ["conky", "-c", output_file, "-d"],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        )
+        log.info("Started desktop widget (Conky)")
 
     def _install_system_gtk4_theme(self, variant: str, scheme: dict) -> None:
         """Install GTK4 system theme for a specific variant (dark/light).

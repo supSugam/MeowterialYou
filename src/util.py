@@ -84,6 +84,12 @@ def parse_arguments():
         action="store_true",
     )
 
+    parser.add_argument(
+        "--desktop-widget",
+        help="enable Material You desktop widget (clock + weather, requires Conky)",
+        action="store_true",
+    )
+
     # Path to store last arguments (XDG config directory)
     config_dir = Path.home() / ".config/meowterialyou"
     args_file = config_dir / "last_args.json"
