@@ -11,3 +11,5 @@ context menu background not themed
 
 [Low Priority]
 - Material You theme for `bat` syntax highlighting (generate .tmTheme file)
+
+fix weird terminal behavious after that we themed

@@ -355,6 +355,7 @@ run_interactive() {
             "     Enable desktop widget?"; then
             DESKTOP_WIDGET=true
             echo -e "     ${CHECK} Desktop Widget: ${BOLD}${GREEN}enabled${NC}"
+            echo -e "     ${DIM}Config: example/templates/addons/desktop_widget/widget.conf${NC}"
         else
             DESKTOP_WIDGET=false
             echo -e "     ${CHECK} Desktop Widget: ${DIM}disabled${NC}"

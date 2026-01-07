@@ -21,7 +21,9 @@ class GenerationOptions(BaseModel):
     buttons_left_enabled: bool = False
     chrome_gtk4_enabled: bool = False
     ui_improvements_enabled: bool = False  # Disabled by default
-    desktop_widget_enabled: bool = False  # Conky desktop widget
+    desktop_widget_enabled: bool = (
+        False  # Widget config is in ~/.config/meowterialyou/widget.conf
+    )
     silent: bool = False
     scheme: MaterialColors | None = None
     wallpaper_path: str | None = None
@@ -526,6 +528,7 @@ class ApplierDomain:
         addon_dir = os.path.join(parent_dir, "example/templates/addons/desktop_widget")
         home = os.path.expanduser("~")
         lightmode_enabled = self._generation_options.lightmode_enabled
+        meowterialyou_dir = os.path.join(home, ".config/meowterialyou")
 
         # Check if conky is installed
         if not shutil.which("conky"):
@@ -534,6 +537,46 @@ class ApplierDomain:
             )
             log.warning("Skipping desktop widget addon")
             return
+
+        # === Read widget configuration from repo ===
+        widget_config_file = os.path.join(addon_dir, "widget.conf")
+
+        # Default values
+        widget_cfg = {
+            "POSITION": "bottom_left",
+            "GAP_X": "24",
+            "GAP_Y": "80",
+            "WIDTH": "320",
+            "HEIGHT": "200",
+            "BACKGROUND_MODE": "solid",
+            "BACKGROUND_OPACITY": "55",
+            "CORNER_RADIUS": "16",
+            "TIME_FORMAT": "12h",
+            "SHOW_AMPM": "true",
+            "TEMP_UNIT": "C",
+            "WEATHER_API_KEY": "",
+            "FONT_FAMILY": "Inter",
+            "TIME_FONT_SIZE": "56",
+            "DATE_FONT_SIZE": "16",
+            "WEATHER_FONT_SIZE": "14",
+            "UPDATE_INTERVAL": "1",
+            "WEATHER_INTERVAL": "900",
+            "PADDING": "24",
+        }
+
+        # Read config file from repo
+        if os.path.exists(widget_config_file):
+            try:
+                with open(widget_config_file, "r") as f:
+                    for line in f:
+                        line = line.strip()
+                        if line and not line.startswith("#") and "=" in line:
+                            key, _, value = line.partition("=")
+                            key = key.strip()
+                            value = value.strip().strip('"').strip("'")
+                            widget_cfg[key] = value
+            except OSError as e:
+                log.warning(f"Could not read widget config: {e}")
 
         # Select the appropriate template based on theme mode
         template_file = os.path.join(
@@ -552,22 +595,106 @@ class ApplierDomain:
             log.error(f"Failed to read widget template {template_file}: {e}")
             return
 
-        # Process template placeholders (replace @{colorName.hex} etc.)
+        # Get color scheme
         theme_data, _ = Theme.get(self._generation_options.wallpaper_path)
         scheme = Scheme(theme=theme_data, lightmode=lightmode_enabled).to_hex()
 
+        # === Process background settings ===
+        is_transparent = widget_cfg["BACKGROUND_MODE"].lower() == "transparent"
+
+        if is_transparent:
+            # Fully transparent - use high contrast colors
+            transparent_mode = "true"
+            argb_value = "0"
+            background_color = "000000"
+            # Use primary for better visibility on any wallpaper
+            text_color = scheme.get("primary", "#ffffff")[1:]
+            accent_color = scheme.get("primary", "#ffffff")[1:]
+            secondary_color = scheme.get("primaryContainer", "#888888")[1:]
+        else:
+            # Solid with transparency
+            transparent_mode = "false"
+            # Convert percentage (0-100) to ARGB (0-255)
+            opacity_pct = max(
+                0, min(100, int(widget_cfg.get("BACKGROUND_OPACITY", "55")))
+            )
+            argb_value = str(int(opacity_pct * 255 / 100))
+            background_color = scheme.get("background", "#1b1c18")[1:]
+            # Standard Material You colors for solid background
+            text_color = scheme.get("onBackground", "#e4e3db")[1:]
+            accent_color = scheme.get("primary", "#b2d274")[1:]
+            secondary_color = scheme.get("outline", "#8f9284")[1:]
+
+        # === Widget configuration placeholders ===
+        conky_config = conky_config.replace(
+            "@{WIDGET_POSITION}", widget_cfg["POSITION"]
+        )
+        conky_config = conky_config.replace("@{WIDGET_GAP_X}", widget_cfg["GAP_X"])
+        conky_config = conky_config.replace("@{WIDGET_GAP_Y}", widget_cfg["GAP_Y"])
+        conky_config = conky_config.replace("@{WIDGET_WIDTH}", widget_cfg["WIDTH"])
+        conky_config = conky_config.replace("@{WIDGET_HEIGHT}", widget_cfg["HEIGHT"])
+
+        # Background settings
+        conky_config = conky_config.replace("@{TRANSPARENT_MODE}", transparent_mode)
+        conky_config = conky_config.replace("@{ARGB_VALUE}", argb_value)
+        conky_config = conky_config.replace("@{BACKGROUND_COLOR}", background_color)
+        conky_config = conky_config.replace(
+            "@{CORNER_RADIUS}", widget_cfg["CORNER_RADIUS"]
+        )
+
+        # Colors
+        conky_config = conky_config.replace("@{TEXT_COLOR}", text_color)
+        conky_config = conky_config.replace("@{ACCENT_COLOR}", accent_color)
+        conky_config = conky_config.replace("@{SECONDARY_COLOR}", secondary_color)
+
+        # Font settings
+        conky_config = conky_config.replace("@{FONT_FAMILY}", widget_cfg["FONT_FAMILY"])
+        conky_config = conky_config.replace(
+            "@{TIME_FONT_SIZE}", widget_cfg["TIME_FONT_SIZE"]
+        )
+        conky_config = conky_config.replace(
+            "@{DATE_FONT_SIZE}", widget_cfg["DATE_FONT_SIZE"]
+        )
+        conky_config = conky_config.replace(
+            "@{WEATHER_FONT_SIZE}", widget_cfg["WEATHER_FONT_SIZE"]
+        )
+
+        # Behavior settings
+        conky_config = conky_config.replace(
+            "@{UPDATE_INTERVAL}", widget_cfg["UPDATE_INTERVAL"]
+        )
+        conky_config = conky_config.replace(
+            "@{WEATHER_INTERVAL}", widget_cfg["WEATHER_INTERVAL"]
+        )
+        conky_config = conky_config.replace("@{PADDING}", widget_cfg["PADDING"])
+
+        # Time format
+        if widget_cfg["TIME_FORMAT"] == "24h":
+            time_format = "%H:%M"
+        else:
+            time_format = "%I:%M"
+        conky_config = conky_config.replace("@{TIME_FORMAT}", time_format)
+
+        # AM/PM display
+        show_ampm = widget_cfg["SHOW_AMPM"].lower() == "true"
+        if show_ampm and widget_cfg["TIME_FORMAT"] == "12h":
+            ampm_display = "${time %p}"
+        else:
+            ampm_display = ""
+        conky_config = conky_config.replace("@{AMPM_DISPLAY}", ampm_display)
+
+        # === Legacy color substitutions (for any remaining placeholders) ===
         for key, value in scheme.items():
-            pattern_hex = f"@{{{key}.hex}}"
-            hex_stripped = value[1:]  # Remove leading #
+            hex_with_hash = value
+            hex_without_hash = value[1:]
+            conky_config = re.sub(f"@{{{key}}}", hex_without_hash, conky_config)
+            conky_config = re.sub(f"@{{{key}.hex}}", hex_with_hash, conky_config)
 
-            conky_config = re.sub(f"@{{{key}}}", hex_stripped, conky_config)
-            conky_config = re.sub(pattern_hex, value, conky_config)
-
-        # Create output directory
+        # Create output directories
         conky_dir = os.path.join(home, ".config/conky")
         os.makedirs(conky_dir, exist_ok=True)
 
-        # Write processed config
+        # Write processed Conky config
         output_file = os.path.join(conky_dir, "meowterialyou.conf")
         try:
             with open(output_file, "w") as f:
@@ -583,16 +710,13 @@ class ApplierDomain:
         if os.path.exists(weather_script_src):
             try:
                 shutil.copy2(weather_script_src, weather_script_dest)
-                os.chmod(weather_script_dest, 0o755)  # Make executable
+                os.chmod(weather_script_dest, 0o755)
                 log.info(f"Installed weather helper script: {weather_script_dest}")
             except OSError as e:
                 log.warning(f"Failed to copy weather script: {e}")
 
         # Kill any existing conky with our config and restart
-        subprocess.run(
-            ["pkill", "-f", "conky.*meowterialyou"],
-            capture_output=True,
-        )
+        subprocess.run(["pkill", "-f", "conky.*meowterialyou"], capture_output=True)
 
         # Start conky in background
         subprocess.Popen(
