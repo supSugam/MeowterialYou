@@ -602,53 +602,166 @@ class ApplierDomain:
         # === Process background settings ===
         is_transparent = widget_cfg["BACKGROUND_MODE"].lower() == "transparent"
 
-        if is_transparent:
-            # Fully transparent - use high contrast colors
-            transparent_mode = "true"
+        # === Analyze wallpaper region for optimal text contrast ===
+        def get_widget_region_luminance():
+            """Analyze the wallpaper region where the widget will be placed."""
+            try:
+                from PIL import Image
+
+                wallpaper_path = self._generation_options.wallpaper_path
+                if not wallpaper_path or not os.path.exists(wallpaper_path):
+                    return None
+
+                # Get screen resolution
+                try:
+                    result = subprocess.run(
+                        ["xrandr", "--current"],
+                        capture_output=True,
+                        text=True,
+                        timeout=5,
+                    )
+                    for line in result.stdout.split("\n"):
+                        if " connected" in line and "x" in line:
+                            # Parse resolution like "2880x1800+0+0"
+                            import re
+
+                            match = re.search(r"(\d+)x(\d+)", line)
+                            if match:
+                                screen_w = int(match.group(1))
+                                screen_h = int(match.group(2))
+                                break
+                    else:
+                        return None
+                except Exception:
+                    return None
+
+                # Get widget position and size
+                position = widget_cfg.get("POSITION", "bottom_left")
+                gap_x = int(widget_cfg.get("GAP_X", "24"))
+                gap_y = int(widget_cfg.get("GAP_Y", "80"))
+                width = int(widget_cfg.get("WIDTH", "320"))
+                height = int(widget_cfg.get("HEIGHT", "200"))
+
+                # Calculate widget bounds based on position
+                if "left" in position:
+                    x1 = gap_x
+                else:  # right
+                    x1 = screen_w - gap_x - width
+
+                if "top" in position:
+                    y1 = gap_y
+                else:  # bottom
+                    y1 = screen_h - gap_y - height
+
+                x2 = x1 + width
+                y2 = y1 + height
+
+                # Open wallpaper and crop to widget region
+                img = Image.open(wallpaper_path)
+                img_w, img_h = img.size
+
+                # Scale coordinates if wallpaper resolution differs from screen
+                scale_x = img_w / screen_w
+                scale_y = img_h / screen_h
+
+                crop_x1 = int(x1 * scale_x)
+                crop_y1 = int(y1 * scale_y)
+                crop_x2 = int(x2 * scale_x)
+                crop_y2 = int(y2 * scale_y)
+
+                # Clamp to image bounds
+                crop_x1 = max(0, min(crop_x1, img_w - 1))
+                crop_y1 = max(0, min(crop_y1, img_h - 1))
+                crop_x2 = max(crop_x1 + 1, min(crop_x2, img_w))
+                crop_y2 = max(crop_y1 + 1, min(crop_y2, img_h))
+
+                region = img.crop((crop_x1, crop_y1, crop_x2, crop_y2))
+
+                # Convert to RGB if needed
+                if region.mode != "RGB":
+                    region = region.convert("RGB")
+
+                # Calculate average luminance (relative luminance formula)
+                pixels = list(region.getdata())
+                total_luminance = 0
+                for r, g, b in pixels:
+                    # sRGB to linear, then relative luminance
+                    luminance = (
+                        0.2126 * (r / 255) + 0.7152 * (g / 255) + 0.0722 * (b / 255)
+                    )
+                    total_luminance += luminance
+
+                avg_luminance = total_luminance / len(pixels)
+                log.info(
+                    f"Widget region luminance: {avg_luminance:.3f} (0=dark, 1=light)"
+                )
+                return avg_luminance
+
+            except Exception as e:
+                log.warning(f"Could not analyze wallpaper region: {e}")
+                return None
+
+        # Determine if truly transparent or using solid background
+        is_fully_transparent = (
+            is_transparent or int(widget_cfg.get("BACKGROUND_OPACITY", "55")) == 0
+        )
+
+        if is_fully_transparent:
+            # Fully transparent - no background at all
+            own_window_transparent = "true"
             argb_value = "0"
             background_color = "000000"
-            # Use primary for better visibility on any wallpaper
-            text_color = scheme.get("primary", "#ffffff")[1:]
-            accent_color = scheme.get("primary", "#ffffff")[1:]
-            secondary_color = scheme.get("primaryContainer", "#888888")[1:]
+
+            # Analyze wallpaper region for text color
+            luminance = get_widget_region_luminance()
+            if luminance is not None and luminance > 0.5:
+                # Light wallpaper - use dark text (primary from light scheme)
+                light_scheme = Scheme(theme=theme_data, lightmode=True).to_hex()
+                text_color = light_scheme.get("primary", "#1b5e20")[1:]
+                log.info(
+                    f"Light wallpaper (lum={luminance:.2f}) → dark text: #{text_color}"
+                )
+            else:
+                # Dark wallpaper - use light text (primary from dark scheme)
+                text_color = scheme.get("primary", "#a5d6a7")[1:]
+                log.info(f"Dark wallpaper → light text: #{text_color}")
         else:
-            # Solid with transparency
-            transparent_mode = "false"
-            # Convert percentage (0-100) to ARGB (0-255)
+            # Solid background with transparency
+            own_window_transparent = "false"
             opacity_pct = max(
                 0, min(100, int(widget_cfg.get("BACKGROUND_OPACITY", "55")))
             )
             argb_value = str(int(opacity_pct * 255 / 100))
-            background_color = scheme.get("background", "#1b1c18")[1:]
-            # Standard Material You colors for solid background
-            text_color = scheme.get("onBackground", "#e4e3db")[1:]
-            accent_color = scheme.get("primary", "#b2d274")[1:]
-            secondary_color = scheme.get("outline", "#8f9284")[1:]
+            background_color = scheme.get("surface", "#1b1c18")[1:]
+            text_color = scheme.get("onSurface", "#e4e3db")[1:]
+            log.info(f"Solid background (opacity={opacity_pct}%) → text: #{text_color}")
 
         # === Widget configuration placeholders ===
         conky_config = conky_config.replace(
             "@{WIDGET_POSITION}", widget_cfg["POSITION"]
         )
-        conky_config = conky_config.replace("@{WIDGET_GAP_X}", widget_cfg["GAP_X"])
-        conky_config = conky_config.replace("@{WIDGET_GAP_Y}", widget_cfg["GAP_Y"])
-        conky_config = conky_config.replace("@{WIDGET_WIDTH}", widget_cfg["WIDTH"])
-        conky_config = conky_config.replace("@{WIDGET_HEIGHT}", widget_cfg["HEIGHT"])
+
+        # GAP values: user's value = exact pixel distance from screen edge
+        user_gap_x = int(widget_cfg.get("GAP_X", "24"))
+        user_gap_y = int(widget_cfg.get("GAP_Y", "24"))
+        conky_config = conky_config.replace("@{WIDGET_GAP_X}", str(user_gap_x))
+        conky_config = conky_config.replace("@{WIDGET_GAP_Y}", str(user_gap_y))
 
         # Background settings
-        conky_config = conky_config.replace("@{TRANSPARENT_MODE}", transparent_mode)
+        conky_config = conky_config.replace(
+            "@{OWN_WINDOW_TRANSPARENT}", own_window_transparent
+        )
         conky_config = conky_config.replace("@{ARGB_VALUE}", argb_value)
         conky_config = conky_config.replace("@{BACKGROUND_COLOR}", background_color)
-        conky_config = conky_config.replace(
-            "@{CORNER_RADIUS}", widget_cfg["CORNER_RADIUS"]
-        )
 
-        # Colors
+        # Single unified text color
         conky_config = conky_config.replace("@{TEXT_COLOR}", text_color)
-        conky_config = conky_config.replace("@{ACCENT_COLOR}", accent_color)
-        conky_config = conky_config.replace("@{SECONDARY_COLOR}", secondary_color)
 
         # Font settings
         conky_config = conky_config.replace("@{FONT_FAMILY}", widget_cfg["FONT_FAMILY"])
+        conky_config = conky_config.replace(
+            "@{ICON_FONT}", widget_cfg.get("ICON_FONT", "MesloLGS Nerd Font Mono")
+        )
         conky_config = conky_config.replace(
             "@{TIME_FONT_SIZE}", widget_cfg["TIME_FONT_SIZE"]
         )
@@ -694,6 +807,48 @@ class ApplierDomain:
         conky_dir = os.path.join(home, ".config/conky")
         os.makedirs(conky_dir, exist_ok=True)
 
+        # === Process and install Lua script for rounded corners ===
+        lua_script_src = os.path.join(addon_dir, "background.lua")
+        lua_script_dest = os.path.join(conky_dir, "meowterialyou_bg.lua")
+
+        if os.path.exists(lua_script_src):
+            try:
+                with open(lua_script_src, "r") as f:
+                    lua_script = f.read()
+
+                # Convert background color hex to RGB floats (0-1 range)
+                bg_hex = background_color
+                bg_r = int(bg_hex[0:2], 16) / 255.0
+                bg_g = int(bg_hex[2:4], 16) / 255.0
+                bg_b = int(bg_hex[4:6], 16) / 255.0
+
+                # Get opacity as 0-1 range
+                if is_fully_transparent:
+                    bg_a = 0.0
+                else:
+                    opacity_pct = max(
+                        0, min(100, int(widget_cfg.get("BACKGROUND_OPACITY", "55")))
+                    )
+                    bg_a = opacity_pct / 100.0
+
+                # Replace Lua placeholders
+                lua_script = lua_script.replace(
+                    "@{CORNER_RADIUS}", widget_cfg["CORNER_RADIUS"]
+                )
+                lua_script = lua_script.replace("@{BG_R}", f"{bg_r:.4f}")
+                lua_script = lua_script.replace("@{BG_G}", f"{bg_g:.4f}")
+                lua_script = lua_script.replace("@{BG_B}", f"{bg_b:.4f}")
+                lua_script = lua_script.replace("@{BG_A}", f"{bg_a:.4f}")
+
+                with open(lua_script_dest, "w") as f:
+                    f.write(lua_script)
+                log.info(f"Installed background Lua script: {lua_script_dest}")
+            except OSError as e:
+                log.warning(f"Failed to process Lua script: {e}")
+
+        # Update conky config with Lua script path
+        conky_config = conky_config.replace("@{LUA_SCRIPT_PATH}", lua_script_dest)
+
         # Write processed Conky config
         output_file = os.path.join(conky_dir, "meowterialyou.conf")
         try:
@@ -704,9 +859,9 @@ class ApplierDomain:
             log.error(f"Failed to write widget config: {e}")
             return
 
-        # Copy weather helper script
-        weather_script_src = os.path.join(addon_dir, "weather.sh")
-        weather_script_dest = os.path.join(conky_dir, "meowterialyou_weather.sh")
+        # Copy Python weather helper script (uses GWeather like GNOME Weather)
+        weather_script_src = os.path.join(addon_dir, "weather.py")
+        weather_script_dest = os.path.join(conky_dir, "meowterialyou_weather.py")
         if os.path.exists(weather_script_src):
             try:
                 shutil.copy2(weather_script_src, weather_script_dest)
