@@ -86,7 +86,7 @@ def parse_arguments():
 
     parser.add_argument(
         "--desktop-widget",
-        help="enable Material You desktop widget (clock + weather, requires Conky)",
+        help="enable Material You desktop widget (clock + weather, uses EWW)",
         action="store_true",
     )
 

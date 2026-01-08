@@ -1,0 +1,43 @@
+# MeowterialYou Desktop Widget Configuration
+# ==========================================
+# This file controls the appearance and behavior of the desktop widget.
+# Changes here are applied after restarting the widget (or re-running meowterialyou).
+
+layout:
+  # Position on screen
+  # Options: bottom_left, bottom_right, top_left, top_right
+  position: bottom_left
+
+  # Horizontal margin from screen edge (pixels)
+  gap_x: 24
+
+  # Vertical margin from screen edge (pixels)
+  # Increase this if the widget overlaps with your dock/panel
+  gap_y: 64
+
+  # Internal padding inside the widget (pixels)
+  padding: 20
+
+  # Corner radius of the widget background (pixels)
+  corner_radius: 8
+
+typography:
+  # Font family for text (must be installed on system)
+  font_family: "Inter"
+
+  # Font for icons (Nerd Font required for weather icons)
+  icon_font: "MesloLGS Nerd Font Mono"
+
+  # Size of the main time display (pixels)
+  time_size: 48
+
+background:
+  # Background mode
+  # Options:
+  #   - transparent: Uses a semi-transparent background color
+  #   - solid: Uses a fully opaque background color
+  mode: transparent
+
+  # Background opacity (0-100)
+  # Only applies when mode is 'transparent'
+  opacity: 50

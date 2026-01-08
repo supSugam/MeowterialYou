@@ -519,8 +519,7 @@ class ApplierDomain:
             )
 
     def _apply_desktop_widget_addon(self, postfix: str) -> None:
-        """Apply Material You desktop widget (Conky clock + weather)."""
-        import re
+        """Apply Material You desktop widget using AGS."""
         import shutil
         from src.util import log, Theme, Scheme
 
@@ -528,43 +527,23 @@ class ApplierDomain:
         addon_dir = os.path.join(parent_dir, "example/templates/addons/desktop_widget")
         home = os.path.expanduser("~")
         lightmode_enabled = self._generation_options.lightmode_enabled
-        meowterialyou_dir = os.path.join(home, ".config/meowterialyou")
 
-        # Check if conky is installed
-        if not shutil.which("conky"):
-            log.warning(
-                "Conky not found. Install it with: sudo apt install conky-all (or equivalent)"
-            )
-            log.warning("Skipping desktop widget addon")
-            return
-
-        # === Read widget configuration from repo ===
+        # === Read widget configuration ===
         widget_config_file = os.path.join(addon_dir, "widget.conf")
-
-        # Default values
         widget_cfg = {
             "POSITION": "bottom_left",
             "GAP_X": "24",
-            "GAP_Y": "80",
-            "WIDTH": "320",
-            "HEIGHT": "200",
+            "GAP_Y": "24",
             "BACKGROUND_MODE": "solid",
-            "BACKGROUND_OPACITY": "55",
-            "CORNER_RADIUS": "16",
-            "TIME_FORMAT": "12h",
-            "SHOW_AMPM": "true",
-            "TEMP_UNIT": "C",
-            "WEATHER_API_KEY": "",
+            "BACKGROUND_OPACITY": "50",
+            "CORNER_RADIUS": "24",
             "FONT_FAMILY": "Inter",
-            "TIME_FONT_SIZE": "56",
-            "DATE_FONT_SIZE": "16",
-            "WEATHER_FONT_SIZE": "14",
-            "UPDATE_INTERVAL": "1",
+            "ICON_FONT": "MesloLGS Nerd Font Mono",
+            "TIME_FONT_SIZE": "48",
             "WEATHER_INTERVAL": "900",
-            "PADDING": "24",
+            "PADDING": "20",
         }
 
-        # Read config file from repo
         if os.path.exists(widget_config_file):
             try:
                 with open(widget_config_file, "r") as f:
@@ -572,314 +551,241 @@ class ApplierDomain:
                         line = line.strip()
                         if line and not line.startswith("#") and "=" in line:
                             key, _, value = line.partition("=")
-                            key = key.strip()
-                            value = value.strip().strip('"').strip("'")
-                            widget_cfg[key] = value
+                            widget_cfg[key.strip()] = (
+                                value.strip().strip('"').strip("'")
+                            )
             except OSError as e:
                 log.warning(f"Could not read widget config: {e}")
 
-        # Select the appropriate template based on theme mode
-        template_file = os.path.join(
-            addon_dir, "conky_light.conf" if lightmode_enabled else "conky_dark.conf"
-        )
-
-        if not os.path.exists(template_file):
-            log.warning(f"Desktop widget template not found: {template_file}")
-            return
-
-        # Read template
-        try:
-            with open(template_file, "r") as f:
-                conky_config = f.read()
-        except OSError as e:
-            log.error(f"Failed to read widget template {template_file}: {e}")
+        # Check if gjs is installed (part of GNOME, usually available)
+        if not shutil.which("gjs"):
+            log.warning("gjs not found. Install it via: sudo apt install gjs")
             return
 
         # Get color scheme
         theme_data, _ = Theme.get(self._generation_options.wallpaper_path)
         scheme = Scheme(theme=theme_data, lightmode=lightmode_enabled).to_hex()
 
-        # === Process background settings ===
-        is_transparent = widget_cfg["BACKGROUND_MODE"].lower() == "transparent"
+        # Process colors
+        bg_mode = widget_cfg.get("BACKGROUND_MODE", "solid").lower()
+        opacity = int(widget_cfg.get("BACKGROUND_OPACITY", "50"))
 
-        # === Analyze wallpaper region for optimal text contrast ===
-        def get_widget_region_luminance():
-            """Analyze the wallpaper region where the widget will be placed."""
+        if bg_mode == "transparent" or opacity == 0:
+            bg_r, bg_g, bg_b, bg_a = 0, 0, 0, 0
+        else:
+            bg_hex = scheme.get("surfaceVariant", "#45483d")[1:]
+            bg_r = int(bg_hex[0:2], 16)
+            bg_g = int(bg_hex[2:4], 16)
+            bg_b = int(bg_hex[4:6], 16)
+            bg_a = opacity / 100.0
+
+        text_color = scheme.get("onSurfaceVariant", "#c6c8b9")
+        primary_color = scheme.get("primary", "#b2d274")
+
+        # Map position to AGS anchor
+        position = widget_cfg.get("POSITION", "bottom_left").lower()
+        anchor_map = {
+            "bottom_left": "Astal.WindowAnchor.BOTTOM | Astal.WindowAnchor.LEFT",
+            "bottom_right": "Astal.WindowAnchor.BOTTOM | Astal.WindowAnchor.RIGHT",
+            "top_left": "Astal.WindowAnchor.TOP | Astal.WindowAnchor.LEFT",
+            "top_right": "Astal.WindowAnchor.TOP | Astal.WindowAnchor.RIGHT",
+        }
+        anchor = anchor_map.get(position, anchor_map["bottom_left"])
+
+        # Create AGS config directory
+        ags_dir = os.path.join(home, ".config/ags/meowterialyou")
+        os.makedirs(ags_dir, exist_ok=True)
+
+        # Localized Theme Generation
+        # 1. Load config for position
+        import yaml
+        from PIL import Image, ImageStat
+        import math
+
+        config_path = os.path.join(ags_dir, "config.yaml")
+        widget_pos = "bottom_left"
+        gap_x = 24
+        gap_y = 64
+        # Default size estimation (approximate, since we don't know exact rendered size yet)
+        w_width = 350
+        w_height = 200
+
+        if os.path.exists(config_path):
             try:
-                from PIL import Image
+                with open(config_path, "r") as f:
+                    w_conf = yaml.safe_load(f)
+                    if w_conf:
+                        layout = w_conf.get("layout", {})
+                        widget_pos = layout.get("position", widget_pos)
+                        gap_x = layout.get("gap_x", gap_x)
+                        gap_y = layout.get("gap_y", gap_y)
+            except Exception as e:
+                log.warning(f"Failed to parse config.yaml for positioning: {e}")
 
-                wallpaper_path = self._generation_options.wallpaper_path
-                if not wallpaper_path or not os.path.exists(wallpaper_path):
-                    return None
+        # 2. Load and crop wallpaper
+        wallpaper_path = self._generation_options.wallpaper_path
+        scheme_to_use = scheme  # Default to global scheme
+        is_dark_bg = True
 
-                # Get screen resolution
-                try:
-                    result = subprocess.run(
-                        ["xrandr", "--current"],
-                        capture_output=True,
-                        text=True,
-                        timeout=5,
-                    )
-                    for line in result.stdout.split("\n"):
-                        if " connected" in line and "x" in line:
-                            # Parse resolution like "2880x1800+0+0"
-                            import re
-
-                            match = re.search(r"(\d+)x(\d+)", line)
-                            if match:
-                                screen_w = int(match.group(1))
-                                screen_h = int(match.group(2))
-                                break
-                    else:
-                        return None
-                except Exception:
-                    return None
-
-                # Get widget position and size
-                position = widget_cfg.get("POSITION", "bottom_left")
-                gap_x = int(widget_cfg.get("GAP_X", "24"))
-                gap_y = int(widget_cfg.get("GAP_Y", "80"))
-                width = int(widget_cfg.get("WIDTH", "320"))
-                height = int(widget_cfg.get("HEIGHT", "200"))
-
-                # Calculate widget bounds based on position
-                if "left" in position:
-                    x1 = gap_x
-                else:  # right
-                    x1 = screen_w - gap_x - width
-
-                if "top" in position:
-                    y1 = gap_y
-                else:  # bottom
-                    y1 = screen_h - gap_y - height
-
-                x2 = x1 + width
-                y2 = y1 + height
-
-                # Open wallpaper and crop to widget region
+        if os.path.exists(wallpaper_path):
+            try:
                 img = Image.open(wallpaper_path)
-                img_w, img_h = img.size
+                sw, sh = img.size
 
-                # Scale coordinates if wallpaper resolution differs from screen
-                scale_x = img_w / screen_w
-                scale_y = img_h / screen_h
+                # Calculate simple crop box based on position
+                # Assuming top-left origin
+                left = 0
+                top = 0
 
-                crop_x1 = int(x1 * scale_x)
-                crop_y1 = int(y1 * scale_y)
-                crop_x2 = int(x2 * scale_x)
-                crop_y2 = int(y2 * scale_y)
+                if widget_pos == "bottom_left":
+                    left = gap_x
+                    top = sh - w_height - gap_y
+                elif widget_pos == "bottom_right":
+                    left = sw - w_width - gap_x
+                    top = sh - w_height - gap_y
+                elif widget_pos == "top_left":
+                    left = gap_x
+                    top = gap_y
+                elif widget_pos == "top_right":
+                    left = sw - w_width - gap_x
+                    top = gap_y
 
-                # Clamp to image bounds
-                crop_x1 = max(0, min(crop_x1, img_w - 1))
-                crop_y1 = max(0, min(crop_y1, img_h - 1))
-                crop_x2 = max(crop_x1 + 1, min(crop_x2, img_w))
-                crop_y2 = max(crop_y1 + 1, min(crop_y2, img_h))
+                # Clamp coordinates
+                left = max(0, min(sw - 1, left))
+                top = max(0, min(sh - 1, top))
+                right = min(sw, left + w_width)
+                bottom = min(sh, top + w_height)
 
-                region = img.crop((crop_x1, crop_y1, crop_x2, crop_y2))
+                crop = img.crop((left, top, right, bottom))
 
-                # Convert to RGB if needed
-                if region.mode != "RGB":
-                    region = region.convert("RGB")
+                # 3. Analyze Luminance (0-255)
+                # Convert to grayscale and get mean
+                grayscale = crop.convert("L")
+                stat = ImageStat.Stat(grayscale)
+                mean_lum = stat.mean[0]
 
-                # Calculate average luminance (relative luminance formula)
-                pixels = list(region.getdata())
-                total_luminance = 0
-                for r, g, b in pixels:
-                    # sRGB to linear, then relative luminance
-                    luminance = (
-                        0.2126 * (r / 255) + 0.7152 * (g / 255) + 0.0722 * (b / 255)
-                    )
-                    total_luminance += luminance
-
-                avg_luminance = total_luminance / len(pixels)
+                # If luminance > 128 (bright), force LIGHT mode (dark text)
+                # If luminance < 128 (dark), force DARK mode (light text)
+                required_dark_mode = mean_lum < 128
                 log.info(
-                    f"Widget region luminance: {avg_luminance:.3f} (0=dark, 1=light)"
+                    f"Widget Region Luminance: {mean_lum:.2f} -> Using {'Dark' if required_dark_mode else 'Light'} scheme"
                 )
-                return avg_luminance
+
+                # 4. Generate Local Palette
+                # Use mean color of the crop as source? Or standard extraction?
+                # Let's use the standard extraction on the crop by resizing it down to 1px to get average color
+                # straightforward way:
+                avg_color_img = crop.resize((1, 1))
+                r, g, b = avg_color_img.getpixel((0, 0))[:3]
+                source_color_hex = "#{:02x}{:02x}{:02x}".format(r, g, b)
+
+                # Generate scheme from this local color
+                from src.material_color_utilities_python.utils.theme_utils import (
+                    themeFromSourceColor,
+                )
+
+                theme = themeFromSourceColor(int(f"FF{r:02x}{g:02x}{b:02x}", 16))
+
+                scheme_to_use = theme["schemes"][
+                    "dark" if required_dark_mode else "light"
+                ]
+
+                # Flatten the scheme to simple hex values
+                # The library returns integers, convert to hex strings
+                new_scheme = {}
+                for k, v in scheme_to_use.props.items():
+                    # v is int ARGB, we need RGB hex (strip alpha if present, usually FF)
+                    # actually utils usually returns standard int. format {:06x}
+                    new_scheme[k] = "#{:06x}".format(v & 0xFFFFFF)
+
+                scheme_to_use = new_scheme
 
             except Exception as e:
-                log.warning(f"Could not analyze wallpaper region: {e}")
-                return None
+                log.error(f"Localized theme extraction failed: {e}")
 
-        # Determine if truly transparent or using solid background
-        is_fully_transparent = (
-            is_transparent or int(widget_cfg.get("BACKGROUND_OPACITY", "55")) == 0
+        # 5. Generate theme.css with FULL palette
+        css_lines = []
+        for name, hex_val in scheme_to_use.items():
+            css_lines.append(f"@define-color {name} {hex_val};")
+
+        # Legacy mappings for backward compatibility (if needed)
+        # But app.ts will be updated to use new tokens.
+        # We also need widget_bg with opacity
+
+        bg_color = scheme_to_use.get("surface", "#000000")  # Base background
+        # Convert hex to rgb for rgba usage
+        br = int(bg_color[1:3], 16)
+        bg = int(bg_color[3:5], 16)
+        bb = int(bg_color[5:7], 16)
+
+        # Opacity comes from config usually, but we want config.yaml to control it runtime.
+        # However, theme.css defines the base color.
+        # We expose @widget_bg_rgb as a color without alpha? No, GTK colors usually include alpha or not.
+        # Let's define @surfaceRGBA for the app.ts to use with alpha() function?
+        # Actually app.ts uses alpha(@widget_bg, ...) which works if widget_bg is a color.
+
+        css_lines.append(f"@define-color widget_bg rgb({br}, {bg}, {bb});")
+        css_lines.append(
+            f"@define-color widget_text {scheme_to_use.get('onSurface', '#ffffff')};"
+        )
+        css_lines.append(
+            f"@define-color widget_primary {scheme_to_use.get('primary', '#00ff00')};"
         )
 
-        if is_fully_transparent:
-            # Fully transparent - no background at all
-            own_window_transparent = "true"
-            argb_value = "0"
-            background_color = "000000"
+        with open(os.path.join(ags_dir, "theme.css"), "w") as f:
+            f.write("\n".join(css_lines))
+        log.info(f"Generated localized theme: {ags_dir}/theme.css")
 
-            # Analyze wallpaper region for text color
-            luminance = get_widget_region_luminance()
-            if luminance is not None and luminance > 0.5:
-                # Light wallpaper - use dark text (primary from light scheme)
-                light_scheme = Scheme(theme=theme_data, lightmode=True).to_hex()
-                text_color = light_scheme.get("primary", "#1b5e20")[1:]
-                log.info(
-                    f"Light wallpaper (lum={luminance:.2f}) → dark text: #{text_color}"
+        # Copy config.yaml
+        config_src = os.path.join(addon_dir, "ags/config.yaml")
+        if os.path.exists(config_src):
+            # Always copy config to ensure updates from repo apply
+            shutil.copy(config_src, os.path.join(ags_dir, "config.yaml"))
+
+        # Cleanup old config.json if it exists
+        old_config = os.path.join(ags_dir, "config.json")
+        if os.path.exists(old_config):
+            try:
+                os.unlink(old_config)
+            except Exception:
+                pass
+
+        # Build TypeScript (no string replacements)
+        app_ts_src = os.path.join(addon_dir, "ags/app.ts")
+        if os.path.exists(app_ts_src):
+            # Build with esbuild (converts TypeScript to JavaScript for GJS)
+            esbuild_path = os.path.join(addon_dir, "ags/node_modules/.bin/esbuild")
+            app_js_out = os.path.join(ags_dir, "app.mjs")
+
+            if os.path.exists(esbuild_path):
+                result = subprocess.run(
+                    [
+                        esbuild_path,
+                        app_ts_src,
+                        "--bundle",
+                        "--format=esm",
+                        "--platform=neutral",
+                        "--external:gi://*",
+                        f"--outfile={app_js_out}",
+                    ],
+                    capture_output=True,
                 )
+                if result.returncode != 0:
+                    log.warning(f"esbuild failed: {result.stderr.decode()}")
             else:
-                # Dark wallpaper - use light text (primary from dark scheme)
-                text_color = scheme.get("primary", "#a5d6a7")[1:]
-                log.info(f"Dark wallpaper → light text: #{text_color}")
-        else:
-            # Solid background with transparency
-            own_window_transparent = "false"
-            opacity_pct = max(
-                0, min(100, int(widget_cfg.get("BACKGROUND_OPACITY", "55")))
-            )
-            argb_value = str(int(opacity_pct * 255 / 100))
-            background_color = scheme.get("surface", "#1b1c18")[1:]
-            text_color = scheme.get("onSurface", "#e4e3db")[1:]
-            log.info(f"Solid background (opacity={opacity_pct}%) → text: #{text_color}")
+                log.warning("esbuild not found, skipping build")
 
-        # === Widget configuration placeholders ===
-        conky_config = conky_config.replace(
-            "@{WIDGET_POSITION}", widget_cfg["POSITION"]
-        )
-
-        # GAP values: user's value = exact pixel distance from screen edge
-        user_gap_x = int(widget_cfg.get("GAP_X", "24"))
-        user_gap_y = int(widget_cfg.get("GAP_Y", "24"))
-        conky_config = conky_config.replace("@{WIDGET_GAP_X}", str(user_gap_x))
-        conky_config = conky_config.replace("@{WIDGET_GAP_Y}", str(user_gap_y))
-
-        # Background settings
-        conky_config = conky_config.replace(
-            "@{OWN_WINDOW_TRANSPARENT}", own_window_transparent
-        )
-        conky_config = conky_config.replace("@{ARGB_VALUE}", argb_value)
-        conky_config = conky_config.replace("@{BACKGROUND_COLOR}", background_color)
-
-        # Single unified text color
-        conky_config = conky_config.replace("@{TEXT_COLOR}", text_color)
-
-        # Font settings
-        conky_config = conky_config.replace("@{FONT_FAMILY}", widget_cfg["FONT_FAMILY"])
-        conky_config = conky_config.replace(
-            "@{ICON_FONT}", widget_cfg.get("ICON_FONT", "MesloLGS Nerd Font Mono")
-        )
-        conky_config = conky_config.replace(
-            "@{TIME_FONT_SIZE}", widget_cfg["TIME_FONT_SIZE"]
-        )
-        conky_config = conky_config.replace(
-            "@{DATE_FONT_SIZE}", widget_cfg["DATE_FONT_SIZE"]
-        )
-        conky_config = conky_config.replace(
-            "@{WEATHER_FONT_SIZE}", widget_cfg["WEATHER_FONT_SIZE"]
-        )
-
-        # Behavior settings
-        conky_config = conky_config.replace(
-            "@{UPDATE_INTERVAL}", widget_cfg["UPDATE_INTERVAL"]
-        )
-        conky_config = conky_config.replace(
-            "@{WEATHER_INTERVAL}", widget_cfg["WEATHER_INTERVAL"]
-        )
-        conky_config = conky_config.replace("@{PADDING}", widget_cfg["PADDING"])
-
-        # Time format
-        if widget_cfg["TIME_FORMAT"] == "24h":
-            time_format = "%H:%M"
-        else:
-            time_format = "%I:%M"
-        conky_config = conky_config.replace("@{TIME_FORMAT}", time_format)
-
-        # AM/PM display
-        show_ampm = widget_cfg["SHOW_AMPM"].lower() == "true"
-        if show_ampm and widget_cfg["TIME_FORMAT"] == "12h":
-            ampm_display = "${time %p}"
-        else:
-            ampm_display = ""
-        conky_config = conky_config.replace("@{AMPM_DISPLAY}", ampm_display)
-
-        # === Legacy color substitutions (for any remaining placeholders) ===
-        for key, value in scheme.items():
-            hex_with_hash = value
-            hex_without_hash = value[1:]
-            conky_config = re.sub(f"@{{{key}}}", hex_without_hash, conky_config)
-            conky_config = re.sub(f"@{{{key}.hex}}", hex_with_hash, conky_config)
-
-        # Create output directories
-        conky_dir = os.path.join(home, ".config/conky")
-        os.makedirs(conky_dir, exist_ok=True)
-
-        # === Process and install Lua script for rounded corners ===
-        lua_script_src = os.path.join(addon_dir, "background.lua")
-        lua_script_dest = os.path.join(conky_dir, "meowterialyou_bg.lua")
-
-        if os.path.exists(lua_script_src):
-            try:
-                with open(lua_script_src, "r") as f:
-                    lua_script = f.read()
-
-                # Convert background color hex to RGB floats (0-1 range)
-                bg_hex = background_color
-                bg_r = int(bg_hex[0:2], 16) / 255.0
-                bg_g = int(bg_hex[2:4], 16) / 255.0
-                bg_b = int(bg_hex[4:6], 16) / 255.0
-
-                # Get opacity as 0-1 range
-                if is_fully_transparent:
-                    bg_a = 0.0
-                else:
-                    opacity_pct = max(
-                        0, min(100, int(widget_cfg.get("BACKGROUND_OPACITY", "55")))
-                    )
-                    bg_a = opacity_pct / 100.0
-
-                # Replace Lua placeholders
-                lua_script = lua_script.replace(
-                    "@{CORNER_RADIUS}", widget_cfg["CORNER_RADIUS"]
-                )
-                lua_script = lua_script.replace("@{BG_R}", f"{bg_r:.4f}")
-                lua_script = lua_script.replace("@{BG_G}", f"{bg_g:.4f}")
-                lua_script = lua_script.replace("@{BG_B}", f"{bg_b:.4f}")
-                lua_script = lua_script.replace("@{BG_A}", f"{bg_a:.4f}")
-
-                with open(lua_script_dest, "w") as f:
-                    f.write(lua_script)
-                log.info(f"Installed background Lua script: {lua_script_dest}")
-            except OSError as e:
-                log.warning(f"Failed to process Lua script: {e}")
-
-        # Update conky config with Lua script path
-        conky_config = conky_config.replace("@{LUA_SCRIPT_PATH}", lua_script_dest)
-
-        # Write processed Conky config
-        output_file = os.path.join(conky_dir, "meowterialyou.conf")
-        try:
-            with open(output_file, "w") as f:
-                f.write(conky_config)
-            log.info(f"Created desktop widget config: {output_file}")
-        except OSError as e:
-            log.error(f"Failed to write widget config: {e}")
-            return
-
-        # Copy Python weather helper script (uses GWeather like GNOME Weather)
-        weather_script_src = os.path.join(addon_dir, "weather.py")
-        weather_script_dest = os.path.join(conky_dir, "meowterialyou_weather.py")
-        if os.path.exists(weather_script_src):
-            try:
-                shutil.copy2(weather_script_src, weather_script_dest)
-                os.chmod(weather_script_dest, 0o755)
-                log.info(f"Installed weather helper script: {weather_script_dest}")
-            except OSError as e:
-                log.warning(f"Failed to copy weather script: {e}")
-
-        # Kill any existing conky with our config and restart
-        subprocess.run(["pkill", "-f", "conky.*meowterialyou"], capture_output=True)
-
-        # Start conky in background
+        # Kill existing widget and start new one with gjs
+        subprocess.run(["pkill", "-f", "gjs.*meowterialyou"], capture_output=True)
+        # Make the script executable and run with gjs
+        app_js_path = os.path.join(ags_dir, "app.mjs")
+        os.chmod(app_js_path, 0o755)
         subprocess.Popen(
-            ["conky", "-c", output_file, "-d"],
+            ["gjs", "-m", app_js_path],
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,
         )
-        log.info("Started desktop widget (Conky)")
+        log.info("Started desktop widget (GJS)")
 
     def _install_system_gtk4_theme(self, variant: str, scheme: dict) -> None:
         """Install GTK4 system theme for a specific variant (dark/light).

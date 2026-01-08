@@ -349,7 +349,7 @@ run_interactive() {
         
         # ─── Desktop Widget ───
         echo -e "  ${BOLD}7. Desktop Widget${NC}"
-        echo -e "     ${DIM}Clock + weather widget on desktop (requires Conky)${NC}"
+        echo -e "     ${DIM}Clock + weather widget on desktop (uses EWW)${NC}"
         if gum confirm --affirmative="  Yes, enable  " --negative="  No, skip  " \
             --prompt.foreground="255" --selected.background="212" --default=false \
             "     Enable desktop widget?"; then
@@ -465,7 +465,7 @@ run_interactive() {
         [[ "$input" =~ ^[Yy]$ ]] && UI_IMPROVEMENTS=true
         echo ""
         
-        echo -e "  ${BOLD}Desktop Widget${NC} (clock + weather, requires Conky) [y/N]"
+        echo -e "  ${BOLD}Desktop Widget${NC} (clock + weather, uses EWW) [y/N]"
         read -rp "     ▸ " input
         [[ "$input" =~ ^[Yy]$ ]] && DESKTOP_WIDGET=true
         echo ""
@@ -797,7 +797,7 @@ main() {
                 echo "  --title-buttons-position POS  Position: left or right"
                 echo "  --chrome-gtk4          Enable Chrome/Chromium GTK4 theme"
                 echo "  --ui-improvements      Enable UI improvements (transparent tray icons)"
-                echo "  --desktop-widget       Enable desktop widget (clock + weather, requires Conky)"
+                echo "  --desktop-widget       Enable desktop widget (clock + weather, uses EWW)"
                 echo "  --silent               Disable desktop notifications"
                 echo "  --uninstall            Uninstall MeowterialYou"
                 echo ""

@@ -164,3 +164,7 @@ cython_debug/
 
 # MeowterialYou installation config (user-specific)
 .install_config
+
+# AGS Widget
+package-lock.json
+node_modules
