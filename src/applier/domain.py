@@ -567,17 +567,13 @@ class ApplierDomain:
         scheme = Scheme(theme=theme_data, lightmode=lightmode_enabled).to_hex()
 
         # Process colors
-        bg_mode = widget_cfg.get("BACKGROUND_MODE", "solid").lower()
-        opacity = int(widget_cfg.get("BACKGROUND_OPACITY", "50"))
+        # Background mode deprecated, using direct opacity in app.ts
+        # We just need to provide the base variant color for widget_bg
 
-        if bg_mode == "transparent" or opacity == 0:
-            bg_r, bg_g, bg_b, bg_a = 0, 0, 0, 0
-        else:
-            bg_hex = scheme.get("surfaceVariant", "#45483d")[1:]
-            bg_r = int(bg_hex[0:2], 16)
-            bg_g = int(bg_hex[2:4], 16)
-            bg_b = int(bg_hex[4:6], 16)
-            bg_a = opacity / 100.0
+        bg_hex = scheme.get("surfaceVariant", "#45483d")[1:]
+        bg_r = int(bg_hex[0:2], 16)
+        bg_g = int(bg_hex[2:4], 16)
+        bg_b = int(bg_hex[4:6], 16)
 
         text_color = scheme.get("onSurfaceVariant", "#c6c8b9")
         primary_color = scheme.get("primary", "#b2d274")
@@ -627,7 +623,9 @@ class ApplierDomain:
         scheme_to_use = scheme  # Default to global scheme
         is_dark_bg = True
 
-        if os.path.exists(wallpaper_path):
+        if False and os.path.exists(
+            wallpaper_path
+        ):  # DISABLED: Force use of global scheme for consistency
             try:
                 img = Image.open(wallpaper_path)
                 sw, sh = img.size
@@ -736,13 +734,15 @@ class ApplierDomain:
             f.write("\n".join(css_lines))
         log.info(f"Generated localized theme: {ags_dir}/theme.css")
 
+        # 6. Blurred background generation removed (using dynamic compositor blur)
+
         # Copy config.yaml
-        config_src = os.path.join(addon_dir, "ags/config.yaml")
+        config_src = os.path.join(addon_dir, "config.yaml")
         if os.path.exists(config_src):
-            # Always copy config to ensure updates from repo apply
+            # Always overwrite config to ensure updates apply
             shutil.copy(config_src, os.path.join(ags_dir, "config.yaml"))
 
-        # Cleanup old config.json if it exists
+        # Remove old config if exists
         old_config = os.path.join(ags_dir, "config.json")
         if os.path.exists(old_config):
             try:
@@ -750,11 +750,38 @@ class ApplierDomain:
             except Exception:
                 pass
 
-        # Build TypeScript (no string replacements)
-        app_ts_src = os.path.join(addon_dir, "ags/app.ts")
+        # Generate .desktop file for app identity (Blur My Shell detection)
+        desktop_entry_path = os.path.join(
+            home, ".local/share/applications/meowterialyou-widget.desktop"
+        )
+        app_js_path = os.path.join(ags_dir, "app.mjs")
+
+        try:
+            desktop_content = f"""[Desktop Entry]
+Type=Application
+Name=MeowterialYou Widget
+Exec=gjs -m {app_js_path}
+Icon=preferences-desktop-theme
+Terminal=false
+Categories=Utility;
+StartupNotify=false
+NoDisplay=true
+X-GNOME-SingleWindow=true
+"""
+            with open(desktop_entry_path, "w") as f:
+                f.write(desktop_content)
+            log.info(f"Created desktop entry: {desktop_entry_path}")
+
+            # Refresh database? usually not strictly needed for running apps mapping but good practice
+            # subprocess.run(["update-desktop-database", os.path.join(home, ".local/share/applications")], check=False)
+        except Exception as e:
+            log.warning(f"Failed to create desktop entry: {e}")
+
+        # Compile TS to JS
+        app_ts_src = os.path.join(addon_dir, "app.ts")
         if os.path.exists(app_ts_src):
-            # Build with esbuild (converts TypeScript to JavaScript for GJS)
-            esbuild_path = os.path.join(addon_dir, "ags/node_modules/.bin/esbuild")
+            # Use local esbuild if available
+            esbuild_path = os.path.join(addon_dir, "node_modules/.bin/esbuild")
             app_js_out = os.path.join(ags_dir, "app.mjs")
 
             if os.path.exists(esbuild_path):
@@ -776,14 +803,21 @@ class ApplierDomain:
                 log.warning("esbuild not found, skipping build")
 
         # Kill existing widget and start new one with gjs
-        subprocess.run(["pkill", "-f", "gjs.*meowterialyou"], capture_output=True)
+        # Use SIGKILL to ensure it dies immediately
+        subprocess.run(["pkill", "-9", "-f", "gjs.*meowterialyou"], capture_output=True)
+
+        # Verify it's dead? pkill returns 0 if it matched, 1 if not.
+
         # Make the script executable and run with gjs
         app_js_path = os.path.join(ags_dir, "app.mjs")
         os.chmod(app_js_path, 0o755)
+
+        # Start detached
         subprocess.Popen(
             ["gjs", "-m", app_js_path],
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,
+            start_new_session=True,  # Detach from parent
         )
         log.info("Started desktop widget (GJS)")
 

@@ -1,0 +1,98 @@
+# MeowterialYou Desktop Widget Configuration
+# ==========================================
+# This file controls the appearance and behavior of the desktop widget.
+# Changes here are applied after restarting the widget (or re-running meowterialyou).
+
+layout:
+  # Position on screen
+  # Options: bottom_left, bottom_right, top_left, top_right
+  position: bottom_left
+
+  # Horizontal margin from screen edge (pixels)
+  gap_x: 24
+
+  # Vertical gap from screen edge (pixels)
+  gap_y: 60
+
+  # Content Alignment (left, center, right, auto)
+  # auto = left for left-side widgets, right for right-side widgets
+  alignment: auto
+
+  # Global scale factor (1.0 = normal size, 1.5 = 150%, etc.)
+  scale_factor: 1
+
+  # Internal padding between border and content (pixels)
+  padding: 20
+
+  # Corner radius of the widget background (pixels)
+  corner_radius: 8
+
+  # Border thickness (pixels)
+  # Set to 0 to remove border
+  border_width: 1
+
+emoji:
+  # The emoji to display
+  value: "😼"
+  # Size multiplier (1.0 = same as text)
+  scale: 0.4
+  # Rotation in degrees
+  rotate: 0
+  # Row to place emoji (1 = Date row, 2 = Time row)
+  row: 2
+
+typography:
+  # Font family for text (must be installed on system)
+  font_family: "Inter"
+
+  # Font for icons (Nerd Font required for weather icons)
+  icon_font: "MesloLGS Nerd Font Mono"
+
+  # Size of the main time display (pixels)
+  time_size: 48
+
+background:
+  # Background opacity (0-100)
+  # Set to 0 for fully transparent
+  opacity: 0
+
+# Pro Tip: Use Blur My Shell to blur the background of the widget, it looks much better!
+
+weather:
+  # Temperature unit: 'C' for Celsius, 'F' for Fahrenheit
+  unit: 'C'
+  
+  # Wind speed unit: 'km' for km/h, 'mi' for mph
+  wind_unit: 'km'
+  
+  # Weather refresh interval in minutes (Default: 10)
+  # Don't set this too low to avoid rate limiting
+  refresh_interval_min: 10
+
+clock:
+  # Time format: '12h' or '24h'
+  format: '12h'
+  
+  # Show AM/PM indicator (only applies if format is '12h', don't care about this if you use 24h)
+  show_ampm: true
+
+visibility:
+  # Show weather information row
+  show_weather: true
+  
+  # Show computer metrics row (CPU, RAM, Net, Temp)
+  show_computer_metrics: true
+  
+  # Show divider line (automatically hidden if metrics are hidden)
+  show_divider: true
+
+performance:
+  # Enable dynamic refresh rate based on window state
+  # If true, widget updates slower when a window is maximized
+  dynamic_refresh: true
+  
+  # Normal refresh interval in milliseconds (when desktop is visible)
+  refresh_normal_ms: 2000
+  
+  # Eco refresh interval (when an app is maximized)
+  refresh_eco_ms: 10000

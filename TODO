@@ -13,3 +13,7 @@ context menu background not themed
 - Material You theme for `bat` syntax highlighting (generate .tmTheme file)
 
 fix weird terminal behavious after that we themed
+theme notification popup
+theme media player in quick settings of quick settings tweaks
+grayscale like but with our colors for app icons.folders etc
+widget: light mode, weather next hours, country flag
