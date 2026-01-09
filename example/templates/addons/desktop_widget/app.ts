@@ -17,205 +17,9 @@ const log = (msg: string) => print(msg);
 
 GLib.set_prgname('meowterialyou-widget');
 
-// --- System Monitor ---
-// Handles CPU, RAM, Net, Temp fetching
-class SystemMonitor {
-  private static cpu_prev = { total: 0, idle: 0 };
-  private static net_prev = { rx: 0, tx: 0, time: 0 };
-  
-  // Cache for detected thermal path
-  private static temp_path: string | null = null;
-  
-  // Current values (updated async)
-  private static current = {
-    cpu: 0,
-    ram: 0,
-    net: '0 KB/s',
-    temp: 0
-  };
-
-  static async init() {
-    this.net_prev.time = GLib.get_monotonic_time();
-    await this.refresh();
-  }
-  
-  static async refresh() {
-    await Promise.all([
-        this.updateCpu(),
-        this.updateRam(),
-        this.updateNet(),
-        this.updateTemp()
-    ]);
-  }
-  
-  // 1. CPU: /proc/stat
-  private static async updateCpu() {
-    try {
-        const data = await readFileAsync('/proc/stat');
-        const lines = data.split('\n');
-        const cpuLine = lines.find(l => l.startsWith('cpu '));
-        
-        if (cpuLine) {
-            const parts = cpuLine.split(/\s+/).slice(1).map(Number);
-            const user = parts[0];
-            const nice = parts[1];
-            const system = parts[2];
-            const idle = parts[3];
-            const iowait = parts[4];
-            const irq = parts[5];
-            const softirq = parts[6];
-            const steal = parts[7];
-            
-            const totalIdle = idle + iowait;
-            const totalNonIdle = user + nice + system + irq + softirq + steal;
-            const total = totalIdle + totalNonIdle;
-            
-            const diffIdle = totalIdle - this.cpu_prev.idle;
-            const diffTotal = total - this.cpu_prev.total;
-            
-            if (diffTotal > 0) {
-                this.current.cpu = Math.round(((diffTotal - diffIdle) / diffTotal) * 100);
-            }
-            
-            this.cpu_prev = { total, idle: totalIdle };
-        }
-    } catch (e) { log(`[Error] CPU: ${e}`); }
-  }
-
-  // 2. RAM: /proc/meminfo
-  private static async updateRam() {
-    try {
-        const data = await readFileAsync('/proc/meminfo');
-        const totalMatch = data.match(/MemTotal:\s+(\d+)/);
-        const availMatch = data.match(/MemAvailable:\s+(\d+)/);
-        
-        if (totalMatch && availMatch) {
-            const total = parseInt(totalMatch[1]);
-            const avail = parseInt(availMatch[1]);
-            const used = total - avail;
-            this.current.ram = Math.round((used / total) * 100);
-        }
-    } catch (e) { log(`[Error] RAM: ${e}`); }
-  }
-
-  // 3. Network: /proc/net/dev
-  private static async updateNet() {
-    try {
-        const data = await readFileAsync('/proc/net/dev');
-        const lines = data.split('\n').slice(2); // Skip headers
-        
-        let totalRx = 0;
-        let totalTx = 0;
-        
-        for (const line of lines) {
-            const trimmed = line.trim();
-            if (!trimmed) continue;
-            
-            const parts = trimmed.split(/\s+/);
-            const name = parts[0];
-            
-            if (name.startsWith('lo')) continue;
-            
-            const cleanLine = trimmed.substring(trimmed.indexOf(':') + 1).trim();
-            const columns = cleanLine.split(/\s+/).map(Number);
-            
-            if (columns.length >= 9) {
-                totalRx += columns[0];
-                totalTx += columns[8];
-            }
-        }
-        
-        const now = GLib.get_monotonic_time();
-        const deltaSec = (now - this.net_prev.time) / 1000000;
-        
-        if (deltaSec > 0) {
-            const speedRx = (totalRx - this.net_prev.rx) / deltaSec;
-            const speedTx = (totalTx - this.net_prev.tx) / deltaSec;
-            const totalSpeed = speedRx + speedTx;
-            
-            if (totalSpeed > 1024 * 1024) {
-                this.current.net = `${(totalSpeed / (1024 * 1024)).toFixed(1)} MB/s`;
-            } else {
-                this.current.net = `${Math.round(totalSpeed / 1024)} KB/s`;
-            }
-        }
-        
-        this.net_prev = { rx: totalRx, tx: totalTx, time: now };
-        
-    } catch (e) { log(`[Error] Net: ${e}`); }
-  }
-
-  // 4. Temp: /sys/class/hwmon
-  private static async updateTemp() {
-     try {
-        let val = 0;
-        
-        if (!this.temp_path) {
-            const PRIORITY = ['coretemp', 'k10temp', 'zenpower', 'asus_ec'];
-            let bestCandidate = null;
-            let acpiCandidate = null;
-
-            const baseDir = Gio.File.new_for_path('/sys/class/hwmon');
-            const enumerator = await new Promise<Gio.FileEnumerator>((resolve, reject) => {
-                baseDir.enumerate_children_async('standard::name', Gio.FileQueryInfoFlags.NONE, GLib.PRIORITY_DEFAULT, null, (obj, res) => {
-                    try { resolve(baseDir.enumerate_children_finish(res)); } 
-                    catch (e) { reject(e); }
-                });
-            });
-
-            let info;
-            while ((info = enumerator.next_file(null))) {
-                const name = info.get_name(); 
-                if (!name.startsWith('hwmon')) continue;
-                
-                const hwmonPath = `/sys/class/hwmon/${name}`;
-                try {
-                    const sensorName = (await readFileAsync(`${hwmonPath}/name`)).trim();
-                    
-                    if (PRIORITY.includes(sensorName)) {
-                        const inputPath = `${hwmonPath}/temp1_input`;
-                        const f = Gio.File.new_for_path(inputPath);
-                        if (f.query_exists(null)) {
-                            this.temp_path = inputPath;
-                            break; 
-                        }
-                    }
-                    
-                    if (!bestCandidate && (sensorName === 'acpitz' || sensorName.includes('thermal'))) {
-                        const inputPath = `${hwmonPath}/temp1_input`;
-                        const f = Gio.File.new_for_path(inputPath);
-                        if (f.query_exists(null)) acpiCandidate = inputPath;
-                    }
-                    
-                } catch {}
-            }
-            
-            if (!this.temp_path && acpiCandidate) {
-                this.temp_path = acpiCandidate;
-            } else if (!this.temp_path) {
-                 const f = Gio.File.new_for_path('/sys/class/thermal/thermal_zone0/temp');
-                 if (f.query_exists(null)) this.temp_path = '/sys/class/thermal/thermal_zone0/temp';
-            }
-        }
-        
-        if (this.temp_path) {
-            try {
-                const c = await readFileAsync(this.temp_path);
-                val = parseInt(c.trim());
-            } catch { this.temp_path = null; } 
-        }
-        
-        if (val > 0) this.current.temp = Math.round(val / 1000);
-        
-    } catch (e) { log(`[Error] Temp: ${e}`); }
-  }
-
-  static getCpu() { return this.current.cpu; }
-  static getRam() { return this.current.ram; }
-  static getNet() { return this.current.net; }
-  static getTemp() { return this.current.temp; }
-
-}
+// Global decoder to prevent GC pressure
+// @ts-ignore
+const decoder = new TextDecoder('utf-8');
 
 const readFileAsync = (path: string): Promise<string> => {
     return new Promise((resolve, reject) => {
@@ -224,8 +28,6 @@ const readFileAsync = (path: string): Promise<string> => {
             try {
                 const [success, contents] = file.load_contents_finish(res);
                 if (success) {
-                    // @ts-ignore
-                    const decoder = new TextDecoder('utf-8');
                     resolve(decoder.decode(contents));
                 } else {
                     reject(new Error('Failed to load contents'));
@@ -236,6 +38,268 @@ const readFileAsync = (path: string): Promise<string> => {
         });
     });
 };
+
+// --- System Monitor ---
+// Handles CPU, RAM, Net, Temp fetching
+class SystemMonitor {
+  private static cpu_prev = { total: 0, idle: 0 };
+  private static net_prev = { rx: 0, tx: 0, time: 0 };
+
+  // Cache for detected thermal path
+  private static temp_path: string | null = null;
+  private static temp_scan_attempts = 0;
+  private static last_scan_time = 0;
+
+  // Current values (updated async)
+  private static current = {
+    cpu: 0,
+    ram: 0,
+    net: '0 KB/s',
+    temp: 0,
+  };
+
+  static async init() {
+    this.net_prev.time = GLib.get_monotonic_time();
+    await this.refresh();
+  }
+
+  static async refresh() {
+    await Promise.all([
+      this.updateCpu(),
+      this.updateRam(),
+      this.updateNet(),
+      this.updateTemp(),
+    ]);
+  }
+
+  // 1. CPU: /proc/stat
+  private static async updateCpu() {
+    try {
+      const data = await readFileAsync('/proc/stat');
+      const lines = data.split('\n');
+      const cpuLine = lines.find((l) => l.startsWith('cpu '));
+
+      if (cpuLine) {
+        const parts = cpuLine.split(/\s+/).slice(1).map(Number);
+        const user = parts[0];
+        const nice = parts[1];
+        const system = parts[2];
+        const idle = parts[3];
+        const iowait = parts[4];
+        const irq = parts[5];
+        const softirq = parts[6];
+        const steal = parts[7];
+
+        const totalIdle = idle + iowait;
+        const totalNonIdle = user + nice + system + irq + softirq + steal;
+        const total = totalIdle + totalNonIdle;
+
+        const diffIdle = totalIdle - this.cpu_prev.idle;
+        const diffTotal = total - this.cpu_prev.total;
+
+        if (diffTotal > 0) {
+          this.current.cpu = Math.round(
+            ((diffTotal - diffIdle) / diffTotal) * 100
+          );
+        }
+
+        this.cpu_prev = { total, idle: totalIdle };
+      }
+    } catch (e) {
+      log(`[Error] CPU: ${e}`);
+    }
+  }
+
+  // 2. RAM: /proc/meminfo
+  private static async updateRam() {
+    try {
+      const data = await readFileAsync('/proc/meminfo');
+      const totalMatch = data.match(/MemTotal:\s+(\d+)/);
+      const availMatch = data.match(/MemAvailable:\s+(\d+)/);
+
+      if (totalMatch && availMatch) {
+        const total = parseInt(totalMatch[1]);
+        const avail = parseInt(availMatch[1]);
+        const used = total - avail;
+        this.current.ram = Math.round((used / total) * 100);
+      }
+    } catch (e) {
+      log(`[Error] RAM: ${e}`);
+    }
+  }
+
+  // 3. Network: /proc/net/dev
+  private static async updateNet() {
+    try {
+      const data = await readFileAsync('/proc/net/dev');
+      const lines = data.split('\n').slice(2); // Skip headers
+
+      let totalRx = 0;
+      let totalTx = 0;
+
+      for (const line of lines) {
+        const trimmed = line.trim();
+        if (!trimmed) continue;
+
+        const parts = trimmed.split(/\s+/);
+        const name = parts[0];
+
+        if (name.startsWith('lo')) continue;
+
+        const cleanLine = trimmed.substring(trimmed.indexOf(':') + 1).trim();
+        const columns = cleanLine.split(/\s+/).map(Number);
+
+        if (columns.length >= 9) {
+          totalRx += columns[0];
+          totalTx += columns[8];
+        }
+      }
+
+      const now = GLib.get_monotonic_time();
+      const deltaSec = (now - this.net_prev.time) / 1000000;
+
+      if (deltaSec > 0) {
+        const speedRx = (totalRx - this.net_prev.rx) / deltaSec;
+        const speedTx = (totalTx - this.net_prev.tx) / deltaSec;
+        const totalSpeed = speedRx + speedTx;
+
+        if (totalSpeed > 1024 * 1024) {
+          this.current.net = `${(totalSpeed / (1024 * 1024)).toFixed(1)} MB/s`;
+        } else {
+          this.current.net = `${Math.round(totalSpeed / 1024)} KB/s`;
+        }
+      }
+
+      this.net_prev = { rx: totalRx, tx: totalTx, time: now };
+    } catch (e) {
+      log(`[Error] Net: ${e}`);
+    }
+  }
+
+  // 4. Temp: /sys/class/hwmon
+  private static async updateTemp() {
+    try {
+      let val = 0;
+      const now = Date.now();
+
+      // Scan for sensors if invalid and backoff allows
+      // Backoff: Wait 60s if we've failed 3 times
+      const canScan =
+        !this.temp_path &&
+        (this.temp_scan_attempts < 3 || now - this.last_scan_time > 60000);
+
+      if (canScan) {
+        this.last_scan_time = now;
+        this.temp_scan_attempts++;
+
+        const PRIORITY = ['coretemp', 'k10temp', 'zenpower', 'asus_ec'];
+        let bestCandidate = null;
+        let acpiCandidate = null;
+
+        const baseDir = Gio.File.new_for_path('/sys/class/hwmon');
+        try {
+          const enumerator = await new Promise<Gio.FileEnumerator>(
+            (resolve, reject) => {
+              baseDir.enumerate_children_async(
+                'standard::name',
+                Gio.FileQueryInfoFlags.NONE,
+                GLib.PRIORITY_DEFAULT,
+                null,
+                (obj, res) => {
+                  try {
+                    resolve(baseDir.enumerate_children_finish(res));
+                  } catch (e) {
+                    reject(e);
+                  }
+                }
+              );
+            }
+          );
+
+          let info;
+          while ((info = enumerator.next_file(null))) {
+            const name = info.get_name();
+            if (!name.startsWith('hwmon')) continue;
+
+            const hwmonPath = `/sys/class/hwmon/${name}`;
+            try {
+              const sensorName = (
+                await readFileAsync(`${hwmonPath}/name`)
+              ).trim();
+
+              if (PRIORITY.includes(sensorName)) {
+                const inputPath = `${hwmonPath}/temp1_input`;
+                const f = Gio.File.new_for_path(inputPath);
+                if (f.query_exists(null)) {
+                  this.temp_path = inputPath;
+                  break;
+                }
+              }
+
+              if (
+                !bestCandidate &&
+                (sensorName === 'acpitz' || sensorName.includes('thermal'))
+              ) {
+                const inputPath = `${hwmonPath}/temp1_input`;
+                const f = Gio.File.new_for_path(inputPath);
+                if (f.query_exists(null)) acpiCandidate = inputPath;
+              }
+            } catch {}
+          }
+        } catch {
+          // Folder access error, ignore
+        }
+
+        if (!this.temp_path && acpiCandidate) {
+          this.temp_path = acpiCandidate;
+        } else if (!this.temp_path) {
+          const f = Gio.File.new_for_path(
+            '/sys/class/thermal/thermal_zone0/temp'
+          );
+          if (f.query_exists(null))
+            this.temp_path = '/sys/class/thermal/thermal_zone0/temp';
+        }
+
+        if (this.temp_path) this.temp_scan_attempts = 0; // Reset counter on success
+      }
+
+      if (this.temp_path) {
+        try {
+          const c = await readFileAsync(this.temp_path);
+          val = parseInt(c.trim());
+        } catch {
+          // Don't NULL immediately, might be temp read error.
+          // Just keep value 0 this time.
+          // If it fails repeatedly, maybe logic needed?
+          // For now, assume single glitch shouldn't force rescan.
+          // If the path genuinely disappears, we might want to check existence efficiently?
+          // But GJS try/catch covers "No such file".
+          // Let's increment failures?
+          // For now, let's just log and NOT clear temp_path.
+          // Clearing temp_path causes the death spiral.
+          log(`[Warn] Temp read failed at ${this.temp_path}`);
+        }
+      }
+
+      if (val > 0) this.current.temp = Math.round(val / 1000);
+    } catch (e) {
+      log(`[Error] Temp: ${e}`);
+    }
+  }
+
+  static getCpu() {
+    return this.current.cpu;
+  }
+  static getRam() {
+    return this.current.ram;
+  }
+  static getNet() {
+    return this.current.net;
+  }
+  static getTemp() {
+    return this.current.temp;
+  }
+}
 
 // --- Configuration ---
 interface Config {
@@ -365,25 +429,25 @@ function isObject(item: any): boolean {
   return (item && typeof item === 'object' && !Array.isArray(item));
 }
 
-function mergeDeep<T extends object>(target: T, source: Partial<T>): T {
-  let output = { ...target };
+function mergeDeep(target: any, source: any): any {
+  let output = Object.assign({}, target);
   if (isObject(target) && isObject(source)) {
-    for (const key in source) {
+    Object.keys(source).forEach((key) => {
       if (isObject(source[key])) {
-        if (!(key in target))
-          Object.assign(output, { [key]: source[key] });
-        else
-          output[key] = mergeDeep(target[key], source[key]);
+        if (!(key in target)) Object.assign(output, { [key]: source[key] });
+        else output[key] = mergeDeep(target[key], source[key]);
       } else {
         Object.assign(output, { [key]: source[key] });
       }
-    }
+    });
   }
   return output;
 }
 
 // --- Weather Logic Helpers ---
-function getGnomeWeatherLocation(): [string, string | null, number, number] | null {
+function getGnomeWeatherLocation():
+  | [string, string | null, number, number]
+  | null {
   try {
     const settings = new Gio.Settings({ schema_id: 'org.gnome.Weather' });
     const locations = settings.get_value('locations');
@@ -397,7 +461,7 @@ function getGnomeWeatherLocation(): [string, string | null, number, number] | nu
       let code: string | null = null;
       try {
         code = locData.get_child_value(1).get_string()[0];
-      } catch (e) { }
+      } catch (e) {}
 
       const coordsArray = locData.get_child_value(3);
 
@@ -418,7 +482,7 @@ function getWeatherIconChar(iconName: string): string {
   if (!iconName) return '󰖙';
   const lower = iconName.toLowerCase();
   if (lower.includes('clear') && lower.includes('night')) return '';
-  if (lower.includes('clear') || lower.includes('sunny')) return ''; 
+  if (lower.includes('clear') || lower.includes('sunny')) return '';
   if (lower.includes('few-clouds') || lower.includes('partly')) return '󰖕';
   if (lower.includes('overcast') || lower.includes('cloud')) return '󰖐';
   if (lower.includes('fog') || lower.includes('mist')) return '󰖑';
@@ -447,11 +511,12 @@ function applyStyles() {
   }
 
   let bgOpacity = config.background.opacity / 100.0;
-  
+
   const scale = config.layout.scale_factor || 1.0;
   const s = (v: number) => Math.round(v * scale);
-  
-  const borderWidth = (config.layout.border_width !== undefined) ? config.layout.border_width : 1;
+
+  const borderWidth =
+    config.layout.border_width !== undefined ? config.layout.border_width : 1;
 
   const dynamicCss = `
         /* Prepended Theme Colors */
@@ -521,7 +586,9 @@ function applyStyles() {
         }
 
         .detail {
-            font-family: "${config.typography.icon_font}", "${config.typography.font_family}", monospace;
+            font-family: "${config.typography.icon_font}", "${
+    config.typography.font_family
+  }", monospace;
             font-size: ${s(14)}px;
             color: @onSurfaceVariant;
             opacity: 0.9;
@@ -562,16 +629,20 @@ const s = (v: number) => Math.round(v * scale);
 
 // Helper for Alignment
 const getAlign = () => {
-    const a = config.layout.alignment || 'auto';
-    const pos = config.layout.position;
-    
-    if (a === 'center') return { gtk: Gtk.Align.CENTER, x: 0.5, isRight: false, isCenter: true };
-    if (a === 'left') return { gtk: Gtk.Align.START, x: 0, isRight: false, isCenter: false };
-    if (a === 'right') return { gtk: Gtk.Align.END, x: 1.0, isRight: true, isCenter: false };
-    
-    // Auto
-    if (pos.includes('left')) return { gtk: Gtk.Align.START, x: 0, isRight: false, isCenter: false };
+  const a = config.layout.alignment || 'auto';
+  const pos = config.layout.position;
+
+  if (a === 'center')
+    return { gtk: Gtk.Align.CENTER, x: 0.5, isRight: false, isCenter: true };
+  if (a === 'left')
+    return { gtk: Gtk.Align.START, x: 0, isRight: false, isCenter: false };
+  if (a === 'right')
     return { gtk: Gtk.Align.END, x: 1.0, isRight: true, isCenter: false };
+
+  // Auto
+  if (pos.includes('left'))
+    return { gtk: Gtk.Align.START, x: 0, isRight: false, isCenter: false };
+  return { gtk: Gtk.Align.END, x: 1.0, isRight: true, isCenter: false };
 };
 const ALIGN = getAlign();
 
@@ -617,38 +688,40 @@ const content = new Gtk.Box({
 
 // Custom Emoji Helper
 const createEmojiLabel = () => {
-    if (config.emoji && config.emoji.value) {
-        const emojiLabel = new Gtk.Label({ label: config.emoji.value });
-        
-        // Determine Base Size based on Row
-        // Row 1 (Date) ~ 14px
-        // Row 2 (Time) ~ config.typography.time_size (default 48px)
-        const targetRow = config.emoji.row || 1;
-        const baseSize = targetRow === 2 ? config.typography.time_size : 14;
-        
-        // Calculate raw size
-        const rawSize = baseSize * (config.emoji.scale || 1.0);
-        
-        // CLAMP: Max size is the base row height (user request)
-        // We allow shrinking (scale < 1.0) but cap growing > 1.0 relative to row height
-        // Actually, user said "max should be the row height", implies cap at baseSize.
-        const finalSize = s(Math.min(rawSize, baseSize));
-        
-        const cssProv = new Gtk.CssProvider();
-        cssProv.load_from_data(`.emoji-custom { font-size: ${finalSize}px; }`);
-        
-        // Use a higher priority (APPLICATION + 20) to ensure we override the base .date style
-        emojiLabel.get_style_context().add_provider(cssProv, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION + 20);
-        emojiLabel.get_style_context().add_class('date'); 
-        emojiLabel.get_style_context().add_class('emoji-custom');
-        
-        if (config.emoji.rotate) {
-            emojiLabel.set_angle(config.emoji.rotate);
-        }
-        
-        return emojiLabel;
+  if (config.emoji && config.emoji.value) {
+    const emojiLabel = new Gtk.Label({ label: config.emoji.value });
+
+    // Determine Base Size based on Row
+    // Row 1 (Date) ~ 14px
+    // Row 2 (Time) ~ config.typography.time_size (default 48px)
+    const targetRow = config.emoji.row || 1;
+    const baseSize = targetRow === 2 ? config.typography.time_size : 14;
+
+    // Calculate raw size
+    const rawSize = baseSize * (config.emoji.scale || 1.0);
+
+    // CLAMP: Max size is the base row height (user request)
+    // We allow shrinking (scale < 1.0) but cap growing > 1.0 relative to row height
+    // Actually, user said "max should be the row height", implies cap at baseSize.
+    const finalSize = s(Math.min(rawSize, baseSize));
+
+    const cssProv = new Gtk.CssProvider();
+    cssProv.load_from_data(`.emoji-custom { font-size: ${finalSize}px; }`);
+
+    // Use a higher priority (APPLICATION + 20) to ensure we override the base .date style
+    emojiLabel
+      .get_style_context()
+      .add_provider(cssProv, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION + 20);
+    emojiLabel.get_style_context().add_class('date');
+    emojiLabel.get_style_context().add_class('emoji-custom');
+
+    if (config.emoji.rotate) {
+      emojiLabel.set_angle(config.emoji.rotate);
     }
-    return null;
+
+    return emojiLabel;
+  }
+  return null;
 };
 
 // Row 1: Date & Optional Emoji
@@ -669,56 +742,55 @@ const dateSpacer = new Gtk.Box({ hexpand: true }); // Spring
 
 // Packing Logic for Date Row
 if ((config.emoji?.row ?? 1) === 1) {
-    const e = createEmojiLabel();
-    if (e) {
-        if (ALIGN.isRight) {
-             // Right Align: [Emoji] <space> [Date]
-             dateRow.pack_start(e, false, false, 0);
-             dateRow.pack_start(dateSpacer, true, true, 0);
-             dateRow.pack_start(dateLabel, false, false, 0);
-        } else {
-             // Left/Center Align: [Date] <space> [Emoji]
-             // Note: If Center, spacer might behave oddly, but user asked for "End".
-             // For Center, maybe just next to it? 
-             // "flips and becomes left when alignment is right" implies specific behavior for L/R.
-             // Let's stick to justify for L/R. For Center, keep neighbors?
-             // User prompt: "ofc this flips... when alignment is right".
-             
-             if (ALIGN.isCenter) {
-                 // Center: [Date] [Emoji] (Just packed)
-                 dateRow.pack_start(dateLabel, false, false, 0);
-                 dateRow.pack_start(e, false, false, 0);
-             } else {
-                 // Left: [Date] <space> [Emoji]
-                 dateRow.pack_start(dateLabel, false, false, 0);
-                 dateRow.pack_start(dateSpacer, true, true, 0);
-                 dateRow.pack_start(e, false, false, 0);
-             }
-        }
+  const e = createEmojiLabel();
+  if (e) {
+    if (ALIGN.isRight) {
+      // Right Align: [Emoji] <space> [Date]
+      dateRow.pack_start(e, false, false, 0);
+      dateRow.pack_start(dateSpacer, true, true, 0);
+      dateRow.pack_start(dateLabel, false, false, 0);
     } else {
-         // No emoji, just label
-         // Use pack_start with expand=false to respect alignment? 
-         // Since halign=FILL, we need to justify the label ourselves if we want it strictly left/right?
-         // No, if no emoji, we can likely just pack it. 
-         // But if halign=FILL, label at start=Left.
-         // If Right align, we need spacer first?
-         if (ALIGN.isRight) {
-             dateRow.pack_end(dateLabel, false, false, 0); // Pack end = Right
-         } else if (ALIGN.isCenter) {
-             dateRow.set_halign(Gtk.Align.CENTER);
-             dateRow.pack_start(dateLabel, false, false, 0);
-         } else {
-             dateRow.pack_start(dateLabel, false, false, 0);
-         }
+      // Left/Center Align: [Date] <space> [Emoji]
+      // Note: If Center, spacer might behave oddly, but user asked for "End".
+      // For Center, maybe just next to it?
+      // "flips and becomes left when alignment is right" implies specific behavior for L/R.
+      // Let's stick to justify for L/R. For Center, keep neighbors?
+      // User prompt: "ofc this flips... when alignment is right".
+
+      if (ALIGN.isCenter) {
+        // Center: [Date] [Emoji] (Just packed)
+        dateRow.pack_start(dateLabel, false, false, 0);
+        dateRow.pack_start(e, false, false, 0);
+      } else {
+        // Left: [Date] <space> [Emoji]
+        dateRow.pack_start(dateLabel, false, false, 0);
+        dateRow.pack_start(dateSpacer, true, true, 0);
+        dateRow.pack_start(e, false, false, 0);
+      }
     }
+  } else {
+    // No emoji, just label
+    // Use pack_start with expand=false to respect alignment?
+    // Since halign=FILL, we need to justify the label ourselves if we want it strictly left/right?
+    // No, if no emoji, we can likely just pack it.
+    // But if halign=FILL, label at start=Left.
+    // If Right align, we need spacer first?
+    if (ALIGN.isRight) {
+      dateRow.pack_end(dateLabel, false, false, 0); // Pack end = Right
+    } else if (ALIGN.isCenter) {
+      dateRow.set_halign(Gtk.Align.CENTER);
+      dateRow.pack_start(dateLabel, false, false, 0);
+    } else {
+      dateRow.pack_start(dateLabel, false, false, 0);
+    }
+  }
 } else {
-    // Emoji not on this row
-    if (ALIGN.isRight) dateRow.pack_end(dateLabel, false, false, 0);
-    else if (ALIGN.isCenter) {
-             dateRow.set_halign(Gtk.Align.CENTER);
-             dateRow.pack_start(dateLabel, false, false, 0);
-    }
-    else dateRow.pack_start(dateLabel, false, false, 0);
+  // Emoji not on this row
+  if (ALIGN.isRight) dateRow.pack_end(dateLabel, false, false, 0);
+  else if (ALIGN.isCenter) {
+    dateRow.set_halign(Gtk.Align.CENTER);
+    dateRow.pack_start(dateLabel, false, false, 0);
+  } else dateRow.pack_start(dateLabel, false, false, 0);
 }
 
 content.pack_start(dateRow, false, false, 0);
@@ -731,8 +803,8 @@ const timeRow = new Gtk.Box({
 
 // Group Time + AMPM
 const timeGroup = new Gtk.Box({
-    orientation: Gtk.Orientation.HORIZONTAL,
-    spacing: s(6)
+  orientation: Gtk.Orientation.HORIZONTAL,
+  spacing: s(6),
 });
 
 const timeLabel = new Gtk.Label({ label: '...' });
@@ -750,39 +822,37 @@ const timeSpacer = new Gtk.Box({ hexpand: true });
 
 // Packing Logic for Time Row
 if (config.emoji?.row === 2) {
-    const e = createEmojiLabel();
-    if (e) {
-         if (ALIGN.isRight) {
-             // [Emoji] <space> [TimeGroup]
-             timeRow.pack_start(e, false, false, 0);
-             timeRow.pack_start(timeSpacer, true, true, 0);
-             timeRow.pack_start(timeGroup, false, false, 0);
-         } else {
-             if (ALIGN.isCenter) {
-                 timeRow.pack_start(timeGroup, false, false, 0);
-                 timeRow.pack_start(e, false, false, 0);
-             } else {
-                 // [TimeGroup] <space> [Emoji]
-                 timeRow.pack_start(timeGroup, false, false, 0);
-                 timeRow.pack_start(timeSpacer, true, true, 0);
-                 timeRow.pack_start(e, false, false, 0);
-             }
-         }
+  const e = createEmojiLabel();
+  if (e) {
+    if (ALIGN.isRight) {
+      // [Emoji] <space> [TimeGroup]
+      timeRow.pack_start(e, false, false, 0);
+      timeRow.pack_start(timeSpacer, true, true, 0);
+      timeRow.pack_start(timeGroup, false, false, 0);
     } else {
-        if (ALIGN.isRight) timeRow.pack_end(timeGroup, false, false, 0);
-        else if (ALIGN.isCenter) {
-             timeRow.set_halign(Gtk.Align.CENTER);
-             timeRow.pack_start(timeGroup, false, false, 0);
-        }
-        else timeRow.pack_start(timeGroup, false, false, 0);
+      if (ALIGN.isCenter) {
+        timeRow.pack_start(timeGroup, false, false, 0);
+        timeRow.pack_start(e, false, false, 0);
+      } else {
+        // [TimeGroup] <space> [Emoji]
+        timeRow.pack_start(timeGroup, false, false, 0);
+        timeRow.pack_start(timeSpacer, true, true, 0);
+        timeRow.pack_start(e, false, false, 0);
+      }
     }
-} else {
+  } else {
     if (ALIGN.isRight) timeRow.pack_end(timeGroup, false, false, 0);
     else if (ALIGN.isCenter) {
-         timeRow.set_halign(Gtk.Align.CENTER);
-         timeRow.pack_start(timeGroup, false, false, 0);
-    }
-    else timeRow.pack_start(timeGroup, false, false, 0);
+      timeRow.set_halign(Gtk.Align.CENTER);
+      timeRow.pack_start(timeGroup, false, false, 0);
+    } else timeRow.pack_start(timeGroup, false, false, 0);
+  }
+} else {
+  if (ALIGN.isRight) timeRow.pack_end(timeGroup, false, false, 0);
+  else if (ALIGN.isCenter) {
+    timeRow.set_halign(Gtk.Align.CENTER);
+    timeRow.pack_start(timeGroup, false, false, 0);
+  } else timeRow.pack_start(timeGroup, false, false, 0);
 }
 
 content.pack_start(timeRow, false, false, 0);
@@ -826,7 +896,7 @@ infoBox.pack_start(wDesc, false, false, 0);
 infoBox.pack_start(wCity, false, false, 0);
 
 weatherRow.pack_start(tempBox, false, false, 0);
-weatherRow.pack_end(infoBox, true, true, 0); 
+weatherRow.pack_end(infoBox, true, true, 0);
 content.pack_start(weatherRow, false, false, 0);
 
 // Row 4: Details
@@ -895,61 +965,62 @@ content.pack_start(sysRow, false, false, 0);
 
 // --- Event-Driven Smart Refresh ---
 const PerfState = {
-    isMaximized: false
+  isMaximized: false,
 };
 
 let currentInterval = config.performance.refresh_normal_ms;
 
 if (config.performance.dynamic_refresh) {
-    try {
-        const screen = Wnck.Screen.get_default();
-        screen.force_update();
+  try {
+    const screen = Wnck.Screen.get_default();
+    screen.force_update();
 
-        const updateState = () => {
-            let foundMax = false;
-            const activeWorkspace = screen.get_active_workspace();
-            const windows = screen.get_windows();
-            
-            for (let i = 0; i < windows.length; i++) {
-                const w = windows[i];
-                const isOnCurrent = (w.get_workspace() === activeWorkspace) || w.is_pinned();
-                
-                if (w.is_maximized() && !w.is_minimized() && isOnCurrent) {
-                    foundMax = true;
-                    break;
-                }
-            }
-            PerfState.isMaximized = foundMax;
-        };
+    const updateState = () => {
+      let foundMax = false;
+      const activeWorkspace = screen.get_active_workspace();
+      const windows = screen.get_windows();
 
-        const connectWin = (win: any) => {
-            // @ts-ignore
-            win.connect('state-changed', () => updateState());
-        };
+      for (let i = 0; i < windows.length; i++) {
+        const w = windows[i];
+        const isOnCurrent =
+          w.get_workspace() === activeWorkspace || w.is_pinned();
 
-        // @ts-ignore
-        screen.connect('window-opened', (_, win) => {
-            connectWin(win);
-            updateState();
-        });
-        
-        // @ts-ignore
-        screen.connect('window-closed', () => updateState());
+        if (w.is_maximized() && !w.is_minimized() && isOnCurrent) {
+          foundMax = true;
+          break;
+        }
+      }
+      PerfState.isMaximized = foundMax;
+    };
 
-        // Connect existing
-        // @ts-ignore
-        screen.get_windows().forEach(connectWin);
-        
-        // Initial check
-        updateState();
-        
-    } catch(e) {
-        log(`[WARNING] Failed to init Wnck events: ${e}`);
-    }
+    const connectWin = (win: any) => {
+      // @ts-ignore
+      win.connect('state-changed', () => updateState());
+    };
+
+    // @ts-ignore
+    screen.connect('window-opened', (_, win) => {
+      connectWin(win);
+      updateState();
+    });
+
+    // @ts-ignore
+    screen.connect('window-closed', () => updateState());
+
+    // Connect existing
+    // @ts-ignore
+    screen.get_windows().forEach(connectWin);
+
+    // Initial check
+    updateState();
+  } catch (e) {
+    log(`[WARNING] Failed to init Wnck events: ${e}`);
+  }
 }
 
 // Metrics Loop with Dynamic Interval
 const updateMetrics = async () => {
+  try {
     // 1. Refresh Data (Async)
     await SystemMonitor.refresh();
 
@@ -958,21 +1029,24 @@ const updateMetrics = async () => {
     ramWidget.label.set_label(`${SystemMonitor.getRam()}%`);
     netWidget.label.set_label(SystemMonitor.getNet());
     tempWidget.label.set_label(`${SystemMonitor.getTemp()}°C`);
-
+  } catch (e) {
+    log(`[ERROR] updateMetrics failed: ${e}`);
+  } finally {
     // 3. Decide next interval (Reads cached state, no polling)
     if (config.performance.dynamic_refresh) {
-        currentInterval = PerfState.isMaximized 
-            ? config.performance.refresh_eco_ms 
-            : config.performance.refresh_normal_ms;
+      currentInterval = PerfState.isMaximized
+        ? config.performance.refresh_eco_ms
+        : config.performance.refresh_normal_ms;
     } else {
-        currentInterval = config.performance.refresh_normal_ms;
+      currentInterval = config.performance.refresh_normal_ms;
     }
-    
+
     // Reschedule
     GLib.timeout_add(GLib.PRIORITY_DEFAULT, currentInterval, () => {
-        updateMetrics();
-        return false;
+      updateMetrics();
+      return false;
     });
+  }
 };
 
 // Pack Content into Glass Overlay

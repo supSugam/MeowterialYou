@@ -672,6 +672,12 @@ _MY_UNDERLINE=$'\\e[4m'
 # GIT BRANCH FUNCTION
 # ═══════════════════════════════════════════════════════════════════════════════
 
+# Non-printing character wrappers for readline (\\001 = \\[, \\002 = \\])
+# These MUST be used when outputting colors from functions called via $() in PS1
+# Otherwise bash miscalculates line length, causing issues with arrow keys/history
+_NP_START=$'\\001'
+_NP_END=$'\\002'
+
 __meowterialyou_git_info() {{
     local branch status_color
     branch=$(git symbolic-ref --short HEAD 2>/dev/null || git describe --tags --exact-match 2>/dev/null)
@@ -683,7 +689,8 @@ __meowterialyou_git_info() {{
         else
             status_color="${{_MY_ERROR}}"    # Dirty (uncommitted changes)
         fi
-        echo -e " ${{status_color}}($branch)${{_MY_RESET}}"
+        # Wrap escape sequences in non-printing markers for proper readline width calculation
+        echo -e " ${{_NP_START}}${{status_color}}${{_NP_END}}($branch)${{_NP_START}}${{_MY_RESET}}${{_NP_END}}"
     fi
 }}
 
@@ -694,7 +701,8 @@ __meowterialyou_git_info() {{
 __meowterialyou_exit_status() {{
     local exit_code=$?
     if [ $exit_code -ne 0 ]; then
-        echo -e " ${{_MY_ERROR}}✗$exit_code${{_MY_RESET}}"
+        # Wrap escape sequences in non-printing markers for proper readline width calculation
+        echo -e " ${{_NP_START}}${{_MY_ERROR}}${{_NP_END}}✗$exit_code${{_NP_START}}${{_MY_RESET}}${{_NP_END}}"
     fi
 }}
 
