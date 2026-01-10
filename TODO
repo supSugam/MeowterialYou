@@ -8,7 +8,7 @@ theme media player in quick settings of quick settings tweaks
 grayscale like but with our colors for app icons.folders etc
 widget: light mode, weather next hours, country flag, now playing
 chrome gtk4 transparent context menus and search suggestions etc, highlight color text,website invisible tab icon
-dnd creates spacing top bar
+dnd creates spacing top bar, no icon in light mode, dnd switch below datemenu weird enabled
 
 [Other Bugs]
 
