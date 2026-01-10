@@ -1,14 +1,19 @@
 [Low Priority]
 - Material You theme for `bat` syntax highlighting (generate .tmTheme file)
+- when i hover over enabled quick toggle item/icon button arrow in dark mode, it feels like the icon inside/text is also dimmed along with background color, is it my placebo or what
 
-fix weird terminal behavious after that we themed
+fix weird terminal behavious after that we themed (done)
 theme notification popup
 theme media player in quick settings of quick settings tweaks
 grayscale like but with our colors for app icons.folders etc
-widget: light mode, weather next hours, country flag
-
+widget: light mode, weather next hours, country flag, now playing
+chrome gtk4 transparent context menus and search suggestions etc, highlight color text,website invisible tab icon
+dnd creates spacing top bar
 
 [Other Bugs]
 
 [Quick Settings Tweaks]
 - WIFI/BLUETOOTH LIST POPUP ON QUICK SETTINGS PANEL EXCEEDS THE SCREEN FROM TOP
+
+good job, now when i use that chevron button to expand or collapse the text content, it has fixed height currently in our theme, the widget has fixed height  no matter the content is shown or hidden instead od adjusting its height like "auto"
+

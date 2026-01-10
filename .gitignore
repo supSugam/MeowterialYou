@@ -168,3 +168,4 @@ cython_debug/
 # AGS Widget
 package-lock.json
 node_modules
+/*.json
