@@ -17,3 +17,15 @@ dnd creates spacing top bar, no icon in light mode, dnd switch below datemenu we
 
 good job, now when i use that chevron button to expand or collapse the text content, it has fixed height currently in our theme, the widget has fixed height  no matter the content is shown or hidden instead od adjusting its height like "auto"
 
+see here:
+.events-button:hover,
+.world-clocks-button:hover,
+.weather-button:hover,
+.QSTWEAKS-media .media-message:hover,
+.weather-button.message:hover,
+.QSTWEAKS-weather:hover {
+  background-color: rgba(0, 0, 0, 0.15);
+  transition-duration: 100ms;
+}
+
+we are using black background with low transparency, i want to use it of our own color but similar effect

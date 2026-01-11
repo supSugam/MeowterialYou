@@ -403,17 +403,22 @@ stage {
 .message-list {
   border: none;
   padding: 0;
-  width: 34em;
   max-width: 34em;
+  /* Trick to emulate flex-basis: 0.
+     Force natural height to be small so the sibling (calendar) drives the height.
+     We assume specific expansion properties are set in JS.
+     min-height ensures it doesn't collapse completely. */
+  height: 1px;
+  min-height: 20em;
   margin: 0 auto;
 }
 
+.message-list-sections {
+  spacing: 12px; }
 .message-list-sections:ltr {
-  margin-right: 0px;
-}
+  margin-right: 12px; }
 .message-list-sections:rtl {
-  margin-left: 0px;
-}
+  margin-left: 12px; }
 
 .message {
   background: @{surface.hex};
@@ -421,10 +426,20 @@ stage {
   border-radius: 18px;
   border: none;
   box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.07);
-  max-width: 34em;
-  margin-top: 5px;
-  margin-bottom: 5px;
+  margin: 0;
+  padding: 0;
 }
+
+  .message-list:ltr {
+    margin-left: 0;
+    margin-right: 4px;
+    padding-right: 6px;
+    border-right-width: 1px; }
+  .message-list:rtl {
+    margin-right: 0;
+    margin-left: 4px;
+    padding-left: 6px;
+    border-left-width: 1px; }
 
 .message:focus {
   box-shadow: inset 0 0 0 2px @{secondary.hex} !important;
@@ -560,10 +575,12 @@ stage {
 
 .dnd-button .toggle-switch:checked {
   background-color: @{primary.hex};
+  background-image: url("toggle-on.svg");
 }
 
 .dnd-button:hover .toggle-switch:checked {
   background-color: @{secondary.hex};
+  background-image: radial-gradient(circle, @{onSecondary.hex} 0%, @{onSecondary.hex} 50%, transparent 50%);
 }
 
 .dnd-button:focus {
@@ -767,21 +784,7 @@ stage {
   background-color: @{surfaceVariant.hex};
 }
 
-/* Notifications */
-.notifications-toasts,
-.notifications-toasts .notification-toast-container {
-    overflow: hidden !important;
-    width: 34em !important;
-    max-width: 34em !important;
-    margin: 0 auto !important;
-}
-
-.notification-toast {
-    width: 34em !important;
-    max-width: 34em !important;
-    margin: 5px auto !important;
-    overflow: hidden !important;
-}
+/* Notifications Banner/Popup */
 
 .notification-banner {
   background-color:  @{surface.hex};
@@ -793,7 +796,7 @@ stage {
   border-radius: 12px;
   box-shadow: 0 2px 4px 0 rgba(0, 0, 0, 0.2);
   overflow: hidden !important;
-  border: 1px solid transparent !important; /* Forces layout constraint */
+  border: 1px solid @{surfaceVariant.hex} !important;
 }
 
 .notification-banner .message-title,

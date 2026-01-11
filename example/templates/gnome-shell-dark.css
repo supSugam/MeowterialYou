@@ -371,6 +371,14 @@ stage {
 .message-list {
   border: none;
   padding: 0;
+  max-width: 34em;
+  /* Trick to emulate flex-basis: 0.
+     Force natural height to be small so the sibling (calendar) drives the height.
+     We assume specific expansion properties are set in JS.
+     min-height ensures it doesn't collapse completely. */
+  height: 1px;
+  min-height: 20em;
+  margin: 0 auto;
 }
 
 .message-list-sections:ltr {
@@ -385,6 +393,15 @@ stage {
   border-radius: 18px;
   border: none;
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+  margin: 0;
+  padding: 0;
+}
+
+.message:ltr {
+  margin-right: 16px;
+}
+.message:rtl {
+  margin-left: 16px;
 }
 
 .message:focus {
@@ -518,11 +535,8 @@ stage {
 }
 
 .dnd-button .toggle-switch:checked {
-  background-color:  @{primary.hex};
-}
-
-.dnd-button:hover .toggle-switch:checked {
-  background-color:  @{secondary.hex};
+  background-image: url("toggle-on.svg");
+  background-color: @{primary.hex};
 }
 
 .dnd-button:focus {
