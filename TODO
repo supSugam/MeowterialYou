@@ -29,3 +29,18 @@ see here:
 }
 
 we are using black background with low transparency, i want to use it of our own color but similar effect
+
+
+
+Format: [Component] [State] [Adwainta-default] [MeowterialYou]
+
+Color Issues in Dark Mode:
+
+1. [quick-toggle button, quick-toggle-icon etc buttons, many other components like almost everything with a background like notification message, weather card, world clock card in quick settings and calendar area, buttons etc all] [hover] [just brightens up subtly, the text remains lighter, the bg color remains that primary orange, so only thing that change is the component brightens up very subtly on hover] [ours do this opposite, it darkens up or changes the bg color to really dark making a drastic change which is not subtle and very bad for user experience]
+
+2. [othe]
+
+
+
+
+<!-- System dialog close button (poweroff) -->

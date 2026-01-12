@@ -79,7 +79,8 @@ stage {
 .panel-button:active,
 .panel-button:overview, /* activites */
 .panel-button:active .clock{
-  background-color: @{inverseOnSurface.hex};
+  /* background-color: @{inverseOnSurface.hex}; removed to keep base color */
+  box-shadow: inset 0 0 0 100px rgba(255, 255, 255, 0.08), inset 0 0 0 1px rgba(255, 255, 255, 0.05);
 }
 
 #panel .power-status.panel-status-indicators-box {
@@ -230,7 +231,8 @@ stage {
 
 .datemenu-today-button:hover {
   transition-duration: 100ms;
-  background-color:  @{inverseOnSurface.hex};
+  /* background-color: @{inverseOnSurface.hex}; removed */
+  box-shadow: inset 0 0 0 100px rgba(255, 255, 255, 0.08);
 }
 
 .datemenu-today-button:focus {
@@ -289,14 +291,15 @@ stage {
 .calendar-day-base:selected,
 .calendar-day:active,
 .calendar-day:selected {
-  background:  @{surfaceVariant.hex};
+  background-color: @{secondaryContainer.hex} !important;
+  color: @{onSecondaryContainer.hex} !important;
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.05);
   font-weight: 700 !important;
 }
 
 .calendar-today,
 .calendar-today:selected {
-  background-color:  @{primary.hex};
+  background-color: @{primary.hex} !important;
   color: @{onPrimary.hex} !important;
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.05);
   font-weight: 700 !important;
@@ -340,7 +343,8 @@ stage {
 .QSTWEAKS-media .media-message:hover,
 .weather-button.message:hover,
 .QSTWEAKS-weather:hover {
-  background-color: @{inverseOnSurface.hex};
+  /* background-color: @{inverseOnSurface.hex}; removed */
+  box-shadow: inset 0 0 0 100px rgba(255, 255, 255, 0.08), inset 0 0 0 1px rgba(255, 255, 255, 0.05);
   transition-duration: 100ms;
 }
 
@@ -415,7 +419,8 @@ stage {
 }
 
 .message-list .message:hover {
-  background-color:  @{inverseOnSurface.hex};
+  /* background-color: @{inverseOnSurface.hex}; removed */
+  box-shadow: inset 0 0 0 100px rgba(255, 255, 255, 0.08), inset 0 0 0 1px rgba(255, 255, 255, 0.05);
 }
 
 .message .message-body, .message-title {
@@ -439,7 +444,8 @@ stage {
 }
 
 .message-close-button:hover {
-  background-color:  @{inverseOnSurface.hex};
+  /* background-color: @{inverseOnSurface.hex}; removed */
+  box-shadow: inset 0 0 0 100px rgba(255, 255, 255, 0.08), inset 0 0 0 1px rgba(255, 255, 255, 0.05);
 }
 
 .message-close-button:active {
@@ -531,7 +537,8 @@ stage {
 }
 
 .dnd-button:hover .toggle-switch {
-  background-color:  @{inverseOnSurface.hex};
+  /* background-color: @{inverseOnSurface.hex}; removed */
+  box-shadow: inset 0 0 0 100px rgba(255, 255, 255, 0.08) !important;
 }
 
 .dnd-button .toggle-switch:checked {
@@ -560,7 +567,8 @@ stage {
 }
 
 .button:hover, .button:active {
-  background-color:  @{inverseOnSurface.hex};
+  /* background-color: @{inverseOnSurface.hex}; removed */
+  box-shadow: inset 0 0 0 100px rgba(255, 255, 255, 0.08), inset 0 0 0 1px rgba(255, 255, 255, 0.05);
 }
 
 .message-list-clear-button {
@@ -588,7 +596,8 @@ stage {
 }
 
 .icon-button:hover {
-	background-color: rgba(255, 255, 255, 0.15);
+  /* background-color: rgba(255, 255, 255, 0.15); removed */
+  box-shadow: inset 0 0 0 100px rgba(255, 255, 255, 0.08), inset 0 0 0 1px rgba(255, 255, 255, 0.05);
 }
 
 
@@ -621,7 +630,8 @@ stage {
 .quick-toggle.button:hover,
 .quick-menu-toggle .quick-toggle:hover,
 .quick-menu-toggle .quick-toggle-arrow:hover {
-  background-color: @{inverseOnSurface.hex};
+  /* background-color: @{inverseOnSurface.hex}; removed */
+  box-shadow: inset 0 0 0 100px rgba(255, 255, 255, 0.08), inset 0 0 0 1px rgba(255, 255, 255, 0.05);
 }
 
 .quick-toggle:checked, .quick-menu-toggle .quick-toggle:checked, .quick-menu-toggle:checked .quick-toggle, .quick-menu-toggle .quick-toggle-arrow:checked {
@@ -633,7 +643,8 @@ stage {
 .quick-toggle:checked:hover, .quick-menu-toggle .quick-toggle:checked:hover, .quick-menu-toggle .quick-toggle-arrow:checked:hover {
 	background-color: @{primary.hex};
 	color: @{onPrimary.hex};
-	box-shadow: inset 0 0 0 100px rgba(0, 0, 0, 0.15);
+	/* box-shadow: inset 0 0 0 100px rgba(0, 0, 0, 0.15); replaced with white overlay */
+	box-shadow: inset 0 0 0 100px rgba(255, 255, 255, 0.15);
 }
 
 .quick-menu-toggle .quick-toggle-arrow:ltr {
@@ -736,7 +747,8 @@ stage {
 }
 
 .background-app-item .close-button:hover {
-  background-color:  @{inverseOnSurface.hex};
+  /* background-color: @{inverseOnSurface.hex}; removed */
+  box-shadow: inset 0 0 0 100px rgba(255, 255, 255, 0.08), inset 0 0 0 1px rgba(255, 255, 255, 0.05);
 }
 
 
@@ -934,7 +946,8 @@ StScrollBar {
 }
 
 .app-folder-dialog .folder-name-container .edit-folder-button:hover {
-  background-color:  @{inverseOnSurface.hex};
+  /* background-color: @{inverseOnSurface.hex}; removed */
+  box-shadow: inset 0 0 0 100px rgba(255, 255, 255, 0.08), inset 0 0 0 1px rgba(255, 255, 255, 0.05);
 }
 
 .app-folder-dialog .folder-name-container .edit-folder-button:focus { box-shadow: inset 0 0 0 2px  @{secondary.hex} !important; }
@@ -957,7 +970,8 @@ StScrollBar {
 }
 
 .page-navigation-arrow:hover {
-  background-color:  @{inverseOnSurface.hex};
+  /* background-color: @{inverseOnSurface.hex}; removed */
+  box-shadow: inset 0 0 0 100px rgba(255, 255, 255, 0.08), inset 0 0 0 1px rgba(255, 255, 255, 0.05);
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.05);
 }
 
@@ -966,7 +980,8 @@ StScrollBar {
 }
 
 .page-navigation-arrow:active {
-  background-color:  @{inverseOnSurface.hex};
+  /* background-color: @{inverseOnSurface.hex}; removed */
+  box-shadow: inset 0 0 0 100px rgba(255, 255, 255, 0.08), inset 0 0 0 1px rgba(255, 255, 255, 0.05);
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.05);
 }
 
@@ -1229,7 +1244,7 @@ StEntry:focus {
 .modal-dialog-linked-button:focus,
 .notification-button:hover,
 .notification-button:focus {
-  background:  @{surfaceVariant.hex};
+  box-shadow: inset 0 0 0 100px rgba(255, 255, 255, 0.08) !important;
   color: @{onSurface.hex};
 }
 
@@ -1240,7 +1255,7 @@ StEntry:focus {
 
 .modal-dialog-linked-button:last-child:hover,
 .modal-dialog-linked-button:last-child:focus {
-  background-color:  @{secondary.hex};
+  box-shadow: inset 0 0 0 100px rgba(255, 255, 255, 0.15) !important;
   color: @{onPrimary.hex}; /* Keep contrast on hover/focus */
 }
 
@@ -1474,8 +1489,4 @@ StEntry:focus {
 
 #panelActivities.panel-button .workspace-dot {
     background-color: @{primary.hex};
-}
-
-#panelRight .panel-button .panel-status-indicators-box .system-status-icon {
-  color: @{primary.hex};
 }
