@@ -61,6 +61,7 @@ stage {
   border: 4px solid transparent;
   background-color: @{surfaceVariant.hex};
   box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.03);
+  transition-duration: 100ms;
 }
 .clock-display StIcon {
   padding: 8px;
@@ -472,22 +473,28 @@ stage {
   color: @{onSurfaceVariant.hex};
 }
 
-.message-close-button {
-  border-radius: 9px;
-  color: @{onSurface.hex};
-  background-color: @{surfaceVariant.hex};
-  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.03);
-  transition-duration: 100ms;
+
+/* [TODO] Better themed buttons on notification messages header expand/close */
+/* .message-close-button,
+.message-expand-button {
+  border-radius: 14px !important;
+  color: @{onSurface.hex} !important;
 }
 
-.message-close-button:hover {
+.message-close-button:hover,
+.message-expand-button:hover {
   box-shadow: inset 0 0 0 100px rgba(0, 0, 0, 0.15), inset 0 0 0 1px rgba(0, 0, 0, 0.05);
 }
 
-.message-close-button:active {
+.message-close-button:active,
+.message-expand-button:active {
   color: @{onSurfaceVariant.hex};
 }
-
+.message .message-header .message-close-button {
+  background: @{onTertiary.hex};
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.05);
+  border-radius: 14px !important;
+} */
 /* Media Controls */
 .message-media-control {
   border-radius: 6px;
@@ -566,6 +573,7 @@ stage {
 .dnd-button {
   width: 48px;
   border-radius: 10px;
+  transition-duration: 100ms;
 }
 
 .dnd-button .toggle-switch {
@@ -617,6 +625,7 @@ stage {
   background-color: @{surfaceVariant.hex};
   padding: 3px 15px;
   color: @{onSurface.hex};
+  transition-duration: 100ms;
 }
 
 .message-list-clear-button:focus {
@@ -1286,7 +1295,7 @@ StEntry:focus {
   box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.03);
   background-color: @{surfaceVariant.hex};
   color: @{onSurface.hex};
-  animation-duration: 100ms;
+  transition-duration: 100ms;
 }
 
 .modal-dialog-linked-button:first-child,
@@ -1344,7 +1353,7 @@ StEntry:focus {
 .modal-dialog .modal-dialog-linked-button:focus,
 .hotplug-notification-item:focus,
 .notification-banner .notification-button:focus {
-  animation-duration: 100ms;
+  transition-duration: 100ms;
   box-shadow: inset 0 0 0 1px @{outline.hex} !important;
 }
 .modal-dialog .modal-dialog-linked-button:focus:hover,
