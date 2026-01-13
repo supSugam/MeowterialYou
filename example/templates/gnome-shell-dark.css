@@ -330,28 +330,26 @@ stage {
 
 .events-button,
 .world-clocks-button,
-.weather-button {
+.weather-button,
+.media-message:hover {
   background-color:  @{surfaceVariant.hex};
   color: @{onSurfaceVariant.hex};
   border-radius: 14px;
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.05);
 }
 
-/* Match Adwaita's grouped hover behavior - these card elements share a common hover effect */
 .events-button:hover,
 .world-clocks-button:hover,
 .weather-button:hover,
-.QSTWEAKS-media .media-message:hover,
-.weather-button.message:hover,
-.QSTWEAKS-weather:hover {
-  /* background-color: @{inverseOnSurface.hex}; removed */
+.media-message:hover {
   box-shadow: inset 0 0 0 100px rgba(255, 255, 255, 0.08), inset 0 0 0 1px rgba(255, 255, 255, 0.05);
   transition-duration: 100ms;
 }
 
 .events-button:focus,
 .world-clocks-button:focus,
-.weather-button:focus {
+.weather-button:focus,
+.media-message:focus {
   box-shadow: inset 0 0 0 2px  @{secondary.hex} !important;
 }
 
@@ -420,7 +418,7 @@ stage {
 }
 
 .message-list .message:hover {
-  /* background-color: @{inverseOnSurface.hex}; removed */
+  /* background-color: @{inverseOnSurface.hex}; */
   box-shadow: inset 0 0 0 100px rgba(255, 255, 255, 0.08), inset 0 0 0 1px rgba(255, 255, 255, 0.05);
 }
 
@@ -594,7 +592,7 @@ stage {
 
 .icon-button {
   background-color:  @{surfaceVariant.hex};
-  color: rgba(234, 243, 251, 1);
+  color: @{onSurface.hex};
   transition-duration: 100ms;
   box-shadow: inset 0 0 0 1px rgba(652, 652, 652, 0.03);
 }
@@ -606,7 +604,7 @@ stage {
 
 
 .quick-toggle, .quick-menu-toggle .quick-toggle { 
-	color: rgba(234, 243, 251, 1);
+	color: @{onSurface.hex};
   border-radius: 15px;
 	background-color:  @{surfaceVariant.hex};
 	transition-duration: 100ms;
@@ -757,37 +755,22 @@ stage {
 
 
 /* Notifications */
-.notifications-toasts,
-.notifications-toasts .notification-toast-container {
-    overflow: hidden !important; 
-    width: 34em !important;
-    max-width: 34em !important;
-    margin: 0 auto !important;
-}
-
-.notification-toast {
-    width: 34em !important;
-    max-width: 34em !important;
-    margin: 5px auto !important;
-    overflow: hidden !important;
-}
 
 .notification-banner {
-  background-color:  @{surface.hex};
+  width: 34em;
+  min-height: 64px;
   color: @{onSurface.hex};
-  width: 34em !important;
-  max-width: 34em !important;
-  min-height: 52px;
-  margin: 5px auto !important;
-  border-radius: 12px;
-  box-shadow: 0 2px 4px 0 rgba(0, 0, 0, 0.2);
-  overflow: hidden !important;
-  border: 1px solid transparent !important; /* Forces layout constraint */
+  background-color: @{surfaceVariant.hex};
+  margin: 4px;
+  border-radius: 14px;
+  box-shadow: 0 2px 4px 0 rgba(0, 0, 0, 0.2), inset 0 0 0 1px rgba(255, 255, 255, 0.05);
+  overflow: hidden;
+  border: 1px solid @{outlineVariant.hex};
 }
 
-.notification-banner .message-content {
-    width: 100% !important;
-    max-width: 34em !important;
+.notification-banner:hover,.notification-banner:focus, .notification-banner:active {
+    box-shadow: inset 0 0 0 100px rgba(255, 255, 255, 0.08), inset 0 0 0 1px rgba(255, 255, 255, 0.05);
+    transition-duration: 100ms;
 }
 
 .notification-banner .message-title,
@@ -1225,6 +1208,7 @@ StEntry:focus {
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.05);
   background-color:  @{surfaceVariant.hex};
   color: @{onSurface.hex};
+  font-weight: 500;
   transition-duration: 100ms;
 }
 
@@ -1252,13 +1236,16 @@ StEntry:focus {
   color: @{onSurface.hex};
 }
 
-.modal-dialog-linked-button:last-child {
+.modal-dialog-linked-button:last-child,
+.notification-button:last-child {
   background-color:  @{primary.hex};
   color: @{onPrimary.hex}; /* Themed contrast color for primary action */
 }
 
 .modal-dialog-linked-button:last-child:hover,
-.modal-dialog-linked-button:last-child:focus {
+.modal-dialog-linked-button:last-child:focus,
+.notification-button:last-child:hover,
+.notification-button:last-child:focus {
   box-shadow: inset 0 0 0 100px rgba(255, 255, 255, 0.15) !important;
   color: @{onPrimary.hex}; /* Keep contrast on hover/focus */
 }
@@ -1453,6 +1440,12 @@ StEntry:focus {
   border-radius: 16px;
   border: none;
 }
+/* Explicit Hover for above widgets */
+.quick-settings.tweaked .media:hover,
+.quick-settings.tweaked .message:hover,
+.popup-menu-content .message:hover {
+   box-shadow: inset 0 0 0 100px rgba(255, 255, 255, 0.08), inset 0 0 0 1px rgba(255, 255, 255, 0.05) !important;
+}
 
 .quick-settings.tweaked .quick-container .quick-slider { margin: 2.5px 0 2.5px 0; }
 .quick-settings.tweaked .quick-container .quick-slider:first-child { margin: 0 0 2.5px 0; }
@@ -1465,7 +1458,7 @@ StEntry:focus {
 
 /* Fix for QSTweaks media progress bar contrast */
 .QSTWEAKS-progress-control .slider {
-  -barlevel-background-color: @{outlineVariant.hex};
+  -barlevel-background-color: @{inverseOnSurface.hex};
 }
 
 

@@ -78,7 +78,7 @@ stage {
 .panel-button:overview, /* activites */
 .panel-button:active .clock {
   /* background-color: @{inverseOnSurface.hex}; removed */
-  box-shadow: inset 0 0 0 100px rgba(0, 0, 0, 0.15), inset 0 0 0 1px rgba(0, 0, 0, 0.05);
+  box-shadow: inset 0 0 0 100px rgba(0, 0, 0, 0.1), inset 0 0 0 1px rgba(0, 0, 0, 0.05);
 }
 
 #panel .power-status.panel-status-indicators-box {
@@ -352,28 +352,27 @@ stage {
 
 .events-button,
 .world-clocks-button,
-.weather-button {
+.weather-button,
+.media-message {
   background-color: @{surfaceVariant.hex};
   color: @{onSurfaceVariant.hex};
   border-radius: 14px;
   box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.03);
 }
 
-/* Match Adwaita's grouped hover behavior - these card elements share a common hover effect */
 .events-button:hover,
 .world-clocks-button:hover,
 .weather-button:hover,
-.QSTWEAKS-media .media-message:hover,
-.weather-button.message:hover,
-.QSTWEAKS-weather:hover {
-  /* background-color: rgba(0, 0, 0, 0.15); removed */
-  box-shadow: inset 0 0 0 100px rgba(0, 0, 0, 0.15), inset 0 0 0 1px rgba(0, 0, 0, 0.05) !important;
+.media-message:hover {
+  /* background-color: transparent; */
+  box-shadow: inset 0 0 0 100px rgba(0, 0, 0, 0.1), inset 0 0 0 1px rgba(0, 0, 0, 0.05) !important;
   transition-duration: 100ms;
 }
 
 .events-button:focus,
 .world-clocks-button:focus,
-.weather-button:focus {
+.weather-button:focus,
+.media-message:focus {
   box-shadow: inset 0 0 0 2px @{secondary.hex} !important;
 }
 
@@ -457,7 +456,7 @@ stage {
 
 .message-list .message:hover {
   /* background-color: @{inverseOnSurface.hex}; removed */
-  box-shadow: inset 0 0 0 100px rgba(0, 0, 0, 0.15), inset 0 0 0 1px rgba(0, 0, 0, 0.05);
+  box-shadow: inset 0 0 0 100px rgba(0, 0, 0, 0.1), inset 0 0 0 1px rgba(0, 0, 0, 0.05);
 }
 
 .message .message-body,
@@ -483,7 +482,7 @@ stage {
 
 .message-close-button:hover,
 .message-expand-button:hover {
-  box-shadow: inset 0 0 0 100px rgba(0, 0, 0, 0.15), inset 0 0 0 1px rgba(0, 0, 0, 0.05);
+  box-shadow: inset 0 0 0 100px rgba(0, 0, 0, 0.1), inset 0 0 0 1px rgba(0, 0, 0, 0.05);
 }
 
 .message-close-button:active,
@@ -504,7 +503,7 @@ stage {
   transition-duration: 100ms;
 }
 .message-media-control:hover {
-  box-shadow: inset 0 0 0 100px rgba(0, 0, 0, 0.15), inset 0 0 0 1px rgba(0, 0, 0, 0.05);
+  box-shadow: inset 0 0 0 100px rgba(0, 0, 0, 0.1), inset 0 0 0 1px rgba(0, 0, 0, 0.05);
   color: @{onSurface.hex};
 }
 .message-media-control:insensitive {
@@ -581,7 +580,7 @@ stage {
 }
 
 .dnd-button:hover .toggle-switch {
-  box-shadow: inset 0 0 0 100px rgba(0, 0, 0, 0.15), inset 0 0 0 1px rgba(0, 0, 0, 0.05);
+  box-shadow: inset 0 0 0 100px rgba(0, 0, 0, 0.1), inset 0 0 0 1px rgba(0, 0, 0, 0.05);
 }
 
 .dnd-button .toggle-switch:checked {
@@ -617,7 +616,7 @@ stage {
 .button:hover,
 .button:active {
   /* background-color:  @{inverseOnSurface.hex}; removed */
-  box-shadow: inset 0 0 0 100px rgba(0, 0, 0, 0.15), inset 0 0 0 1px rgba(0, 0, 0, 0.05);
+  box-shadow: inset 0 0 0 100px rgba(0, 0, 0, 0.1), inset 0 0 0 1px rgba(0, 0, 0, 0.05);
 }
 
 .message-list-clear-button {
@@ -647,7 +646,7 @@ stage {
 
 .icon-button:hover {
   /* background-color: rgba(0, 0, 0, 0.15); removed */
-  box-shadow: inset 0 0 0 100px rgba(0, 0, 0, 0.15), inset 0 0 0 1px rgba(0, 0, 0, 0.05);
+  box-shadow: inset 0 0 0 100px rgba(0, 0, 0, 0.1), inset 0 0 0 1px rgba(0, 0, 0, 0.05);
 }
 
 .quick-toggle,
@@ -687,7 +686,7 @@ stage {
 .quick-menu-toggle .quick-toggle:hover,
 .quick-menu-toggle .quick-toggle-arrow:hover {
   /* background-color: rgba(0, 0, 0, 0.15); removed */
-  box-shadow: inset 0 0 0 100px rgba(0, 0, 0, 0.15), inset 0 0 0 1px rgba(0, 0, 0, 0.05) !important;
+  box-shadow: inset 0 0 0 100px rgba(0, 0, 0, 0.1), inset 0 0 0 1px rgba(0, 0, 0, 0.05) !important;
 }
 
 .quick-toggle:checked,
@@ -804,17 +803,24 @@ stage {
 /* Notifications Banner/Popup */
 
 .notification-banner {
-  background-color:  @{surface.hex};
+  width: 34em;
+  min-height: 64px;
   color: @{onSurface.hex};
-  width: 34em !important;
-  max-width: 34em !important;
-  min-height: 52px;
-  margin: 5px auto !important;
-  border-radius: 12px;
-  box-shadow: 0 2px 4px 0 rgba(0, 0, 0, 0.2);
-  overflow: hidden !important;
-  border: 1px solid @{surfaceVariant.hex} !important;
+  background-color: @{surfaceVariant.hex};
+  margin: 4px;
+  border-radius: 14px;
+  box-shadow: 0 2px 4px 0 rgba(0, 0, 0, 0.2), inset 0 0 0 1px rgba(255, 255, 255, 0.05);
+  overflow: hidden;
+  border: 1px solid @{outlineVariant.hex};
 }
+
+.notification-banner:hover,
+.notification-banner:focus,
+.notification-banner:active {
+  box-shadow: inset 0 0 0 100px rgba(0, 0, 0, 0.1), inset 0 0 0 1px rgba(0, 0, 0, 0.05);
+  transition-duration: 100ms;
+}
+
 
 .notification-banner .message-title,
 .notification-banner .message-body {
@@ -1295,6 +1301,7 @@ StEntry:focus {
   box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.03);
   background-color: @{surfaceVariant.hex};
   color: @{onSurface.hex};
+  font-weight: 500;
   transition-duration: 100ms;
 }
 
@@ -1335,17 +1342,20 @@ StEntry:focus {
 }
 
 /* Primary action button - themed for contrast on primary background */
-.modal-dialog-linked-button:last-child {
+.modal-dialog-linked-button:last-child,
+.notification-button:last-child {
   color: @{onPrimary.hex};
   background-color: @{primary.hex};
 }
 
-.modal-dialog-linked-button:last-child:focus {
+.modal-dialog-linked-button:last-child:focus,
+.notification-button:last-child:focus {
   color: @{onPrimary.hex};
   background-color: @{secondary.hex};
 }
 
-.modal-dialog-linked-button:last-child:hover {
+.modal-dialog-linked-button:last-child:hover,
+.notification-button:last-child:hover {
   color: @{onPrimary.hex};
   box-shadow: inset 0 0 0 100px rgba(0, 0, 0, 0.15) !important;
 }
@@ -1620,7 +1630,7 @@ StEntry:focus {
 }
 
 #panelActivities.panel-button:hover {
-  box-shadow: inset 0 0 0 100px rgba(0, 0, 0, 0.15), inset 0 0 0 1px rgba(0, 0, 0, 0.05) !important;
+  box-shadow: inset 0 0 0 100px rgba(0, 0, 0, 0.1), inset 0 0 0 1px rgba(0, 0, 0, 0.05) !important;
 }
 
 #panelActivities.panel-button .workspace-dot {

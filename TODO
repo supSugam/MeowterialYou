@@ -1,14 +1,16 @@
 [Low Priority]
-- Material You theme for `bat` syntax highlighting (generate .tmTheme file)
-- when i hover over enabled quick toggle item/icon button arrow in dark mode, it feels like the icon inside/text is also dimmed along with background color, is it my placebo or what
+- catting a code file still has non-contrasting colors for some text especially in light modes gnome-terminal
 
-fix weird terminal behavious after that we themed (done)
 theme notification popup
 theme media player in quick settings of quick settings tweaks
 grayscale like but with our colors for app icons.folders etc
+
 widget: light mode, weather next hours, country flag, now playing
+
 chrome gtk4 transparent context menus and search suggestions etc, highlight color text,website invisible tab icon
 dnd creates spacing top bar, no icon in light mode, dnd switch below datemenu weird enabled
+
+qstweaks removes hover effect from weather card and media player card in quick settings,
 
 [Other Bugs]
 
@@ -46,3 +48,8 @@ Color Issues in Dark Mode:
 <!-- System dialog close button (poweroff) -->
 <!-- Transparent topbar totally but with hover effects -->
 <!-- add option to reapply in interactive -->
+
+
+
+
+<!-- DND gap fixed by JustPerfection -->
