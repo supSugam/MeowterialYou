@@ -899,9 +899,14 @@ StScrollBar StButton#hhandle:active {
 }
 
 /* overview */
-#overviewGroup,
-.workspace-animation {
+#overviewGroup, .workspace-animation {
   background-color: @{surface.hex};
+}
+
+/* Blur My Shell compatibility: prevent visible edges when blur is active */
+.blurred-overview #overviewGroup,
+.blurred-overview .workspace-animation {
+  background-color: transparent !important;
 }
 
 .workspace-background {
