@@ -8,9 +8,7 @@ grayscale like but with our colors for app icons.folders etc
 widget: light mode, weather next hours, country flag, now playing
 
 chrome gtk4 transparent context menus and search suggestions etc, highlight color text,website invisible tab icon
-dnd creates spacing top bar, no icon in light mode, dnd switch below datemenu weird enabled
 
-qstweaks removes hover effect from weather card and media player card in quick settings,
 
 [Other Bugs]
 
@@ -53,3 +51,12 @@ Color Issues in Dark Mode:
 
 
 <!-- DND gap fixed by JustPerfection -->
+
+we have a problem with QSTWEAKS-media in quick settings, the problem is that message title or body is sometimes long so it does not come up in same line so the expand button truncates or shows it all, so the problem is that when i use that expand button to show or expand the message content, it does its job but it does ot adjusts its component height relatively
+before you make a fix let me tell you that if i uninstall theme and default to adwaita, the qstweaks message media DOES adjusts its height accordingly just fine so the issue is seem to be our theming css, for yaru's css see 
+Yaru-gnome-shell.css
+ 
+
+for quick settings tree see 
+quick_settings_tree.json
+ 

@@ -48,6 +48,8 @@ TITLE_BUTTONS_POSITION="right"
 CHROME_GTK4=false
 UI_IMPROVEMENTS=false
 DESKTOP_WIDGET=false
+TRANSPARENT_TOPBAR=false
+SKIP_INTERACTIVE=false
 SKIP_INTERACTIVE=false
 DO_UNINSTALL=false
 DO_DEFAULTS=false
@@ -360,10 +362,22 @@ run_interactive() {
             DESKTOP_WIDGET=false
             echo -e "     ${CHECK} Desktop Widget: ${DIM}disabled${NC}"
         fi
+        # ─── Transparent Topbar ───
+        echo -e "  ${BOLD}8. Transparent Topbar${NC}"
+        echo -e "     ${DIM}Make the top bar transparent${NC}"
+        if gum confirm --affirmative="  Yes, enable  " --negative="  No, skip  " \
+            --prompt.foreground="255" --selected.background="212" --default=false \
+            "     Enable transparent topbar?"; then
+            TRANSPARENT_TOPBAR=true
+            echo -e "     ${CHECK} Transparent Topbar: ${BOLD}${GREEN}enabled${NC}"
+        else
+            TRANSPARENT_TOPBAR=false
+            echo -e "     ${CHECK} Transparent Topbar: ${DIM}disabled${NC}"
+        fi
         echo ""
         
         # ─── Wallpaper ───
-        echo -e "  ${BOLD}8. Wallpaper${NC}"
+        echo -e "  ${BOLD}9. Wallpaper${NC}"
         echo -e "     ${DIM}Press Enter to use your current wallpaper${NC}"
         WALLPAPER=$(gum input --placeholder="Path to wallpaper (or press Enter for current)" \
             --prompt="     ▸ " --cursor.foreground="212" --width=50)
@@ -380,7 +394,7 @@ run_interactive() {
         echo ""
         
         # ─── GNOME Terminal Theming ───
-        echo -e "  ${BOLD}9. GNOME Terminal Theming${NC}"
+        echo -e "  ${BOLD}10. GNOME Terminal Theming${NC}"
         echo -e "     ${DIM}Apply Material You colors to terminal (background, cursor, highlight, palette)${NC}"
         if gum confirm --affirmative="  Yes, enable  " --negative="  No, skip  " \
             --prompt.foreground="255" --selected.background="212" --default=true \
@@ -394,7 +408,7 @@ run_interactive() {
         echo ""
         
         # ─── Optional App Theming ───
-        echo -e "  ${BOLD}10. Additional Apps${NC} ${DIM}(detected apps only)${NC}"
+        echo -e "  ${BOLD}11. Additional Apps${NC} ${DIM}(detected apps only)${NC}"
         
         # Spicetify (Spotify)
         if command -v spicetify &> /dev/null; then
@@ -469,6 +483,11 @@ run_interactive() {
         read -rp "     ▸ " input
         [[ "$input" =~ ^[Yy]$ ]] && DESKTOP_WIDGET=true
         echo ""
+
+        echo -e "  ${BOLD}Transparent Topbar${NC} [y/N]"
+        read -rp "     ▸ " input
+        [[ "$input" =~ ^[Yy]$ ]] && TRANSPARENT_TOPBAR=true
+        echo ""
         
         echo -e "  ${BOLD}GNOME Terminal Theming${NC} [Y/n] (default: yes)"
         read -rp "     ▸ " input
@@ -491,6 +510,7 @@ run_interactive() {
     echo -e "  ${DOT} Chrome GTK4:     ${BOLD}$([ "$CHROME_GTK4" = true ] && echo "enabled" || echo "disabled")${NC}"
     echo -e "  ${DOT} UI Improvements: ${BOLD}$([ "$UI_IMPROVEMENTS" = true ] && echo "enabled" || echo "disabled")${NC}"
     echo -e "  ${DOT} Desktop Widget:  ${BOLD}$([ "$DESKTOP_WIDGET" = true ] && echo "enabled" || echo "disabled")${NC}"
+    echo -e "  ${DOT} Transp. Topbar:  ${BOLD}$([ "$TRANSPARENT_TOPBAR" = true ] && echo "enabled" || echo "disabled")${NC}"
     echo -e "  ${DOT} Terminal Theme:  ${BOLD}$([ "$THEME_GNOME_TERMINAL" = true ] && echo "enabled" || echo "disabled")${NC}"
     echo -e "  ${DOT} Wallpaper:       ${BOLD}${WALLPAPER:-"Current system wallpaper"}${NC}"
     
@@ -676,6 +696,7 @@ apply_theme() {
     [ "$CHROME_GTK4" = true ] && args="$args --chrome-gtk4"
     [ "$UI_IMPROVEMENTS" = true ] && args="$args --ui-improvements"
     [ "$DESKTOP_WIDGET" = true ] && args="$args --desktop-widget"
+    [ "$TRANSPARENT_TOPBAR" = true ] && args="$args --transparent-topbar"
     { [ "$DO_REAPPLY" = true ] || [ "$SILENT" = true ]; } && args="$args --silent"
     
     echo -e "  ${DIM}$ meowterialyou $args${NC}"
@@ -744,6 +765,7 @@ TITLE_BUTTONS_POSITION=$TITLE_BUTTONS_POSITION
 CHROME_GTK4=$CHROME_GTK4
 UI_IMPROVEMENTS=$UI_IMPROVEMENTS
 DESKTOP_WIDGET=$DESKTOP_WIDGET
+TRANSPARENT_TOPBAR=$TRANSPARENT_TOPBAR
 THEME_GNOME_TERMINAL=$THEME_GNOME_TERMINAL
 THEME_SPOTIFY=$THEME_SPOTIFY
 THEME_DISCORD=$THEME_DISCORD
@@ -778,6 +800,7 @@ main() {
             --chrome-gtk4) CHROME_GTK4=true; SKIP_INTERACTIVE=true; shift ;;
             --ui-improvements) UI_IMPROVEMENTS=true; SKIP_INTERACTIVE=true; shift ;;
             --desktop-widget) DESKTOP_WIDGET=true; SKIP_INTERACTIVE=true; shift ;;
+            --transparent-topbar) TRANSPARENT_TOPBAR=true; SKIP_INTERACTIVE=true; shift ;;
             --uninstall)   DO_UNINSTALL=true; shift ;;
             --defaults)    DO_DEFAULTS=true; SKIP_INTERACTIVE=true; shift ;;
             --reapply)     DO_REAPPLY=true; SKIP_INTERACTIVE=true; shift ;;
@@ -798,6 +821,7 @@ main() {
                 echo "  --chrome-gtk4          Enable Chrome/Chromium GTK4 theme"
                 echo "  --ui-improvements      Enable UI improvements (transparent tray icons)"
                 echo "  --desktop-widget       Enable desktop widget (clock + weather, uses EWW)"
+                echo "  --transparent-topbar   Enable transparent topbar addon"
                 echo "  --silent               Disable desktop notifications"
                 echo "  --uninstall            Uninstall MeowterialYou"
                 echo ""

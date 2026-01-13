@@ -457,7 +457,8 @@ stage {
 .message-media-control {
   border-radius: 6px;
   padding: 12px 14px;
-  margin: 8px 0;
+  /* This was commented out to fix media-message not adjusting itself when it is expanded/collapsed */
+  /* margin: 8px 0; */ 
   color: @{onSurface.hex};
   transition-duration: 100ms;
 }

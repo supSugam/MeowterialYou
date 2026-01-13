@@ -24,6 +24,7 @@ class GenerationOptions(BaseModel):
     desktop_widget_enabled: bool = (
         False  # Widget config is in ~/.config/meowterialyou/widget.conf
     )
+    transparent_topbar_enabled: bool = False  # Transparent topbar addon
     silent: bool = False
     scheme: MaterialColors | None = None
     wallpaper_path: str | None = None
@@ -309,6 +310,10 @@ class ApplierDomain:
         if self._generation_options.desktop_widget_enabled:
             self._apply_desktop_widget_addon(postfix)
 
+        # 2d. Apply transparent topbar addon if enabled
+        if self._generation_options.transparent_topbar_enabled:
+            self._apply_transparent_topbar_addon(dest_theme, postfix)
+
         # 3. Generate and copy GTK4 system CSS to BOTH light and dark themes if --chrome-gtk4 flag is set
         # This uses separate Chrome-focused templates from the addons/chrome_gtk4/ folder
         if self._generation_options.chrome_gtk4_enabled:
@@ -516,6 +521,72 @@ class ApplierDomain:
         except Exception as e:
             log.warning(
                 f"Failed to set DTP title color (extension may not be installed): {e}"
+            )
+
+    def _apply_transparent_topbar_addon(self, dest_theme: str, postfix: str) -> None:
+        """Apply Transparent Topbar addon to GLIB Shell CSS.
+
+        This makes the top bar transparent by removing its background color and shadow.
+        """
+        import re
+        from src.util import log, Theme, Scheme
+
+        parent_dir = self._generation_options.parent_dir
+        addon_dir = os.path.join(
+            parent_dir, "example/templates/addons/transparent_topbar"
+        )
+        home = os.path.expanduser("~")
+        lightmode_enabled = self._generation_options.lightmode_enabled
+
+        # Select the appropriate addon file based on theme mode
+        addon_file = os.path.join(
+            addon_dir, "shell_light.css" if lightmode_enabled else "shell_dark.css"
+        )
+
+        # Target: the generated GNOME Shell CSS
+        theme_name = f"MeowterialYou-{postfix}"
+        output_file = os.path.join(
+            home, f".themes/{theme_name}/gnome-shell/gnome-shell.css"
+        )
+
+        if not os.path.exists(addon_file):
+            log.warning(f"Transparent Topbar addon file not found: {addon_file}")
+            return
+
+        if not os.path.exists(output_file):
+            log.warning(f"GNOME Shell CSS not found: {output_file}")
+            return
+
+        try:
+            with open(addon_file, "r") as f:
+                addon_css = f.read()
+        except OSError as e:
+            log.error(f"Failed to read addon file {addon_file}: {e}")
+            return
+
+        # Process template placeholders (replace @{colorName.hex} etc.) if needed
+        # Even if currently no tokens are used, it's good practice to support them
+        theme_data, _ = Theme.get(self._generation_options.wallpaper_path)
+        scheme = Scheme(theme=theme_data, lightmode=lightmode_enabled).to_hex()
+
+        for key, value in scheme.items():
+            pattern_hex = f"@{{{key}.hex}}"
+            hex_stripped = value[1:]
+            rgb_value = f"rgb({','.join(str(c) for c in tuple(int(hex_stripped[i:i+2], 16) for i in (0, 2, 4)))})"
+            pattern_rgb = f"@{{{key}.rgb}}"
+
+            addon_css = re.sub(f"@{{{key}}}", hex_stripped, addon_css)
+            addon_css = re.sub(pattern_hex, value, addon_css)
+            addon_css = re.sub(pattern_rgb, rgb_value, addon_css)
+
+        try:
+            with open(output_file, "a") as f:
+                f.write("\n\n/* ===== Transparent Topbar Addon ===== */\n")
+                f.write(addon_css)
+            log.info(f"Applied Transparent Topbar addon to {output_file}")
+        except OSError as e:
+            log.error(
+                f"Failed to append Transparent Topbar addon to {output_file}: {e}"
             )
 
     def _apply_desktop_widget_addon(self, postfix: str) -> None:

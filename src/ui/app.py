@@ -70,6 +70,7 @@ class MainWindow(Gtk.ApplicationWindow):
         options_listbox.set_selection_mode(Gtk.SelectionMode.NONE)
         options_listbox.set_css_classes(["boxed-list"])
         options_listbox.append(self._add_light_theme_switch())
+        options_listbox.append(self._add_transparent_topbar_switch())
 
         options_preference_group = Adw.PreferencesGroup(
             title="Apply Options", margin_top=20
@@ -229,17 +230,39 @@ class MainWindow(Gtk.ApplicationWindow):
                 hex_to_gdk_rgba(self._applier_domain.scheme[color_key])
             )
 
+    def switch_transparent_topbar_switched(self, switch, state: bool):
+        print(f"Transparent Topbar switch has been switched {'on' if state else 'off'}")
+        self._applier_domain._generation_options.transparent_topbar_enabled = state
+
+    def _add_transparent_topbar_switch(self):
+        action_row = Adw.ActionRow()
+        action_row.set_title("Transparent Topbar")
+        action_row.set_subtitle("Make the GNOME Shell top bar transparent")
+
+        self.transparent_topbar_switch = Gtk.Switch()
+        self.transparent_topbar_switch.set_active(
+            self._applier_domain._generation_options.transparent_topbar_enabled
+        )
+        self.transparent_topbar_switch.connect(
+            "state-set", self.switch_transparent_topbar_switched
+        )
+        self.transparent_topbar_switch.set_valign(Gtk.Align.CENTER)
+
+        action_row.add_suffix(self.transparent_topbar_switch)
+
+        return action_row
+
     def _add_light_theme_switch(self):
         action_row = Adw.ActionRow()
         action_row.set_title("Light Theme")
         action_row.set_subtitle("Enable light theme configuration")
 
-        self.light_theme_switch = Gtk.Switch()
-        self.light_theme_switch.set_active(self._applier_domain.lightmode_enabled)
-        self.light_theme_switch.connect("state-set", self.switch_switched)
-        self.light_theme_switch.set_valign(Gtk.Align.CENTER)
+        self.screen_switch = Gtk.Switch()
+        self.screen_switch.set_active(self._applier_domain.lightmode_enabled)
+        self.screen_switch.connect("state-set", self.switch_switched)
+        self.screen_switch.set_valign(Gtk.Align.CENTER)
 
-        action_row.add_suffix(self.light_theme_switch)
+        action_row.add_suffix(self.screen_switch)
 
         return action_row
 
