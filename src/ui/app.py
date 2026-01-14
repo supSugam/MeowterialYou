@@ -70,7 +70,7 @@ class MainWindow(Gtk.ApplicationWindow):
         options_listbox.set_selection_mode(Gtk.SelectionMode.NONE)
         options_listbox.set_css_classes(["boxed-list"])
         options_listbox.append(self._add_light_theme_switch())
-        options_listbox.append(self._add_transparent_topbar_switch())
+        options_listbox.append(self._add_transparent_panel_switch())
 
         options_preference_group = Adw.PreferencesGroup(
             title="Apply Options", margin_top=20
@@ -230,25 +230,25 @@ class MainWindow(Gtk.ApplicationWindow):
                 hex_to_gdk_rgba(self._applier_domain.scheme[color_key])
             )
 
-    def switch_transparent_topbar_switched(self, switch, state: bool):
-        print(f"Transparent Topbar switch has been switched {'on' if state else 'off'}")
-        self._applier_domain._generation_options.transparent_topbar_enabled = state
+    def switch_transparent_panel_switched(self, switch, state: bool):
+        print(f"Transparent Panel switch has been switched {'on' if state else 'off'}")
+        self._applier_domain._generation_options.transparent_panel_enabled = state
 
-    def _add_transparent_topbar_switch(self):
+    def _add_transparent_panel_switch(self):
         action_row = Adw.ActionRow()
-        action_row.set_title("Transparent Topbar")
-        action_row.set_subtitle("Make the GNOME Shell top bar transparent")
+        action_row.set_title("Transparent Panel")
+        action_row.set_subtitle("Make the GNOME Shell panel transparent")
 
-        self.transparent_topbar_switch = Gtk.Switch()
-        self.transparent_topbar_switch.set_active(
-            self._applier_domain._generation_options.transparent_topbar_enabled
+        self.transparent_panel_switch = Gtk.Switch()
+        self.transparent_panel_switch.set_active(
+            self._applier_domain._generation_options.transparent_panel_enabled
         )
-        self.transparent_topbar_switch.connect(
-            "state-set", self.switch_transparent_topbar_switched
+        self.transparent_panel_switch.connect(
+            "state-set", self.switch_transparent_panel_switched
         )
-        self.transparent_topbar_switch.set_valign(Gtk.Align.CENTER)
+        self.transparent_panel_switch.set_valign(Gtk.Align.CENTER)
 
-        action_row.add_suffix(self.transparent_topbar_switch)
+        action_row.add_suffix(self.transparent_panel_switch)
 
         return action_row
 

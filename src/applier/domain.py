@@ -24,7 +24,7 @@ class GenerationOptions(BaseModel):
     desktop_widget_enabled: bool = (
         False  # Widget config is in ~/.config/meowterialyou/widget.conf
     )
-    transparent_topbar_enabled: bool = False  # Transparent topbar addon
+    transparent_panel_enabled: bool = False  # Transparent panel addon
     silent: bool = False
     scheme: MaterialColors | None = None
     wallpaper_path: str | None = None
@@ -311,8 +311,8 @@ class ApplierDomain:
             self._apply_desktop_widget_addon(postfix)
 
         # 2d. Apply transparent topbar addon if enabled
-        if self._generation_options.transparent_topbar_enabled:
-            self._apply_transparent_topbar_addon(dest_theme, postfix)
+        if self._generation_options.transparent_panel_enabled:
+            self._apply_transparent_panel_addon(dest_theme, postfix)
 
         # 3. Generate and copy GTK4 system CSS to BOTH light and dark themes if --chrome-gtk4 flag is set
         # This uses separate Chrome-focused templates from the addons/chrome_gtk4/ folder
@@ -523,25 +523,87 @@ class ApplierDomain:
                 f"Failed to set DTP title color (extension may not be installed): {e}"
             )
 
-    def _apply_transparent_topbar_addon(self, dest_theme: str, postfix: str) -> None:
-        """Apply Transparent Topbar addon to GLIB Shell CSS.
+    def _detect_panel_position(self) -> str:
+        """Detect panel position (TOP/BOTTOM/LEFT/RIGHT). Defaults to TOP."""
+        import subprocess
 
-        This makes the top bar transparent by removing its background color and shadow.
+        try:
+            # Check Dash to Panel
+            result = subprocess.run(
+                [
+                    "gsettings",
+                    "get",
+                    "org.gnome.shell.extensions.dash-to-panel",
+                    "panel-position",
+                ],
+                capture_output=True,
+                text=True,
+                timeout=1,
+            )
+            if result.returncode == 0:
+                pos = result.stdout.strip().strip("'")
+                if pos in ["TOP", "BOTTOM", "LEFT", "RIGHT"]:
+                    return pos
+        except Exception:
+            pass
+
+        # Default to TOP
+        return "TOP"
+
+    def _get_screen_height(self) -> int:
+        """Get the screen height using xrandr."""
+        try:
+            # Run xrandr to get screen resolution
+            result = subprocess.run(
+                ["xrandr"], capture_output=True, text=True, check=True
+            )
+            # Look for line with '*' (current mode)
+            # Output format: "   2880x1800     59.97*+"
+            import re
+
+            for line in result.stdout.splitlines():
+                if "*" in line:
+                    match = re.search(r"(\d+)x(\d+)", line)
+                    if match:
+                        return int(match.group(2))
+        except Exception as e:
+            from src.util import log
+
+            log.warning(f"Failed to detect screen height: {e}")
+
+        return 1080  # Default fallback
+
+    def _get_panel_metrics(self) -> tuple[str, float]:
+        """Get panel position and height ratio relative to screen."""
+        position = self._detect_panel_position()
+        screen_height = self._get_screen_height()
+
+        # Determine panel height (pixels)
+        # Default GNOME panel is ~32px
+        # We add a small safety buffer of 2px
+        panel_height_px = 32 + 2
+
+        # Calculate ratio
+        height_ratio = panel_height_px / screen_height
+
+        # Ensure minimum safe ratio (e.g. 1%)
+        height_ratio = max(height_ratio, 0.01)
+
+        return position, height_ratio
+
+    def _apply_transparent_panel_addon(self, dest_theme: str, postfix: str) -> None:
+        """Apply Transparent Panel addon to GLIB Shell CSS.
+
+        This checks brightness of the panel region and applies appropriate contrast CSS.
         """
         import re
-        from src.util import log, Theme, Scheme
+        from src.util import log, Theme, Scheme, is_region_dark
 
         parent_dir = self._generation_options.parent_dir
         addon_dir = os.path.join(
-            parent_dir, "example/templates/addons/transparent_topbar"
+            parent_dir, "example/templates/addons/transparent_panel"
         )
         home = os.path.expanduser("~")
-        lightmode_enabled = self._generation_options.lightmode_enabled
-
-        # Select the appropriate addon file based on theme mode
-        addon_file = os.path.join(
-            addon_dir, "shell_light.css" if lightmode_enabled else "shell_dark.css"
-        )
 
         # Target: the generated GNOME Shell CSS
         theme_name = f"MeowterialYou-{postfix}"
@@ -549,12 +611,55 @@ class ApplierDomain:
             home, f".themes/{theme_name}/gnome-shell/gnome-shell.css"
         )
 
-        if not os.path.exists(addon_file):
-            log.warning(f"Transparent Topbar addon file not found: {addon_file}")
-            return
-
         if not os.path.exists(output_file):
             log.warning(f"GNOME Shell CSS not found: {output_file}")
+            return
+
+        # --- 1. Detect Metrics & Brightness ---
+        wallpaper_path = self._generation_options.wallpaper_path
+        position, height_ratio = self._get_panel_metrics()
+
+        # Calculate dynamic region based on ratio
+        region = (0, 0, 1.0, height_ratio)  # Default TOP
+        if position == "BOTTOM":
+            region = (0, 1.0 - height_ratio, 1.0, 1.0)
+        elif position == "LEFT":
+            region = (0, 0, height_ratio, 1.0)
+        elif position == "RIGHT":
+            region = (1.0 - height_ratio, 0, 1.0, 1.0)
+
+        is_dark = False
+        if wallpaper_path:
+            is_dark = is_region_dark(wallpaper_path, region=region)
+
+        # --- 2. Select Addon File & Text Color ---
+        if is_dark:
+            # Dark region -> Need Light Text -> Use shell_dark.css
+            addon_filename = "shell_dark.css"
+
+            theme_dark, _ = Theme.get(wallpaper_path)
+            scheme_dark = Scheme(theme=theme_dark, lightmode=False).to_hex()
+            panel_text_color = scheme_dark.get("onSurface", "#e1e3df")
+
+            log.info(
+                f"Transparent panel: Detected DARK region ({height_ratio:.1%}). Using light text."
+            )
+        else:
+            # Light region -> Need Dark Text -> Use shell_light.css
+            addon_filename = "shell_light.css"
+
+            theme_light, _ = Theme.get(wallpaper_path)
+            scheme_light = Scheme(theme=theme_light, lightmode=True).to_hex()
+            panel_text_color = scheme_light.get("onSurface", "#191c1a")
+
+            log.info(
+                f"Transparent panel: Detected LIGHT region ({height_ratio:.1%}). Using dark text."
+            )
+
+        # --- 3. Read Addon File ---
+        addon_file = os.path.join(addon_dir, addon_filename)
+        if not os.path.exists(addon_file):
+            log.warning(f"Transparent Panel addon file not found: {addon_file}")
             return
 
         try:
@@ -564,30 +669,37 @@ class ApplierDomain:
             log.error(f"Failed to read addon file {addon_file}: {e}")
             return
 
-        # Process template placeholders (replace @{colorName.hex} etc.) if needed
-        # Even if currently no tokens are used, it's good practice to support them
-        theme_data, _ = Theme.get(self._generation_options.wallpaper_path)
-        scheme = Scheme(theme=theme_data, lightmode=lightmode_enabled).to_hex()
+        # --- 4. Inject Colors ---
+        # Get current scheme for other placeholders if any
+        theme_current, _ = Theme.get(self._generation_options.wallpaper_path)
+        scheme_current = Scheme(
+            theme=theme_current, lightmode=self._generation_options.lightmode_enabled
+        ).to_hex()
+
+        scheme = dict(scheme_current)
+        scheme["panelTextColor"] = panel_text_color
 
         for key, value in scheme.items():
             pattern_hex = f"@{{{key}.hex}}"
-            hex_stripped = value[1:]
+            hex_stripped = value[1:] if value.startswith("#") else value
             rgb_value = f"rgb({','.join(str(c) for c in tuple(int(hex_stripped[i:i+2], 16) for i in (0, 2, 4)))})"
             pattern_rgb = f"@{{{key}.rgb}}"
 
-            addon_css = re.sub(f"@{{{key}}}", hex_stripped, addon_css)
+            # Replace both hex and rgb tokens
+            if f"@{{{key}}}" in addon_css:
+                addon_css = re.sub(f"@{{{key}}}", hex_stripped, addon_css)
             addon_css = re.sub(pattern_hex, value, addon_css)
             addon_css = re.sub(pattern_rgb, rgb_value, addon_css)
 
         try:
             with open(output_file, "a") as f:
-                f.write("\n\n/* ===== Transparent Topbar Addon ===== */\n")
+                f.write(
+                    f"\n\n/* ===== Transparent Panel Addon ({addon_filename}) ===== */\n"
+                )
                 f.write(addon_css)
-            log.info(f"Applied Transparent Topbar addon to {output_file}")
+            log.info(f"Applied Transparent Panel addon to {output_file}")
         except OSError as e:
-            log.error(
-                f"Failed to append Transparent Topbar addon to {output_file}: {e}"
-            )
+            log.error(f"Failed to append Transparent Panel addon to {output_file}: {e}")
 
     def _apply_desktop_widget_addon(self, postfix: str) -> None:
         """Apply Material You desktop widget using AGS."""

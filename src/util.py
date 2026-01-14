@@ -4,6 +4,7 @@ import re
 import subprocess
 import sys
 import json
+import numpy as np
 from argparse import ArgumentParser, Namespace
 from configparser import ConfigParser
 from pathlib import Path
@@ -91,8 +92,10 @@ def parse_arguments():
     )
 
     parser.add_argument(
+        "--transparent-panel",
         "--transparent-topbar",
-        help="enable transparent topbar addon",
+        dest="transparent_panel",
+        help="enable transparent panel addon",
         action="store_true",
     )
 
@@ -192,6 +195,93 @@ def _get_image_stats(image_path: str) -> tuple[float, float, float]:
     except Exception as e:
         log.warning(f"Could not analyze image: {e}")
         return 128, 0.5, 0.5  # Defaults
+
+
+def is_region_dark(
+    image_path: str,
+    region: tuple[float, float, float, float] | None = None,
+    threshold: float = 150.0,
+) -> bool:
+    """
+    Determine if a specific region of the wallpaper is dark.
+
+    Uses perceptual luminance (Rec. 709) to evaluate brightness, which better
+    matches human perception than simple RGB averaging.
+
+    Args:
+        image_path: Path to wallpaper image
+        region: (left, top, right, bottom) in normalized coordinates [0.0-1.0].
+                If None, defaults to top 10% (0, 0, 1, 0.1).
+        threshold: Brightness threshold (0-255). Below = dark.
+
+    Returns:
+        True if region is dark (needs light text for topbar)
+    """
+    try:
+        img = Image.open(image_path)
+
+        # Convert to RGB early to handle RGBA, grayscale, etc.
+        if img.mode != "RGB":
+            img = img.convert("RGB")
+
+        width, height = img.size
+
+        # Determine crop region
+        if region:
+            l, t, r, b = region
+            # Validate normalized coordinates
+            if not all(0.0 <= val <= 1.0 for val in region):
+                log.warning(f"Region coords must be in [0,1]: {region}")
+                region = None
+
+        if region is None:
+            # Default: top 10%, minimum 50px
+            l, t, r, b = 0.0, 0.0, 1.0, max(0.1, 50 / height)
+
+        # Convert to pixel coordinates
+        l_px = int(l * width)
+        t_px = int(t * height)
+        r_px = int(r * width)
+        b_px = int(b * height)
+
+        # Ensure valid crop region
+        l_px = max(0, min(l_px, width - 1))
+        t_px = max(0, min(t_px, height - 1))
+        r_px = max(l_px + 1, min(r_px, width))
+        b_px = max(t_px + 1, min(b_px, height))
+
+        # Crop and downsample for performance
+        crop = img.crop((l_px, t_px, r_px, b_px))
+
+        # Adaptive downsampling: maintain aspect ratio, cap at ~4K pixels
+        aspect = crop.width / crop.height
+        target_pixels = 4096
+        if crop.width * crop.height > target_pixels:
+            new_height = int((target_pixels / aspect) ** 0.5)
+            new_width = int(new_height * aspect)
+            crop = crop.resize((new_width, new_height), Image.Resampling.LANCZOS)
+
+        # Calculate perceptual luminance (Rec. 709 coefficients)
+        pixels = np.array(crop, dtype=np.float32)
+        luminance = (
+            0.2126 * pixels[:, :, 0]
+            + 0.7152 * pixels[:, :, 1]
+            + 0.0722 * pixels[:, :, 2]
+        )
+
+        # Use median instead of mean (more robust to outliers like bright UI elements)
+        avg_brightness = np.median(luminance)
+
+        log.debug(
+            f"Region brightness: {avg_brightness:.1f} (threshold: {threshold}, "
+            f"sampled {crop.width}x{crop.height}px)"
+        )
+
+        return avg_brightness < threshold
+
+    except Exception as e:
+        log.warning(f"Could not analyze region brightness: {e}")
+        return False  # Safe default: assume light wallpaper (use dark text)
 
 
 def _calculate_contrast_ratio(color1: str, color2_rgb: tuple) -> float:

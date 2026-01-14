@@ -48,7 +48,7 @@ def main():  # sourcery skip: raise-specific-error
             chrome_gtk4_enabled=arguments.chrome_gtk4,
             ui_improvements_enabled=arguments.ui_improvements,
             desktop_widget_enabled=getattr(arguments, "desktop_widget", False),
-            transparent_topbar_enabled=getattr(arguments, "transparent_topbar", False),
+            transparent_panel_enabled=getattr(arguments, "transparent_panel", False),
             wallpaper_path=arguments.wallpaper
             or ApplierDomain.get_current_system_wallpaper_path(),
             silent=arguments.silent,

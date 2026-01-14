@@ -1,0 +1,95 @@
+/* ===== Transparent Panel Addon (Dark Mode) ===== */
+
+/* Panel background */
+#panel:not(.dashtopanelBottom), #panel:not(.dashtopanelMainPanel) {
+  background-color: transparent !important;
+}
+
+/* All panel buttons */
+#panel .panel-button {
+  background-color: transparent !important;
+  box-shadow: none !important;
+}
+
+/* Generic Hover Effect */
+#panel .panel-button:hover,
+#panel .panel-button:active,
+#panel .panel-button:overview,
+#panel .panel-button:focus,
+#panel .panel-button:checked {
+  background-color: transparent !important;
+  box-shadow: inset 0 0 0 100px rgba(0, 0, 0, 0.1) !important;
+}
+
+/* Specific fix for Clock/Date Menu (Simplified) */
+#panel .panel-button.clock-display,
+#panel .panel-button.clock-display .clock,
+#panel .panel-button.clock-display StIcon {
+  background-color: transparent !important;
+}
+
+/* Clock base styling - subtle inset border always visible */
+#panel .panel-button .clock {
+  background-color: transparent !important;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.1) !important;
+  transition-duration: 100ms;
+}
+
+/* Clock Hover/Active/Focus/Checked states - border + overlay */
+#panel .panel-button:hover .clock,
+#panel .panel-button:active .clock,
+#panel .panel-button:focus .clock,
+#panel .panel-button:checked .clock {
+  background-color: transparent !important;
+  box-shadow: inset 0 0 0 100px rgba(0, 0, 0, 0.1), inset 0 0 0 1px rgba(0, 0, 0, 0.1) !important;
+}
+
+/* Panel Activities Button styling - subtle inset border always visible */
+#panel #panelActivities.panel-button {
+  background-color: transparent !important;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.1) !important;
+  transition-duration: 100ms;
+}
+
+/* Activities Hover/Active/Focus/Checked states - border + overlay */
+#panel #panelActivities.panel-button:hover,
+#panel #panelActivities.panel-button:active,
+#panel #panelActivities.panel-button:overview,
+#panel #panelActivities.panel-button:focus,
+#panel #panelActivities.panel-button:checked {
+  background-color: transparent !important;
+  box-shadow: inset 0 0 0 100px rgba(0, 0, 0, 0.1), inset 0 0 0 1px rgba(0, 0, 0, 0.1) !important;
+}
+
+#panelActivities.panel-button .workspace-dot {
+    background-color: @{panelTextColor.hex} !important;
+}
+
+/* Override ui_improvements Quick Settings restoration - subtle inset border */
+#panelRight > *:last-child .panel-button {
+  background-color: transparent !important;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.1) !important;
+  transition-duration: 100ms;
+}
+
+/* Quick Settings Hover/Active/Focus/Checked states - border + overlay */
+#panelRight > *:last-child .panel-button:hover,
+#panelRight > *:last-child .panel-button:active,
+#panelRight > *:last-child .panel-button:focus,
+#panelRight > *:last-child .panel-button:checked {
+  background-color: transparent !important;
+  box-shadow: inset 0 0 0 100px rgba(0, 0, 0, 0.1), inset 0 0 0 1px rgba(0, 0, 0, 0.1) !important;
+}
+
+/* Text/icon colors based on wallpaper brightness */
+#panel .panel-button,
+#panel .panel-button.clock-display,
+#panel .panel-button StLabel,
+#panel .panel-button StIcon,
+#panel .clock,
+#panel .clock StLabel,
+#panel .clock StIcon,
+#panelActivities,
+#panelActivities StLabel, {
+  color: @{panelTextColor.hex} !important;
+}
