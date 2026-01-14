@@ -62,9 +62,15 @@ def sourceColorFromImage(image):
     # // Convert Pixels to Material Colors
     result = QuantizerCelebi.quantize(pixels, 128)
     ranked = Score.score(result)
+
+    # Fallback to dominant color if scoring fails (returns default blue)
+    if len(ranked) == 1 and ranked[0] == 0xFF4285F4 and 0xFF4285F4 not in result:
+        print("Info: No colorful seeds found. Validating dominant colors...")
+        sorted_by_pop = sorted(result.items(), key=lambda item: item[1], reverse=True)
+        if sorted_by_pop:
+            ranked = [color for color, count in sorted_by_pop]
+
     top = ranked[0]
-    second_top = ranked[1]
-    print(top, second_top)
     return top
 
 
@@ -102,6 +108,13 @@ def topColorsFromImage(image) -> list[int]:
 
     result = QuantizerCelebi.quantize(argb_pixels, 128)
     ranked = Score.score(result)
+
+    # Fallback to dominant color if scoring fails (returns default blue)
+    if len(ranked) == 1 and ranked[0] == 0xFF4285F4 and 0xFF4285F4 not in result:
+        print("Info: No colorful seeds found. Validating dominant colors...")
+        sorted_by_pop = sorted(result.items(), key=lambda item: item[1], reverse=True)
+        if sorted_by_pop:
+            ranked = [color for color, count in sorted_by_pop]
     if len(ranked) > 10:
         print(ranked[:10])
         return ranked[:10]
