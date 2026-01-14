@@ -1,4 +1,4 @@
-/* ===== Transparent Panel Addon (Dark Mode) ===== */
+/* ===== Transparent Panel Addon (Light Mode) ===== */
 
 /* Panel background */
 #panel:not(.dashtopanelBottom), #panel:not(.dashtopanelMainPanel) {
@@ -90,6 +90,6 @@
 #panel .clock StLabel,
 #panel .clock StIcon,
 #panelActivities,
-#panelActivities StLabel, {
+#panelActivities StLabel {
   color: @{panelTextColor.hex} !important;
 }
