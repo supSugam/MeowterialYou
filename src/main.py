@@ -49,6 +49,10 @@ def main():  # sourcery skip: raise-specific-error
             ui_improvements_enabled=arguments.ui_improvements,
             desktop_widget_enabled=getattr(arguments, "desktop_widget", False),
             transparent_panel_enabled=getattr(arguments, "transparent_panel", False),
+            themed_folder_icons_enabled=getattr(
+                arguments, "themed_folder_icons", False
+            ),
+            themed_app_icons_enabled=getattr(arguments, "themed_app_icons", False),
             scheme_variant=getattr(arguments, "scheme", "tonal_spot"),
             wallpaper_path=arguments.wallpaper
             or ApplierDomain.get_current_system_wallpaper_path(),

@@ -79,7 +79,9 @@ stage {
 .panel-button:hover .clock,
 .panel-button:active,
 .panel-button:overview, /* activites */
-.panel-button:active .clock {
+.panel-button:active .clock,
+.panel-button:focus,
+.panel-button:checked {
   box-shadow: inset 0 0 0 100px rgba(255, 255, 255, 0.08), inset 0 0 0 1px rgba(255, 255, 255, 0.05);
 }
 
@@ -845,6 +847,11 @@ StScrollBar {
 
 
 /* overview */
+/* Controls manager and workspace spacing */
+.controls-manager, .secondary-monitor-workspaces {
+  spacing: 12px;
+}
+
 #overviewGroup, .workspace-animation {
   background-color:  @{surface.hex};
 }
@@ -853,6 +860,15 @@ StScrollBar {
 .blurred-overview #overviewGroup,
 .blurred-overview .workspace-animation {
   background-color: transparent !important;
+}
+
+.overview-controls {
+  padding-bottom: 32px;
+}
+
+/* Window picker */
+.window-picker {
+  spacing: 6px;
 }
 
 .workspace-background {
@@ -870,7 +886,97 @@ StScrollBar {
 }
 
 
-/* App icons */
+/* Overview Tiles - App Grid and Search Results */
+.overview-tile, .grid-search-result {
+  color: @{onSurface.hex};
+  background-color: @{surfaceContainer.hex};
+  border-radius: 18px;
+  padding: 12px;
+  transition-duration: 100ms;
+}
+
+.overview-tile:hover, .grid-search-result:hover {
+  color: @{onSurface.hex};
+  background-color: @{surfaceContainerHigh.hex};
+  box-shadow: inset 0 0 0 100px rgba(255, 255, 255, 0.08), inset 0 0 0 1px rgba(255, 255, 255, 0.05);
+}
+
+.overview-tile:focus, .grid-search-result:focus {
+  color: @{onSurface.hex};
+  box-shadow: inset 0 0 0 2px @{primary.hex} !important;
+  background-color: @{surfaceContainerHigh.hex};
+}
+
+.overview-tile:focus:hover, .grid-search-result:focus:hover {
+  background-color: @{surfaceContainerHighest.hex};
+}
+
+.overview-tile:active, .grid-search-result:active {
+  color: @{onSurface.hex};
+  background-color: @{surfaceContainerHighest.hex};
+}
+
+.overview-tile:active:hover, .grid-search-result:active:hover {
+  background-color: @{surfaceContainerHighest.hex};
+  box-shadow: inset 0 0 0 100px rgba(255, 255, 255, 0.08);
+}
+
+.overview-tile:highlighted, .grid-search-result:highlighted,
+.overview-tile:selected, .grid-search-result:selected,
+.overview-tile:checked, .grid-search-result:checked {
+  color: @{onSurface.hex};
+  background-color: @{surfaceContainerHigh.hex};
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+}
+
+.overview-tile:highlighted:hover, .grid-search-result:highlighted:hover,
+.overview-tile:selected:hover, .grid-search-result:selected:hover,
+.overview-tile:checked:hover, .grid-search-result:checked:hover {
+  background-color: @{surfaceContainerHighest.hex};
+}
+
+.overview-tile:insensitive, .grid-search-result:insensitive {
+  color: @{outline.hex};
+  background-color: @{surfaceContainer.hex};
+}
+
+.overview-tile:drop, .grid-search-result:drop {
+  background-color: @{primaryContainer.hex};
+  box-shadow: inset 0 0 0 2px @{primary.hex};
+}
+
+.overview-tile .overview-icon.overview-icon-with-label > StBoxLayout, 
+.grid-search-result .overview-icon.overview-icon-with-label > StBoxLayout {
+  spacing: 6px;
+}
+
+/* App Folders in Grid */
+.app-folder {
+  color: @{onSurface.hex};
+  background-color: @{surfaceVariant.hex};
+  transition-duration: 100ms;
+}
+
+.app-folder:hover {
+  background-color: @{surfaceContainerHigh.hex};
+  box-shadow: inset 0 0 0 100px rgba(255, 255, 255, 0.08);
+}
+
+.app-folder:focus {
+  box-shadow: inset 0 0 0 2px @{primary.hex} !important;
+  background-color: @{surfaceContainerHigh.hex};
+}
+
+.app-folder:active, .app-folder:selected, .app-folder:checked {
+  background-color: @{surfaceContainerHighest.hex};
+}
+
+.app-folder:drop {
+  background-color: @{primaryContainer.hex};
+  box-shadow: inset 0 0 0 2px @{primary.hex};
+}
+
+/* App Well app and overview-icon styling */
 .app-well-app.app-folder .overview-icon, .app-folder.grid-search-result .overview-icon, .app-well-app .overview-icon, .grid-search-result .overview-icon {
   box-shadow: inset 0 0 0 0px rgba(255, 255, 255, 0); /* fix default dash focused box-shadow*/
   transition-duration: 100ms;
@@ -1115,41 +1221,162 @@ StEntry StLabel:insensitive {
   color: @{onSurfaceVariant.hex};
 }
 
-StEntry:hover, StEntry:focus, StEntry:active {
+StEntry:hover {
   border: 1px solid @{outline.hex};
-  background-color:  @{surfaceVariant.hex};
-  box-shadow: none;
+  background-color: @{surfaceVariant.hex};
+}
+
+StEntry:focus, StEntry:active {
+  border: none !important;
+  background-color: @{surfaceContainerHigh.hex};
+  box-shadow: inset 0 0 0 2px @{primary.hex} !important;
 }
 
 StEntry:focus {
   color: @{onSurface.hex};
 }
 
-.search-section-content{
+.search-section-content {
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.05);
   border-radius: 15px;
   border: none;
-  background-color:  @{surfaceVariant.hex};
+  background-color: @{surfaceContainer.hex};
   color: @{onSurface.hex};
+  padding: 12px;
+  margin: 0 12px;
 }
 
-.list-search-result .list-search-result-title { color: @{onSurface.hex}; } /* ubuntu fix */
+.search-section {
+  spacing: 18px;
+}
 
-.list-search-result .list-search-result-description { color: @{onSurfaceVariant.hex}; }
+.search-section .search-section-separator {
+  height: 8px;
+  background-color: transparent;
+}
+
+/* Search entry styling */
+.search-entry {
+  border-radius: 999px;
+  margin-top: 24px;
+  margin-bottom: 12px;
+  width: 24em;
+}
+
+.search-entry StLabel.hint-text {
+  color: @{onSurfaceVariant.hex};
+}
+
+.search-entry .search-entry-icon {
+  icon-size: 1.091em;
+  margin-top: 2px;
+  padding: 0 4px;
+}
+
+/* List Search Results */
+#searchResults {
+  margin: 0 4px;
+}
+
+#searchResultsContent {
+  max-width: 1044px;
+}
+
+.list-search-results {
+  spacing: 6px;
+}
+
+.grid-search-results {
+  spacing: 30px;
+  margin: 0 12px;
+}
+
+.list-search-result, .search-provider-icon {
+  color: @{onSurface.hex};
+  background-color: @{surfaceContainer.hex};
+  border-radius: 12px;
+  transition-duration: 100ms;
+  padding: 6px;
+}
+
+.list-search-result .list-search-result-content {
+  spacing: 6px;
+}
+
+.list-search-result .list-search-result-title {
+  color: @{onSurface.hex};
+  spacing: 12px;
+}
+
+.list-search-result .list-search-result-description {
+  color: @{onSurfaceVariant.hex};
+}
 
 .search-provider-icon .list-search-provider-content .list-search-provider-details {
   width: 120px;
-  color: @{onSurface.hex}; }
-
-.list-search-result:focus, .search-provider-icon:focus,
-.list-search-result:hover, .search-provider-icon:hover,
-.list-search-result:selected, .search-provider-icon:selected {
-  background-color:  @{surfaceVariant.hex};
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.05);
+  color: @{onSurface.hex};
 }
 
-.list-search-result:active, .search-provider-icon:active, .nm-dialog-item:selected {
-  background-color:  @{surfaceVariant.hex};
+.search-provider-icon:ltr {
+  margin-right: 4px;
+}
+
+.search-provider-icon:rtl {
+  margin-left: 4px;
+}
+
+.list-search-result:hover, .search-provider-icon:hover {
+  color: @{onSurface.hex};
+  background-color: @{surfaceContainerHigh.hex};
+  box-shadow: inset 0 0 0 100px rgba(255, 255, 255, 0.08), inset 0 0 0 1px rgba(255, 255, 255, 0.05);
+}
+
+.list-search-result:focus, .search-provider-icon:focus {
+  color: @{onSurface.hex};
+  box-shadow: inset 0 0 0 2px @{primary.hex} !important;
+  background-color: @{surfaceContainerHigh.hex};
+}
+
+.list-search-result:focus:hover, .search-provider-icon:focus:hover {
+  background-color: @{surfaceContainerHighest.hex};
+}
+
+.list-search-result:active, .search-provider-icon:active {
+  color: @{onSurface.hex};
+  background-color: @{surfaceContainerHighest.hex};
+}
+
+.list-search-result:active:hover, .search-provider-icon:active:hover {
+  background-color: @{surfaceContainerHighest.hex};
+  box-shadow: inset 0 0 0 100px rgba(255, 255, 255, 0.08);
+}
+
+.list-search-result:highlighted, .search-provider-icon:highlighted,
+.list-search-result:selected, .search-provider-icon:selected,
+.list-search-result:checked, .search-provider-icon:checked {
+  color: @{onSurface.hex};
+  background-color: @{surfaceContainerHigh.hex};
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+}
+
+.list-search-result:highlighted:hover, .search-provider-icon:highlighted:hover,
+.list-search-result:selected:hover, .search-provider-icon:selected:hover,
+.list-search-result:checked:hover, .search-provider-icon:checked:hover {
+  background-color: @{surfaceContainerHighest.hex};
+}
+
+.list-search-result:insensitive, .search-provider-icon:insensitive {
+  color: @{outline.hex};
+  background-color: @{surfaceContainer.hex};
+}
+
+.list-search-result:drop, .search-provider-icon:drop {
+  background-color: @{primaryContainer.hex};
+  box-shadow: inset 0 0 0 2px @{primary.hex};
+}
+
+.nm-dialog-item:selected {
+  background-color: @{surfaceContainerHigh.hex};
   color: @{onSurface.hex};
 }
 

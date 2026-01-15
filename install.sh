@@ -49,6 +49,8 @@ CHROME_GTK4=false
 UI_IMPROVEMENTS=false
 DESKTOP_WIDGET=false
 TRANSPARENT_PANEL=false
+THEMED_FOLDER_ICONS=true
+
 SKIP_INTERACTIVE=false
 DO_UNINSTALL=false
 DO_DEFAULTS=false
@@ -212,6 +214,7 @@ uninstall_meowterialyou() {
     rm -rf ~/.local/share/themes/custom-light
     rm -rf ~/.themes/MeowterialYou-dark
     rm -rf ~/.themes/MeowterialYou-light
+    rm -rf ~/.local/share/icons/MeowterialYou
 
     # 3. Cleanup GTK config files/links
     echo -e "  ${DOT} Cleaning up GTK configs..."
@@ -375,8 +378,24 @@ run_interactive() {
         fi
         echo ""
         
+        # ─── Themed Folder Icons ───
+        echo -e "  ${BOLD}9. Themed Folder Icons${NC}"
+        echo -e "     ${DIM}Recolor folder icons to match your wallpaper palette${NC}"
+        if gum confirm --affirmative="  Yes, enable  " --negative="  No, skip  " \
+            --prompt.foreground="255" --selected.background="212" --default=true \
+            "     Enable themed folder icons?"; then
+            THEMED_FOLDER_ICONS=true
+            echo -e "     ${CHECK} Themed Folder Icons: ${BOLD}${GREEN}enabled${NC}"
+        else
+            THEMED_FOLDER_ICONS=false
+            echo -e "     ${CHECK} Themed Folder Icons: ${DIM}disabled${NC}"
+        fi
+        echo ""
+        
+
+        
         # ─── Wallpaper ───
-        echo -e "  ${BOLD}9. Wallpaper${NC}"
+        echo -e "  ${BOLD}11. Wallpaper${NC}"
         echo -e "     ${DIM}Press Enter to use your current wallpaper${NC}"
         WALLPAPER=$(gum input --placeholder="Path to wallpaper (or press Enter for current)" \
             --prompt="     ▸ " --cursor.foreground="212" --width=50)
@@ -393,7 +412,7 @@ run_interactive() {
         echo ""
         
         # ─── GNOME Terminal Theming ───
-        echo -e "  ${BOLD}10. GNOME Terminal Theming${NC}"
+        echo -e "  ${BOLD}12. GNOME Terminal Theming${NC}"
         echo -e "     ${DIM}Apply Material You colors to terminal (background, cursor, highlight, palette)${NC}"
         if gum confirm --affirmative="  Yes, enable  " --negative="  No, skip  " \
             --prompt.foreground="255" --selected.background="212" --default=true \
@@ -407,7 +426,7 @@ run_interactive() {
         echo ""
         
         # ─── Optional App Theming ───
-        echo -e "  ${BOLD}11. Additional Apps${NC} ${DIM}(detected apps only)${NC}"
+        echo -e "  ${BOLD}13. Additional Apps${NC} ${DIM}(detected apps only)${NC}"
         
         # Spicetify (Spotify)
         if command -v spicetify &> /dev/null; then
@@ -696,6 +715,8 @@ apply_theme() {
     [ "$UI_IMPROVEMENTS" = true ] && args="$args --ui-improvements"
     [ "$DESKTOP_WIDGET" = true ] && args="$args --desktop-widget"
     [ "$TRANSPARENT_PANEL" = true ] && args="$args --transparent-panel"
+    [ "$THEMED_FOLDER_ICONS" = true ] && args="$args --themed-folder-icons"
+
     { [ "$DO_REAPPLY" = true ] || [ "$SILENT" = true ]; } && args="$args --silent"
     
     echo -e "  ${DIM}$ meowterialyou $args${NC}"
@@ -771,6 +792,8 @@ THEME_DISCORD=$THEME_DISCORD
 THEME_VSCODE=$THEME_VSCODE
 THEME_OBSIDIAN=$THEME_OBSIDIAN
 THEME_VIVALDI=$THEME_VIVALDI
+THEMED_FOLDER_ICONS=$THEMED_FOLDER_ICONS
+
 EOF
 }
 
@@ -802,6 +825,8 @@ main() {
             --ui-improvements) UI_IMPROVEMENTS=true; SKIP_INTERACTIVE=true; shift ;;
             --desktop-widget) DESKTOP_WIDGET=true; SKIP_INTERACTIVE=true; shift ;;
             --transparent-panel) TRANSPARENT_PANEL=true; SKIP_INTERACTIVE=true; shift ;;
+            --themed-folder-icons) THEMED_FOLDER_ICONS=true; SKIP_INTERACTIVE=true; shift ;;
+
             --uninstall)   DO_UNINSTALL=true; shift ;;
             --defaults)    DO_DEFAULTS=true; SKIP_INTERACTIVE=true; shift ;;
             --reapply)     DO_REAPPLY=true; SKIP_INTERACTIVE=true; shift ;;
@@ -822,7 +847,9 @@ main() {
                 echo "  --chrome-gtk4          Enable Chrome/Chromium GTK4 theme"
                 echo "  --ui-improvements      Enable UI improvements (transparent tray icons)"
                 echo "  --desktop-widget       Enable desktop widget (clock + weather, uses EWW)"
-                echo "  --transparent-panel   Enable transparent panel addon"
+                echo "  --transparent-panel    Enable transparent panel addon"
+                echo "  --themed-folder-icons  Enable themed folder icons"
+
                 echo "  --silent               Disable desktop notifications"
                 echo "  --uninstall            Uninstall MeowterialYou"
                 echo ""

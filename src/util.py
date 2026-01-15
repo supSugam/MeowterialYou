@@ -116,6 +116,12 @@ def parse_arguments():
         action="store_true",
     )
 
+    parser.add_argument(
+        "--themed-folder-icons",
+        help="enable themed folder icons (recolored SVG icons)",
+        action="store_true",
+    )
+
     # Path to store last arguments (XDG config directory)
     config_dir = Path.home() / ".config/meowterialyou"
     args_file = config_dir / "last_args.json"
@@ -155,6 +161,17 @@ def parse_arguments():
             print(f"Warning: Could not save arguments: {e}")
 
     return args
+
+
+def on_theme_applied() -> None:
+    """Execute maintenance tasks after theme is successfully applied."""
+    try:
+        # Quit Nautilus to force icon refresh for folder icons
+        subprocess.run(
+            ["nautilus", "-q"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
+        )
+    except Exception as e:
+        log.warning(f"Failed to refresh Nautilus: {e}")
 
 
 def setup_logging():

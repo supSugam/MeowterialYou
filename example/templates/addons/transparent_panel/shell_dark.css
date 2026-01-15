@@ -18,7 +18,7 @@
 #panel .panel-button:focus,
 #panel .panel-button:checked {
   background-color: transparent !important;
-  box-shadow: inset 0 0 0 100px rgba(255, 255, 255, 0.08) !important;
+  box-shadow: inset 0 0 0 100px rgba(255, 255, 255, 0.15) !important;
 }
 
 /* Specific fix for Clock/Date Menu and #panelCenter (Just Perfection etc) */
@@ -34,7 +34,7 @@
 #panel .panel-button .clock,
 #panel #panelCenter .panel-button {
   background-color: transparent !important;
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08) !important;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.15) !important;
   transition-duration: 100ms;
 }
 
@@ -48,13 +48,13 @@
 #panel #panelCenter .panel-button:focus,
 #panel #panelCenter .panel-button:checked {
   background-color: transparent !important;
-  box-shadow: inset 0 0 0 100px rgba(255, 255, 255, 0.08), inset 0 0 0 1px rgba(255, 255, 255, 0.08) !important;
+  box-shadow: inset 0 0 0 100px rgba(255, 255, 255, 0.08), inset 0 0 0 1px rgba(255, 255, 255, 0.15) !important;
 }
 
 /* Panel Activities Button styling - subtle inset border always visible */
 #panel #panelActivities.panel-button {
   background-color: transparent !important;
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08) !important;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.15) !important;
   transition-duration: 100ms;
 }
 
@@ -65,7 +65,7 @@
 #panel #panelActivities.panel-button:focus,
 #panel #panelActivities.panel-button:checked {
   background-color: transparent !important;
-  box-shadow: inset 0 0 0 100px rgba(255, 255, 255, 0.08), inset 0 0 0 1px rgba(255, 255, 255, 0.08) !important;
+  box-shadow: inset 0 0 0 100px rgba(255, 255, 255, 0.08), inset 0 0 0 1px rgba(255, 255, 255, 0.15) !important;
 }
 
 #panelActivities.panel-button .workspace-dot {
@@ -75,7 +75,7 @@
 /* Override ui_improvements Quick Settings restoration - subtle inset border */
 #panelRight > *:last-child .panel-button {
   background-color: transparent !important;
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08) !important;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.15) !important;
   transition-duration: 100ms;
 }
 
@@ -85,7 +85,7 @@
 #panelRight > *:last-child .panel-button:focus,
 #panelRight > *:last-child .panel-button:checked {
   background-color: transparent !important;
-  box-shadow: inset 0 0 0 100px rgba(255, 255, 255, 0.08), inset 0 0 0 1px rgba(255, 255, 255, 0.08) !important;
+  box-shadow: inset 0 0 0 100px rgba(255, 255, 255, 0.08), inset 0 0 0 1px rgba(255, 255, 255, 0.15) !important;
 }
 
 /* Text/icon colors based on wallpaper brightness */

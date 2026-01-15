@@ -11,7 +11,7 @@ from src.material_color_utilities_python.closest_folder_color.domain import (
 )
 from src.icon_theme import IconThemeGenerator
 from src.models import MaterialColors
-from src.util import Config, Scheme, Theme, reload_apps, set_wallpaper
+from src.util import Config, Scheme, Theme, reload_apps, set_wallpaper, on_theme_applied
 
 
 class GenerationOptions(BaseModel):
@@ -26,6 +26,8 @@ class GenerationOptions(BaseModel):
         False  # Widget config is in ~/.config/meowterialyou/widget.conf
     )
     transparent_panel_enabled: bool = False  # Transparent panel addon
+    themed_folder_icons_enabled: bool = True  # Themed folder icons (default: enabled)
+
     silent: bool = False
     scheme: MaterialColors | None = None
     wallpaper_path: str | None = None
@@ -86,6 +88,8 @@ class ApplierDomain:
             os.path.join(home, ".config/conky/meowterialyou.conf"),
             os.path.join(home, ".config/conky/meowterialyou_weather.sh"),
             os.path.join(home, ".cache/meowterialyou_weather"),
+            # Icon theme
+            os.path.join(home, ".local/share/icons/MeowterialYou"),
         ]
 
         # Kill any running Conky widget
@@ -325,16 +329,26 @@ class ApplierDomain:
 
         primary_color = scheme["primary"]
 
-        # Generate Material You themed icons
-        self._generate_material_you_icons(scheme)
+        # Generate Material You themed folder icons if enabled
+        if self._generation_options.themed_folder_icons_enabled:
+            self._generate_material_you_icons(scheme)
+        else:
+            # Fallback for non-folder icons or if theming disabled
+            # We still set Papirus color for compatibility
+            print("Skipping themed folder icons (disabled or fallback)")
+            # If disabled, we should probably reset to Papirus default or user choice
+            # But for now, let's just update the folder color to match theme
+            pass
 
-        # Keep papirus-folders as fallback for non-folder icons
+        # set Papirus folder color (always set this as it affects existing Papirus install)
+        # It's a good fallback and also handles the non-folder icons in Papirus theme
         folder_color = self._closest_folder_color_domain.get_closest_color(
             primary_color
         )
         self._set_papirus_folder_color(folder_color)
 
         self._reload_apps()
+        on_theme_applied()
 
     def _generate_material_you_icons(self, scheme: MaterialColors) -> None:
         """Generate custom Material You icon theme from the color scheme."""

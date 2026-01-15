@@ -62,3 +62,23 @@ Yaru-gnome-shell.css
 for quick settings tree see 
 quick_settings_tree.json
  
+
+
+ # Future Features & Technical Debt
+
+## App Icon Theming
+
+**Goal**: Dynamically tint standard app icons (in Dash/App Grid) to match the Material You Primary color, similar to Android 12+.
+
+**Status**: Attempted and Failed (Jan 2026).
+
+**Implementation Tried**:
+- **CSS Filters**: Using `filter: grayscale(100%) sepia(100%) hue-rotate(...) saturate(...)`.
+- **Targeting**: Successful selectors found (`.overview-icon`, `StIcon`). Tested with visual debug (Red borders, Cyan backgrounds).
+- **Result**: Visual debug properties (`border`, `background`) render correctly, proving the selectors work. However, `filter` and `opacity` properties designed to affect the icon texture itself are **ignored** by the rendering engine on the test environment (GNOME Shell + Dash to Panel + specific graphics drivers).
+- **Dash to Panel**: DTP achieves grayscale via `Clutter.DesaturateEffect` in JavaScript, which bypasses CSS limitations.
+
+**Future Solution**:
+- Cannot be solved via pure CSS Theme.
+- requires a **GNOME Shell Extension** helper that injects Clutter Effects (or Shader Effects) onto the app icon actors, exposing parameters that the CSS theme can then control (or controlling them via GSettings).
+- Alternatively, wait for GNOME Shell / St Engine updates that might expose better CSS filter support for these widgets.
