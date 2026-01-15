@@ -9,6 +9,7 @@ from rich.console import Console
 from src.material_color_utilities_python.closest_folder_color.domain import (
     ClosestFolderColorDomain,
 )
+from src.icon_theme import IconThemeGenerator
 from src.models import MaterialColors
 from src.util import Config, Scheme, Theme, reload_apps, set_wallpaper
 
@@ -323,18 +324,50 @@ class ApplierDomain:
                 self._install_system_gtk4_theme(variant, scheme)
 
         primary_color = scheme["primary"]
+
+        # Generate Material You themed icons
+        self._generate_material_you_icons(scheme)
+
+        # Keep papirus-folders as fallback for non-folder icons
         folder_color = self._closest_folder_color_domain.get_closest_color(
             primary_color
         )
+        self._set_papirus_folder_color(folder_color)
 
-        self._set_papirus_icon_theme(folder_color)
         self._reload_apps()
 
-    def _set_papirus_icon_theme(self, folder_color: str) -> None:
-        print(f"Applying Papirus {folder_color}.")
-        # Set current directory to home directory. No need for sudo then
+    def _generate_material_you_icons(self, scheme: MaterialColors) -> None:
+        """Generate custom Material You icon theme from the color scheme."""
+        is_dark = not self._generation_options.lightmode_enabled
+
+        # Convert scheme to dict if needed
+        colors = (
+            dict(scheme)
+            if hasattr(scheme, "__iter__")
+            else {
+                "primary": scheme.get("primary", "#38693d"),
+                "primaryContainer": scheme.get("primaryContainer", "#b8f0b8"),
+                "surfaceContainerHigh": scheme.get("surfaceContainerHigh", "#e8e9e3"),
+                "surfaceContainerHighest": scheme.get(
+                    "surfaceContainerHighest", "#e2e3dd"
+                ),
+            }
+        )
+
+        try:
+            generator = IconThemeGenerator()
+            theme_path = generator.generate(colors, is_dark_mode=is_dark)
+            generator.apply_theme()
+            print(f"Generated Material You icon theme at: {theme_path}")
+        except Exception as e:
+            print(f"Warning: Failed to generate icon theme: {e}")
+            print("Falling back to Papirus...")
+
+    def _set_papirus_folder_color(self, folder_color: str) -> None:
+        """Set Papirus folder color as fallback."""
+        print(f"Setting Papirus folder accent: {folder_color}")
         os.system("export PWD=$HOME")
-        os.system(f"papirus-folders -C {folder_color}")
+        os.system(f"papirus-folders -C {folder_color} 2>/dev/null || true")
 
         # get a key from the config that contains SPOTIFY in it
 
@@ -355,14 +388,8 @@ class ApplierDomain:
             else:
                 print("Skipping Spotify theme (disabled in preferences)")
 
-        if lightmode_enabled:
-            os.system(
-                "gsettings set org.gnome.desktop.interface icon-theme Papirus-Light"
-            )
-        else:
-            os.system(
-                "gsettings set org.gnome.desktop.interface icon-theme Papirus-Dark"
-            )
+        # Icon theme is now set by _generate_material_you_icons()
+        # which sets it to MeowterialYou (inherits from Papirus/Papirus-Dark)
 
     def _apply_macbuttons_addon(self, dest_theme: str, postfix: str) -> None:
         """Apply macOS-style window buttons addon CSS to generated theme files."""
