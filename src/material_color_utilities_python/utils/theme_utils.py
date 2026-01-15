@@ -94,24 +94,23 @@ def themeFromImage(image, customColors=[], style="tonal_spot"):
         hct = Hct.fromInt(source)
 
         # Tier 1: True Monochrome / Near Grayscale
-        # If the source color is almost grayscale (chroma < 8), any tint (green/yellow/blue)
-        # will likely look "muddy" or "wrong" to the user who perceives it as B&W.
-        # We force "monochrome" style to ensure a clean, tint-free grayscale theme.
-        if hct.chroma < 8.0:
+        # If the source color is practically grayscale (chroma < 1.5), we force "monochrome"
+        # to ensure a clean, tint-free grayscale theme.
+        if hct.chroma < 1.5:
             print(
-                f"Info: Very low chroma source ({hct.chroma:.1f}) detected. Switching style to 'monochrome'."
+                f"Info: Near-grayscale source ({hct.chroma:.1f}) detected. Switching style to 'monochrome'."
             )
             style = "monochrome"
 
-        # Tier 2: Low Chroma / Neutral
-        # If the source has some color (chroma 8-18) but is still muted, "tonal_spot"
-        # would artificialy boost the chroma to ~36, making it look TOO colorful/fake.
-        # We switch to "neutral" which preserves the low chroma (fixed at 12 for primary).
+        # Tier 2: Low Chroma / Subtle Tint
+        # If the source has subtle color (chroma 1.5-18, e.g. cream, platinum, beige),
+        # "tonal_spot" would boost chroma to ~36 (too fake), and "neutral" forces it to 12.
+        # We switch to "content" (Fidelity) which preserves the EXACT source chroma.
         elif hct.chroma < 18.0:
             print(
-                f"Info: Low chroma source ({hct.chroma:.1f}) detected. Switching style to 'neutral'."
+                f"Info: Low chroma source ({hct.chroma:.1f}) detected. Switching style to 'content' to preserve tint."
             )
-            style = "neutral"
+            style = "content"
 
         # Tier 3: Colorful
         # For chroma >= 18.0, we stick to the requested "tonal_spot" (or whatever default)

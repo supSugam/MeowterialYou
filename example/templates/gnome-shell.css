@@ -754,7 +754,7 @@ stage {
 
 /* connect / disconnect text color */
 .device-subtitle {
-    color: rgba(7, 25, 43, 0.6);
+    color: @{onSurfaceVariant.hex};
 }
 
 /* Quick toggle menu header icon - themed for contrast on primary background */

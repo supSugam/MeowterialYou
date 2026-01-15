@@ -37,14 +37,19 @@ class CorePalette:
 
     @staticmethod
     def neutral(argb: int):
+        """
+        Neutral style: for muted, understated themes.
+        N2 chroma increased to 6.0 for visible surfaceVariant distinction.
+        """
         hct = Hct.fromInt(argb)
         hue = hct.hue
         return CorePalette(
             TonalPalette.fromHueAndChroma(hue, 12.0),
             TonalPalette.fromHueAndChroma(hue, 8.0),
-            TonalPalette.fromHueAndChroma(hue, 16.0),
+            TonalPalette.fromHueAndChroma(hue + 60.0, 16.0),
             TonalPalette.fromHueAndChroma(hue, 2.0),
-            TonalPalette.fromHueAndChroma(hue, 2.0),
+            # N2: Increased from 2.0 to 6.0 for visible surfaceVariant
+            TonalPalette.fromHueAndChroma(hue, 6.0),
             TonalPalette.fromHueAndChroma(25.0, 84.0),
         )
 
@@ -104,15 +109,23 @@ class CorePalette:
 
     @staticmethod
     def content(argb: int):
+        """
+        Content/Fidelity style: preserves the input chroma for primary.
+        For neutral palettes (N1, N2), we ensure minimum chroma values
+        to guarantee visible contrast between surface roles, especially
+        in light mode where low-chroma colors can appear washed out.
+        """
         hct = Hct.fromInt(argb)
         hue = hct.hue
         chroma = hct.chroma
         return CorePalette(
             TonalPalette.fromHueAndChroma(hue, chroma),
-            TonalPalette.fromHueAndChroma(hue, chroma / 3.0),
-            TonalPalette.fromHueAndChroma(hue + 60.0, chroma / 2.0),
-            TonalPalette.fromHueAndChroma(hue, chroma / 12.0),
-            TonalPalette.fromHueAndChroma(hue, chroma / 6.0),
+            TonalPalette.fromHueAndChroma(hue, max(8.0, chroma / 3.0)),
+            TonalPalette.fromHueAndChroma(hue + 60.0, max(12.0, chroma / 2.0)),
+            # N1: Minimum chroma of 2.0 for subtle but visible tint
+            TonalPalette.fromHueAndChroma(hue, max(2.0, chroma / 12.0)),
+            # N2: Minimum chroma of 6.0 for clear surfaceVariant distinction
+            TonalPalette.fromHueAndChroma(hue, max(6.0, chroma / 6.0)),
             TonalPalette.fromHueAndChroma(25.0, 84.0),
         )
 
