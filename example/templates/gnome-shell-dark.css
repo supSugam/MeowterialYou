@@ -27,7 +27,7 @@ stage {
 /* panel */
 
 #panel{
-  background-color: @{surface.hex};
+  background-color: @{surfaceContainer.hex};
   height: 38px;
   font-size: 14px;
 }
@@ -127,7 +127,7 @@ stage {
 /* POPOVERS */
 .popup-menu-content, .candidate-popup-content {
   color: @{onSurface.hex};
-  background:  @{surface.hex};
+  background:  @{surfaceContainer.hex};
   padding: 10px;
   border-radius: 20px;
   border: 1px solid rgba(255, 255, 255, 0.08);
@@ -170,7 +170,7 @@ stage {
   margin-left: 4.5px; }
 
 .popup-sub-menu {
-  background-color:  @{surfaceVariant.hex};
+  background-color:  @{surfaceContainerHighest.hex};
   color: @{onSurface.hex};
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.05);
   border-radius: 0 0 12px 12px;
@@ -321,7 +321,7 @@ stage {
 /* events */
 .calendar {
   border-radius: 14px;
-  background-color:  @{surfaceVariant.hex};
+  background-color:  @{surfaceContainer.hex};
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.05) !important;
   padding: 5px;
 }
@@ -411,7 +411,7 @@ stage {
 }
 
 .message-list .message {
-  background-color:  @{surfaceVariant.hex};
+  background-color:  @{surfaceContainerHigh.hex};
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.05);
   transition-duration: 100ms;
 }

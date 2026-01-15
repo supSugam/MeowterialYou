@@ -23,7 +23,7 @@ stage {
 }
 
 #panel {
-  background-color: @{surface.hex};
+  background-color: @{surfaceContainer.hex};
   height: 38px;
   font-size: 14px;
 }
@@ -132,7 +132,7 @@ stage {
 .popup-menu-content,
 .candidate-popup-content {
   color: @{onSurface.hex};
-  background: @{surface.hex};
+  background: @{surfaceContainer.hex};
   padding: 10px;
   border-radius: 20px;
   border: 1px solid rgba(0, 0, 0, 0.07);
@@ -180,7 +180,7 @@ stage {
 }
 
 .popup-sub-menu {
-  background-color: @{surfaceVariant.hex};
+  background-color: @{surfaceContainerHighest.hex};
   color: @{onSurface.hex};
   box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.03);
   border-radius: 0 0 12px 12px;
@@ -1269,7 +1269,7 @@ StEntry:focus {
 /* OSD */
 .modal-dialog {
   border-radius: 18px;
-  background-color: @{surface.hex};
+  background-color: @{surfaceContainerHigh.hex};
   border: none;
   box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.03);
   color: @{onSurface.hex};
@@ -1280,7 +1280,7 @@ StEntry:focus {
 .workspace-switcher,
 .osd-window {
   border-radius: 18px;
-  background: @{surface.hex};
+  background: @{surfaceContainerHigh.hex};
   color: @{onSurface.hex};
   box-shadow: 0 0px 8px 0 rgba(0, 0, 0, 0.05);
   border: none;

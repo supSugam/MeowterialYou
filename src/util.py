@@ -34,6 +34,23 @@ def parse_arguments():
     )
 
     parser.add_argument(
+        "--scheme",
+        help="Material You dynamic scheme variant",
+        choices=[
+            "tonal_spot",
+            "neutral",
+            "vibrant",
+            "expressive",
+            "rainbow",
+            "fruit_salad",
+            "content",
+            "monochrome",
+            "fidelity",
+        ],
+        default="tonal_spot",
+    )
+
+    parser.add_argument(
         "-i",
         "--ui",
         help="use ui",
@@ -1132,18 +1149,18 @@ class Config:
 
 class Theme:
     @classmethod
-    def get(cls, image: str):
+    def get(cls, image: str, style: str = "tonal_spot"):
         log.info(f"Using image {image}")
 
         img = cls._get_image_from_file(image)
 
-        theme, colors = themeFromImage(img)
+        theme, colors = themeFromImage(img, style=style)
         return theme, colors
 
     @staticmethod
-    def get_theme_from_color(color: str) -> dict:
+    def get_theme_from_color(color: str, style: str = "tonal_spot") -> dict:
         rgb_color = ColorTransformer.hex_to_argb(color)
-        return themeFromSourceColor(rgb_color)
+        return themeFromSourceColor(rgb_color, style=style)
 
     @classmethod
     def _get_image_from_file(cls, image: str):

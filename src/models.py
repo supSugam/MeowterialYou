@@ -29,3 +29,12 @@ class MaterialColors(TypedDict):
     inverseSurface: str
     inverseOnSurface: str
     inversePrimary: str
+    surfaceDim: str
+    surfaceBright: str
+    surfaceContainerLowest: str
+    surfaceContainerLow: str
+    surfaceContainer: str
+    surfaceContainerHigh: str
+    surfaceContainerHighest: str
+    scrim: str
+    outlineVariant: str

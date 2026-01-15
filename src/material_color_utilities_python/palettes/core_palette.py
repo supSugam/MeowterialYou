@@ -8,19 +8,127 @@ from ..palettes.tonal_palette import *
 #  * as the key color, and all vary in chroma.
 #  */
 class CorePalette:
-    def __init__(self, argb: int):
-        hct = Hct.fromInt(argb)
-        hue = hct.hue
-        self.a1 = TonalPalette.fromHueAndChroma(hue, max(32, hct.chroma))
-        self.a2 = TonalPalette.fromHueAndChroma(hue, 16)
-        self.a3 = TonalPalette.fromHueAndChroma(hue + 60, 24)
-        self.n1 = TonalPalette.fromHueAndChroma(hue, 4)
-        self.n2 = TonalPalette.fromHueAndChroma(hue, 8)
-        self.error = TonalPalette.fromHueAndChroma(25, 84)
 
-    # /**
-    #  * @param argb ARGB representation of a color
-    #  */
+    def __init__(self, a1, a2, a3, n1, n2, error):
+        self.a1 = a1
+        self.a2 = a2
+        self.a3 = a3
+        self.n1 = n1
+        self.n2 = n2
+        self.error = error
+
     @staticmethod
     def of(argb: int):
-        return CorePalette(argb)
+        return CorePalette.tonal_spot(argb)
+
+    @staticmethod
+    def tonal_spot(argb: int):
+        hct = Hct.fromInt(argb)
+        hue = hct.hue
+        chroma = hct.chroma
+        return CorePalette(
+            TonalPalette.fromHueAndChroma(hue, max(36.0, chroma)),
+            TonalPalette.fromHueAndChroma(hue, 16.0),
+            TonalPalette.fromHueAndChroma(hue + 60.0, 24.0),
+            TonalPalette.fromHueAndChroma(hue, 4.0),
+            TonalPalette.fromHueAndChroma(hue, 8.0),
+            TonalPalette.fromHueAndChroma(25.0, 84.0),
+        )
+
+    @staticmethod
+    def neutral(argb: int):
+        hct = Hct.fromInt(argb)
+        hue = hct.hue
+        return CorePalette(
+            TonalPalette.fromHueAndChroma(hue, 12.0),
+            TonalPalette.fromHueAndChroma(hue, 8.0),
+            TonalPalette.fromHueAndChroma(hue, 16.0),
+            TonalPalette.fromHueAndChroma(hue, 2.0),
+            TonalPalette.fromHueAndChroma(hue, 2.0),
+            TonalPalette.fromHueAndChroma(25.0, 84.0),
+        )
+
+    @staticmethod
+    def vibrant(argb: int):
+        hct = Hct.fromInt(argb)
+        hue = hct.hue
+        chroma = hct.chroma
+        return CorePalette(
+            TonalPalette.fromHueAndChroma(hue, max(48.0, chroma)),
+            TonalPalette.fromHueAndChroma(hue, 24.0),
+            TonalPalette.fromHueAndChroma(hue + 30.0, 32.0),
+            TonalPalette.fromHueAndChroma(hue, 10.0),
+            TonalPalette.fromHueAndChroma(hue, 12.0),
+            TonalPalette.fromHueAndChroma(25.0, 84.0),
+        )
+
+    @staticmethod
+    def expressive(argb: int):
+        hct = Hct.fromInt(argb)
+        hue = hct.hue
+        return CorePalette(
+            TonalPalette.fromHueAndChroma(hue + 240.0, 40.0),
+            TonalPalette.fromHueAndChroma(hue + 15.0, 24.0),
+            TonalPalette.fromHueAndChroma(hue + 180.0, 32.0),
+            TonalPalette.fromHueAndChroma(hue + 15.0, 8.0),
+            TonalPalette.fromHueAndChroma(hue + 15.0, 12.0),
+            TonalPalette.fromHueAndChroma(25.0, 84.0),
+        )
+
+    @staticmethod
+    def rainbow(argb: int):
+        hct = Hct.fromInt(argb)
+        hue = hct.hue
+        chroma = hct.chroma
+        return CorePalette(
+            TonalPalette.fromHueAndChroma(hue, 48.0),
+            TonalPalette.fromHueAndChroma(hue, 16.0),
+            TonalPalette.fromHueAndChroma(hue + 60.0, 24.0),
+            TonalPalette.fromHueAndChroma(hue, 0.0),
+            TonalPalette.fromHueAndChroma(hue, 0.0),
+            TonalPalette.fromHueAndChroma(25.0, 84.0),
+        )
+
+    @staticmethod
+    def fruit_salad(argb: int):
+        hct = Hct.fromInt(argb)
+        hue = hct.hue
+        return CorePalette(
+            TonalPalette.fromHueAndChroma(hue - 50.0, 48.0),
+            TonalPalette.fromHueAndChroma(hue - 50.0, 36.0),
+            TonalPalette.fromHueAndChroma(hue, 36.0),
+            TonalPalette.fromHueAndChroma(hue, 10.0),
+            TonalPalette.fromHueAndChroma(hue, 16.0),
+            TonalPalette.fromHueAndChroma(25.0, 84.0),
+        )
+
+    @staticmethod
+    def content(argb: int):
+        hct = Hct.fromInt(argb)
+        hue = hct.hue
+        chroma = hct.chroma
+        return CorePalette(
+            TonalPalette.fromHueAndChroma(hue, chroma),
+            TonalPalette.fromHueAndChroma(hue, chroma / 3.0),
+            TonalPalette.fromHueAndChroma(hue + 60.0, chroma / 2.0),
+            TonalPalette.fromHueAndChroma(hue, chroma / 12.0),
+            TonalPalette.fromHueAndChroma(hue, chroma / 6.0),
+            TonalPalette.fromHueAndChroma(25.0, 84.0),
+        )
+
+    @staticmethod
+    def monochrome(argb: int):
+        hct = Hct.fromInt(argb)
+        hue = hct.hue
+        return CorePalette(
+            TonalPalette.fromHueAndChroma(hue, 0.0),
+            TonalPalette.fromHueAndChroma(hue, 0.0),
+            TonalPalette.fromHueAndChroma(hue, 0.0),
+            TonalPalette.fromHueAndChroma(hue, 0.0),
+            TonalPalette.fromHueAndChroma(hue, 0.0),
+            TonalPalette.fromHueAndChroma(25.0, 84.0),
+        )
+
+    @staticmethod
+    def fidelity(argb: int):
+        return CorePalette.content(argb)

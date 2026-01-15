@@ -51,13 +51,16 @@ def customColor(source, color):
 #  * @return Theme object
 #  */
 # NOTE: Changes made to output format to be Dictionary
-def themeFromSourceColor(source: int, customColors=[]):
+def themeFromSourceColor(source: int, customColors=[], style="tonal_spot"):
     palette = CorePalette.of(source)
+    if hasattr(CorePalette, style):
+        palette = getattr(CorePalette, style)(source)
+
     return {
         "source": source,
         "schemes": {
-            "light": Scheme.light(source),
-            "dark": Scheme.dark(source),
+            "light": Scheme.light(source, style),
+            "dark": Scheme.dark(source, style),
         },
         "palettes": {
             "primary": palette.a1,
@@ -78,9 +81,43 @@ def themeFromSourceColor(source: int, customColors=[]):
 #  * @param customColors Array of custom colors
 #  * @return Theme object
 #  */
-def themeFromImage(image, customColors=[]):
+def themeFromImage(image, customColors=[], style="tonal_spot"):
     colors = topColorsFromImage(image)
-    return themeFromSourceColor(colors[0], customColors), [
+    source = colors[0]
+
+    # Smart Style Logic
+    # If the user hasn't strictly chosen a style (default "tonal_spot"), we analyze the source color
+    # to find the "best matching" palette.
+    if style == "tonal_spot":
+        from ..hct.hct import Hct
+
+        hct = Hct.fromInt(source)
+
+        # Tier 1: True Monochrome / Near Grayscale
+        # If the source color is almost grayscale (chroma < 8), any tint (green/yellow/blue)
+        # will likely look "muddy" or "wrong" to the user who perceives it as B&W.
+        # We force "monochrome" style to ensure a clean, tint-free grayscale theme.
+        if hct.chroma < 8.0:
+            print(
+                f"Info: Very low chroma source ({hct.chroma:.1f}) detected. Switching style to 'monochrome'."
+            )
+            style = "monochrome"
+
+        # Tier 2: Low Chroma / Neutral
+        # If the source has some color (chroma 8-18) but is still muted, "tonal_spot"
+        # would artificialy boost the chroma to ~36, making it look TOO colorful/fake.
+        # We switch to "neutral" which preserves the low chroma (fixed at 12 for primary).
+        elif hct.chroma < 18.0:
+            print(
+                f"Info: Low chroma source ({hct.chroma:.1f}) detected. Switching style to 'neutral'."
+            )
+            style = "neutral"
+
+        # Tier 3: Colorful
+        # For chroma >= 18.0, we stick to the requested "tonal_spot" (or whatever default)
+        # which provides the standard Material You vibrancy.
+
+    return themeFromSourceColor(source, customColors, style), [
         ColorTransformer.argb_to_hex(color) for color in colors
     ]
 

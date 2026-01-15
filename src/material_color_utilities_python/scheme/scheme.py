@@ -92,6 +92,33 @@ class Scheme:
     def get_inversePrimary(self):
         return self.props["inversePrimary"]
 
+    def get_surfaceDim(self):
+        return self.props["surfaceDim"]
+
+    def get_surfaceBright(self):
+        return self.props["surfaceBright"]
+
+    def get_surfaceContainerLowest(self):
+        return self.props["surfaceContainerLowest"]
+
+    def get_surfaceContainerLow(self):
+        return self.props["surfaceContainerLow"]
+
+    def get_surfaceContainer(self):
+        return self.props["surfaceContainer"]
+
+    def get_surfaceContainerHigh(self):
+        return self.props["surfaceContainerHigh"]
+
+    def get_surfaceContainerHighest(self):
+        return self.props["surfaceContainerHighest"]
+
+    def get_scrim(self):
+        return self.props["scrim"]
+
+    def get_outlineVariant(self):
+        return self.props["outlineVariant"]
+
     primary = property(get_primary)
     primaryContainer = property(get_primaryContainer)
     onPrimary = property(get_onPrimary)
@@ -115,10 +142,19 @@ class Scheme:
     surfaceVariant = property(get_surfaceVariant)
     onSurfaceVariant = property(get_onSurfaceVariant)
     outline = property(get_outline)
+    outlineVariant = property(get_outlineVariant)
     shadow = property(get_shadow)
+    scrim = property(get_scrim)
     inverseSurface = property(get_inverseSurface)
     inverseOnSurface = property(get_inverseOnSurface)
     inversePrimary = property(get_inversePrimary)
+    surfaceDim = property(get_surfaceDim)
+    surfaceBright = property(get_surfaceBright)
+    surfaceContainerLowest = property(get_surfaceContainerLowest)
+    surfaceContainerLow = property(get_surfaceContainerLow)
+    surfaceContainer = property(get_surfaceContainer)
+    surfaceContainerHigh = property(get_surfaceContainerHigh)
+    surfaceContainerHighest = property(get_surfaceContainerHighest)
 
     # /**
     #  * @param argb ARGB representation of a color.
@@ -126,8 +162,11 @@ class Scheme:
     #  */
     # Official Google Material Color Utilities tone values
     @staticmethod
-    def light(argb):
+    def light(argb, style="tonal_spot"):
         core = CorePalette.of(argb)
+        if hasattr(CorePalette, style):
+            core = getattr(CorePalette, style)(argb)
+
         return Scheme(
             {
                 "primary": core.a1.tone(40),
@@ -159,6 +198,13 @@ class Scheme:
                 "inverseSurface": core.n1.tone(20),
                 "inverseOnSurface": core.n1.tone(95),
                 "inversePrimary": core.a1.tone(80),
+                "surfaceDim": core.n1.tone(87),
+                "surfaceBright": core.n1.tone(98),
+                "surfaceContainerLowest": core.n1.tone(100),
+                "surfaceContainerLow": core.n1.tone(96),
+                "surfaceContainer": core.n1.tone(94),
+                "surfaceContainerHigh": core.n1.tone(92),
+                "surfaceContainerHighest": core.n1.tone(90),
             }
         )
 
@@ -168,8 +214,11 @@ class Scheme:
     #  */
     # Official Google Material Color Utilities tone values
     @staticmethod
-    def dark(argb):
+    def dark(argb, style="tonal_spot"):
         core = CorePalette.of(argb)
+        if hasattr(CorePalette, style):
+            core = getattr(CorePalette, style)(argb)
+
         return Scheme(
             {
                 "primary": core.a1.tone(80),
@@ -201,6 +250,13 @@ class Scheme:
                 "inverseSurface": core.n1.tone(90),
                 "inverseOnSurface": core.n1.tone(20),
                 "inversePrimary": core.a1.tone(40),
+                "surfaceDim": core.n1.tone(6),
+                "surfaceBright": core.n1.tone(24),
+                "surfaceContainerLowest": core.n1.tone(4),
+                "surfaceContainerLow": core.n1.tone(10),
+                "surfaceContainer": core.n1.tone(12),
+                "surfaceContainerHigh": core.n1.tone(17),
+                "surfaceContainerHighest": core.n1.tone(22),
             }
         )
 

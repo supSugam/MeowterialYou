@@ -28,6 +28,7 @@ class GenerationOptions(BaseModel):
     silent: bool = False
     scheme: MaterialColors | None = None
     wallpaper_path: str | None = None
+    scheme_variant: str = "tonal_spot"
 
 
 def print_scheme(scheme: MaterialColors):
@@ -478,7 +479,10 @@ class ApplierDomain:
             return
 
         # Process template placeholders (replace @{colorName.hex} etc.)
-        theme_data, _ = Theme.get(self._generation_options.wallpaper_path)
+        theme_data, _ = Theme.get(
+            self._generation_options.wallpaper_path,
+            style=self._generation_options.scheme_variant,
+        )
         scheme = Scheme(theme=theme_data, lightmode=lightmode_enabled).to_hex()
 
         for key, value in scheme.items():
@@ -637,7 +641,9 @@ class ApplierDomain:
             # Dark region -> Need Light Text -> Use shell_dark.css
             addon_filename = "shell_dark.css"
 
-            theme_dark, _ = Theme.get(wallpaper_path)
+            theme_dark, _ = Theme.get(
+                wallpaper_path, style=self._generation_options.scheme_variant
+            )
             scheme_dark = Scheme(theme=theme_dark, lightmode=False).to_hex()
             panel_text_color = scheme_dark.get("onSurface", "#e1e3df")
 
@@ -648,7 +654,9 @@ class ApplierDomain:
             # Light region -> Need Dark Text -> Use shell_light.css
             addon_filename = "shell_light.css"
 
-            theme_light, _ = Theme.get(wallpaper_path)
+            theme_light, _ = Theme.get(
+                wallpaper_path, style=self._generation_options.scheme_variant
+            )
             scheme_light = Scheme(theme=theme_light, lightmode=True).to_hex()
             panel_text_color = scheme_light.get("onSurface", "#191c1a")
 
@@ -671,7 +679,10 @@ class ApplierDomain:
 
         # --- 4. Inject Colors ---
         # Get current scheme for other placeholders if any
-        theme_current, _ = Theme.get(self._generation_options.wallpaper_path)
+        theme_current, _ = Theme.get(
+            self._generation_options.wallpaper_path,
+            style=self._generation_options.scheme_variant,
+        )
         scheme_current = Scheme(
             theme=theme_current, lightmode=self._generation_options.lightmode_enabled
         ).to_hex()
@@ -746,7 +757,10 @@ class ApplierDomain:
             return
 
         # Get color scheme
-        theme_data, _ = Theme.get(self._generation_options.wallpaper_path)
+        theme_data, _ = Theme.get(
+            self._generation_options.wallpaper_path,
+            style=self._generation_options.scheme_variant,
+        )
         scheme = Scheme(theme=theme_data, lightmode=lightmode_enabled).to_hex()
 
         # Process colors
@@ -865,7 +879,10 @@ class ApplierDomain:
                     themeFromSourceColor,
                 )
 
-                theme = themeFromSourceColor(int(f"FF{r:02x}{g:02x}{b:02x}", 16))
+                theme = themeFromSourceColor(
+                    int(f"FF{r:02x}{g:02x}{b:02x}", 16),
+                    style=self._generation_options.scheme_variant,
+                )
 
                 scheme_to_use = theme["schemes"][
                     "dark" if required_dark_mode else "light"
@@ -1029,7 +1046,10 @@ X-GNOME-SingleWindow=true
 
         # Generate the correct color scheme for this variant
         is_light = variant == "light"
-        theme_data, _ = Theme.get(self._generation_options.wallpaper_path)
+        theme_data, _ = Theme.get(
+            self._generation_options.wallpaper_path,
+            style=self._generation_options.scheme_variant,
+        )
         variant_scheme = Scheme(theme=theme_data, lightmode=is_light).to_hex()
 
         print(f"Generating system GTK4 CSS from {template_path.name} for {theme_name}")
@@ -1163,10 +1183,15 @@ X-GNOME-SingleWindow=true
         if not color:
             if self._generation_options.wallpaper_path is None:
                 raise ValueError("Wallpaper path is None")
-            theme, top_colors = Theme.get(self._generation_options.wallpaper_path)
+            theme, top_colors = Theme.get(
+                self._generation_options.wallpaper_path,
+                style=self._generation_options.scheme_variant,
+            )
             self._top_colors = top_colors
         else:
-            theme = Theme.get_theme_from_color(color)
+            theme = Theme.get_theme_from_color(
+                color, style=self._generation_options.scheme_variant
+            )
 
         return self._get_scheme_from_theme(theme)
 
