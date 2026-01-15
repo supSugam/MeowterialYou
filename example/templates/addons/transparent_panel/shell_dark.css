@@ -21,25 +21,32 @@
   box-shadow: inset 0 0 0 100px rgba(255, 255, 255, 0.08) !important;
 }
 
-/* Specific fix for Clock/Date Menu (Simplified) */
+/* Specific fix for Clock/Date Menu and #panelCenter (Just Perfection etc) */
 #panel .panel-button.clock-display,
 #panel .panel-button.clock-display .clock,
-#panel .panel-button.clock-display StIcon {
+#panel .panel-button.clock-display StIcon,
+#panel #panelCenter .panel-button,
+#panel #panelCenter .panel-button {
   background-color: transparent !important;
 }
 
-/* Clock base styling - subtle inset border always visible */
-#panel .panel-button .clock {
+/* Clock/Center Box base styling - subtle inset border always visible */
+#panel .panel-button .clock,
+#panel #panelCenter .panel-button {
   background-color: transparent !important;
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08) !important;
   transition-duration: 100ms;
 }
 
-/* Clock Hover/Active/Focus/Checked states - border + overlay */
+/* Clock/Center Box Hover/Active/Focus/Checked states - border + overlay */
 #panel .panel-button:hover .clock,
 #panel .panel-button:active .clock,
 #panel .panel-button:focus .clock,
-#panel .panel-button:checked .clock {
+#panel .panel-button:checked .clock,
+#panel #panelCenter .panel-button:hover,
+#panel #panelCenter .panel-button:active,
+#panel #panelCenter .panel-button:focus,
+#panel #panelCenter .panel-button:checked {
   background-color: transparent !important;
   box-shadow: inset 0 0 0 100px rgba(255, 255, 255, 0.08), inset 0 0 0 1px rgba(255, 255, 255, 0.08) !important;
 }
