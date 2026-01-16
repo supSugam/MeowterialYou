@@ -429,11 +429,15 @@ class ApplierDomain:
                     ],
                 ),
                 # GTK3 light
+                # Note: We also update gtk-dark.css in case gtk.css is symlinked to it
+                # from a previous dark mode run. This ensures rubberband/selection colors
+                # update correctly even when the symlink exists.
                 (
                     os.path.join(addon_dir, "gtk_3_light.css"),
                     [
                         os.path.join(dest_theme, "gtk-3.0", "gtk.css"),
                         os.path.join(home, ".config/gtk-3.0/gtk.css"),
+                        os.path.join(home, ".config/gtk-3.0/gtk-dark.css"),
                     ],
                 ),
             ]

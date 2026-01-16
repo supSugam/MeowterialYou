@@ -173,6 +173,24 @@ def on_theme_applied() -> None:
     except Exception as e:
         log.warning(f"Failed to refresh Nautilus: {e}")
 
+    # Restart DING extension to refresh desktop rubberband selection colors
+    # DING caches GTK accent colors and needs a restart to pick up new theme colors
+    try:
+        subprocess.run(
+            ["gnome-extensions", "disable", "ding@rastersoft.com"],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            timeout=3,
+        )
+        subprocess.run(
+            ["gnome-extensions", "enable", "ding@rastersoft.com"],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            timeout=3,
+        )
+    except Exception:
+        pass  # DING may not be installed, silently ignore
+
 
 def setup_logging():
     FORMAT = "%(message)s"

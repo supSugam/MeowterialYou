@@ -82,3 +82,10 @@ quick_settings_tree.json
 - Cannot be solved via pure CSS Theme.
 - requires a **GNOME Shell Extension** helper that injects Clutter Effects (or Shader Effects) onto the app icon actors, exposing parameters that the CSS theme can then control (or controlling them via GSettings).
 - Alternatively, wait for GNOME Shell / St Engine updates that might expose better CSS filter support for these widgets.
+
+
+
+Still somewhat inaccurate color palette on some wallpaper, i wonder why is this, there ARE SO MANY color possibilities of best matching pallete but we still seem to be lacking?
+
+
+in desktop, when you click, hold and drag, that rectangle transparent selector appears right? that probably has wrong color or it does not upldate on reapply/wallpaper change, invesitage what's going on
