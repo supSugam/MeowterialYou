@@ -846,7 +846,7 @@ main() {
                 echo "  --title-buttons-position POS  Position: left or right"
                 echo "  --chrome-gtk4          Enable Chrome/Chromium GTK4 theme"
                 echo "  --ui-improvements      Enable UI improvements (transparent tray icons)"
-                echo "  --desktop-widget       Enable desktop widget (clock + weather, uses EWW)"
+                echo "  --desktop-widget       Enable desktop widget (clock + weather)"
                 echo "  --transparent-panel    Enable transparent panel addon"
                 echo "  --themed-folder-icons  Enable themed folder icons"
 

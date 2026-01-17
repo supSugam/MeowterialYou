@@ -10,7 +10,7 @@ import GWeather from "gi://GWeather?version=4.0";
 // @ts-ignore
 import GTop from "gi://GTop?version=2.0";
 // @ts-ignore
-import Wnck from "gi://Wnck?version=3.0";
+import Wnck from 'gi://Wnck?version=3.0';
 import yaml from 'js-yaml';
 
 
@@ -306,6 +306,7 @@ interface Config {
     time_size: number;
   };
   background: {
+    style: 'solid' | 'smart_transparency';
     opacity: number;
   };
   clock: {
@@ -356,6 +357,7 @@ const defaultConfig: Config = {
     time_size: 48,
   },
   background: {
+    style: 'smart_transparency',
     opacity: 60,
   },
   clock: {
@@ -477,6 +479,9 @@ function getWeatherIconChar(iconName: string): string {
 // --- Styles ---
 function applyStyles() {
   let themeContent = '';
+  let calculatedOpacity = 60; // Default
+  let bgStyle = 'smart_transparency';
+
   try {
     const themeFile = Gio.File.new_for_path(THEME_CSS_PATH);
     if (themeFile.query_exists(null)) {
@@ -485,13 +490,34 @@ function applyStyles() {
         // @ts-ignore
         const decoder = new TextDecoder('utf-8');
         themeContent = decoder.decode(doc);
+
+        // Parse calculated values from CSS comments
+        const opacityMatch = themeContent.match(
+          /WIDGET_CALCULATED_OPACITY:\s*(\d+)/,
+        );
+        if (opacityMatch) {
+          calculatedOpacity = parseInt(opacityMatch[1], 10);
+        }
+
+        const styleMatch = themeContent.match(/WIDGET_BG_STYLE:\s*(\w+)/);
+        if (styleMatch) {
+          bgStyle = styleMatch[1];
+        }
       }
     }
   } catch (e) {
     log(`Error loading theme.css content: ${e}`);
   }
 
-  let bgOpacity = config.background.opacity / 100.0;
+  // Use calculated opacity for smart_transparency mode, config value for solid mode
+  let bgOpacity: number;
+  if (bgStyle === 'smart_transparency') {
+    bgOpacity = calculatedOpacity / 100.0;
+    log(`Using smart opacity: ${calculatedOpacity}%`);
+  } else {
+    bgOpacity = config.background.opacity / 100.0;
+    log(`Using solid opacity: ${config.background.opacity}%`);
+  }
 
   const scale = config.layout.scale_factor || 1.0;
   const s = (v: number) => Math.round(v * scale);
@@ -520,14 +546,14 @@ function applyStyles() {
             font-family: "${config.typography.font_family}", sans-serif;
             font-size: ${s(14)}px;
             font-weight: 500;
-            color: @onSurface;
+            color: @widget_text;
         }
 
         .time {
             font-family: "${config.typography.font_family}", sans-serif;
             font-size: ${s(config.typography.time_size)}px;
             font-weight: bold;
-            color: @primary;
+            color: @widget_primary;
             letter-spacing: -${s(1)}px;
         }
 
@@ -535,53 +561,53 @@ function applyStyles() {
             font-family: "${config.typography.font_family}", sans-serif;
             font-size: ${s(16)}px;
             font-weight: 500;
-            color: @onSurfaceVariant;
+            color: @widget_text_secondary;
         }
 
         .weather-icon {
             font-family: "${config.typography.icon_font}", monospace;
             font-size: ${s(32)}px;
-            color: @primary;
+            color: @widget_primary;
         }
 
         .weather-temp {
             font-family: "${config.typography.font_family}", sans-serif;
             font-size: ${s(24)}px;
             font-weight: bold;
-            color: @onSurface;
+            color: @widget_text;
         }
 
         .weather-desc {
             font-family: "${config.typography.font_family}", sans-serif;
             font-size: ${s(14)}px;
             font-weight: 500;
-            color: @onSurfaceVariant;
+            color: @widget_text_secondary;
         }
 
         .weather-city {
             font-family: "${config.typography.font_family}", sans-serif;
             font-size: ${s(14)}px;
-            color: @onSurfaceVariant;
+            color: @widget_text_secondary;
             opacity: 1.0;
             font-weight: 500;
         }
 
         .detail {
             font-family: "${config.typography.icon_font}", "${
-    config.typography.font_family
-  }", monospace;
+              config.typography.font_family
+            }", monospace;
             font-size: ${s(14)}px;
-            color: @onSurfaceVariant;
+            color: @widget_text_secondary;
             opacity: 0.9;
         }
         
         .sys-icon {
             font-family: "${config.typography.icon_font}", monospace;
             font-size: ${s(18)}px;
-            color: @primary;
+            color: @widget_primary;
         }
         .divider {
-            background-color: @onSurfaceVariant;
+            background-color: @widget_text_secondary;
             min-height: 1px;
             opacity: 0.15;
         }
@@ -594,7 +620,7 @@ function applyStyles() {
   Gtk.StyleContext.add_provider_for_screen(
     Gdk.Screen.get_default()!,
     styleProvider,
-    Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION + 10
+    Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION + 10,
   );
 }
 
@@ -841,7 +867,7 @@ content.pack_start(timeRow, false, false, 0);
 // Row 3: Weather
 const weatherRow = new Gtk.Box({
   orientation: Gtk.Orientation.HORIZONTAL,
-  spacing: s(192),
+  spacing: s(156),
 });
 
 const tempBox = new Gtk.Box({

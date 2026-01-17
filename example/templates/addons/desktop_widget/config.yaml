@@ -52,11 +52,13 @@ typography:
   time_size: 60
 
 background:
-  # Background opacity (0-100)
-  # Set to 0 for fully transparent
-  opacity: 0
-
-# Pro Tip: Use Blur My Shell to blur the background of the widget, it looks much better!
+  # Style: 'solid' | 'smart_transparency'
+  # solid = uses the opacity value below
+  # smart_transparency = auto-adjusts opacity for text readability based on wallpaper
+  style: smart_transparency
+  
+  # Opacity (0-100) - only used when style is 'solid'
+  opacity: 100
 
 weather:
   # Temperature unit: 'C' for Celsius, 'F' for Fahrenheit

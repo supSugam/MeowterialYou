@@ -89,3 +89,12 @@ Still somewhat inaccurate color palette on some wallpaper, i wonder why is this,
 
 
 in desktop, when you click, hold and drag, that rectangle transparent selector appears right? that probably has wrong color or it does not upldate on reapply/wallpaper change, invesitage what's going on
+
+
+
+
+perfectly modularize @desktop_widget since we will have multiple widgets, make the current one to new folder weatherclock, but we need to think about maybe we need a unified widget manager to not overlap the widgets and maintain a certain layout, idk how can we achieve pls pitch a good plan to handle this best way
+
+since each widget will have its own folder they will have their own config.yaml too, node_modules and etc ofc stays on first level outside
+
+there also shall be global config file to define how to handle multiple widgets like when widgets are rendered on same area let's say bottom left, we can define gap that should be maintained between widgets and horizontal or vertical arrangement + other stuff that make sense that you feel needed, it is still an addon bro, just make desktop_widget to desktop_widgets no need to fucking move stuffs right? dont take me too literal, get the gist of what i want and implement it your way the best way, do not ruin the current widget in the process.

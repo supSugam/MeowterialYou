@@ -804,30 +804,148 @@ class ApplierDomain:
                 log.warning(f"Failed to remove broken symlink {widget_dir}: {e}")
         os.makedirs(widget_dir, exist_ok=True)
 
-        # Localized Theme Generation
-        # (Simplified: Just generating theme.css)
+        # === Smart Region Analysis ===
+        # Load widget config to get position and mode
+        import yaml
+        from src.util import is_region_dark, _get_image_stats
 
-        # Default scheme extraction
-        scheme_to_use = scheme
+        config_src = os.path.join(addon_dir, "config.yaml")
+        widget_cfg = {}
+        if os.path.exists(config_src):
+            try:
+                with open(config_src, "r") as f:
+                    widget_cfg = yaml.safe_load(f) or {}
+            except Exception as e:
+                log.warning(f"Failed to parse config.yaml: {e}")
 
-        # Generate theme.css with FULL palette
+        # Get layout config
+        layout = widget_cfg.get("layout", {})
+        position = layout.get("position", "bottom_left")
+        gap_x = layout.get("gap_x", 24)
+        gap_y = layout.get("gap_y", 60)
+
+        # Get background config
+        bg_config = widget_cfg.get("background", {})
+        bg_style = bg_config.get("style", "smart_transparency")
+        manual_opacity = bg_config.get("opacity", 60)
+
+        # Estimate widget size (approximate)
+        widget_width = 350
+        widget_height = 250
+
+        # Get screen dimensions (approximate, use 1920x1080 as fallback)
+        screen_width = 1920
+        screen_height = 1080
+        try:
+            import Gdk
+
+            display = Gdk.Display.get_default()
+            if display:
+                monitor = display.get_primary_monitor()
+                if monitor:
+                    geom = monitor.get_geometry()
+                    screen_width = geom.width
+                    screen_height = geom.height
+        except Exception:
+            pass
+
+        # Calculate widget region in normalized coordinates [0.0-1.0]
+        if position == "bottom_left":
+            left = gap_x / screen_width
+            top = (screen_height - widget_height - gap_y) / screen_height
+        elif position == "bottom_right":
+            left = (screen_width - widget_width - gap_x) / screen_width
+            top = (screen_height - widget_height - gap_y) / screen_height
+        elif position == "top_left":
+            left = gap_x / screen_width
+            top = gap_y / screen_height
+        else:  # top_right
+            left = (screen_width - widget_width - gap_x) / screen_width
+            top = gap_y / screen_height
+
+        right = left + (widget_width / screen_width)
+        bottom = top + (widget_height / screen_height)
+
+        # Clamp to valid range
+        left = max(0.0, min(1.0, left))
+        top = max(0.0, min(1.0, top))
+        right = max(0.0, min(1.0, right))
+        bottom = max(0.0, min(1.0, bottom))
+
+        widget_region = (left, top, right, bottom)
+
+        # Analyze region brightness for smart_transparency mode
+        wallpaper_path = self._generation_options.wallpaper_path
+        region_is_dark = is_region_dark(
+            wallpaper_path, region=widget_region, threshold=128.0
+        )
+
+        # Get image stats for smarter opacity calculation
+        brightness, variance, saturation = _get_image_stats(wallpaper_path)
+
+        # Calculate optimal opacity for smart_transparency mode
+        if bg_style == "smart_transparency":
+            # Smart transparency: adjust based on wallpaper region
+            if region_is_dark:
+                # Dark region: use lower opacity (dark bg on dark wallpaper)
+                base_opacity = 50
+            else:
+                # Light region: need more opacity for contrast
+                base_opacity = 70
+
+            # Adjust for image complexity
+            opacity_adjustment = int(variance * 20)  # Up to +20% for busy images
+
+            calculated_opacity = base_opacity + opacity_adjustment
+            calculated_opacity = max(40, min(85, calculated_opacity))
+        else:
+            # Solid mode: use user-specified opacity
+            calculated_opacity = manual_opacity
+
+        log.info(
+            f"Widget: style={bg_style}, region_dark={region_is_dark}, opacity={calculated_opacity}%"
+        )
+
+        # === ALWAYS use dark background with light text ===
+        # To ensure this, we generate a DARK variant of the scheme specifically for the widget
+        # This guarantees 'surface' is dark and 'onSurface' is light
+
+        # FIX: Scheme.to_hex() modifies theme_data in place.
+        # If we already generated the dark scheme (because system is in dark mode), reuse it.
+        if not lightmode_enabled:
+            widget_scheme = scheme
+        else:
+            # System is light, so 'scheme' is light. generate fresh dark scheme for widget.
+            # We must be careful not to corrupt theme_data if it's used elsewhere, but here it's fine.
+            # Also need to handle case where theme_data was modified?
+            # Ideally we'd deepcopy but let's try direct generation as lightmode=True run
+            # shouldn't have touched dark props.
+            widget_scheme = Scheme(theme=theme_data, lightmode=False).to_hex()
+
+        dark_bg = widget_scheme.get("surface", "#1a1a1a")
+        light_text = widget_scheme.get("onSurface", "#ffffff")
+        light_text_secondary = widget_scheme.get("onSurfaceVariant", "#c0c0c0")
+        accent_color = widget_scheme.get("primary", "#00ff00")
+
+        # Generate theme.css with FULL palette + widget-specific colors
         css_lines = []
-        for name, hex_val in scheme_to_use.items():
+        for name, hex_val in scheme.items():
             css_lines.append(f"@define-color {name} {hex_val};")
 
-        bg_color = scheme_to_use.get("surface", "#000000")  # Base background
-        # Convert hex to rgb for rgba usage
-        br = int(bg_color[1:3], 16)
-        bg = int(bg_color[3:5], 16)
-        bb = int(bg_color[5:7], 16)
+        # Convert dark_bg to RGB for alpha usage
+        bg_hex = dark_bg.lstrip("#")
+        br = int(bg_hex[0:2], 16)
+        bg = int(bg_hex[2:4], 16)
+        bb = int(bg_hex[4:6], 16)
 
         css_lines.append(f"@define-color widget_bg rgb({br}, {bg}, {bb});")
-        css_lines.append(
-            f"@define-color widget_text {scheme_to_use.get('onSurface', '#ffffff')};"
-        )
-        css_lines.append(
-            f"@define-color widget_primary {scheme_to_use.get('primary', '#00ff00')};"
-        )
+        css_lines.append(f"@define-color widget_text {light_text};")
+        css_lines.append(f"@define-color widget_text_secondary {light_text_secondary};")
+        css_lines.append(f"@define-color widget_primary {accent_color};")
+
+        # Add analysis results as CSS comments for app.ts to parse
+        css_lines.append(f"/* WIDGET_CALCULATED_OPACITY: {calculated_opacity} */")
+        css_lines.append(f"/* WIDGET_BG_STYLE: {bg_style} */")
 
         with open(os.path.join(widget_dir, "theme.css"), "w") as f:
             f.write("\n".join(css_lines))
@@ -896,8 +1014,10 @@ X-GNOME-SingleWindow=true
                 )
                 if result.returncode != 0:
                     log.warning(f"esbuild failed: {result.stderr.decode()}")
+                else:
+                    log.info("esbuild succeeded")
             else:
-                log.warning("esbuild not found, skipping build")
+                log.warning(f"esbuild not found at {esbuild_path}, skipping build")
 
         # Kill existing widget and start new one with gjs
         # Use SIGKILL to ensure it dies immediately
@@ -910,13 +1030,20 @@ X-GNOME-SingleWindow=true
         if os.path.exists(app_js_path):
             os.chmod(app_js_path, 0o755)
 
-        # Start detached
-        subprocess.Popen(
-            ["gjs", "-m", app_js_path],
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL,
-            start_new_session=True,  # Detach from parent
-        )
+        # Start detached, logging to file
+        log_file = os.path.expanduser("~/.cache/meowterialyou-widget.log")
+        # Prepare environment: Force X11 backend for Wnck compatibility
+        env = os.environ.copy()
+        env["GDK_BACKEND"] = "x11"
+
+        with open(log_file, "w") as f_log:
+            subprocess.Popen(
+                ["gjs", "-m", app_js_path],
+                env=env,
+                stdout=f_log,
+                stderr=subprocess.STDOUT,
+                start_new_session=True,  # Detach from parent
+            )
         log.info("Started desktop widget (GJS)")
 
     def _install_system_gtk4_theme(self, variant: str, scheme: dict) -> None:
