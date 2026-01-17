@@ -35,9 +35,9 @@ emoji:
   # The emoji to display
   value: "😼"
   # Size multiplier (1.0 = same as text)
-  scale: 0.7
+  scale: 0.5
   # Rotation in degrees
-  rotate: -20
+  rotate: 20
   # Row to place emoji (1 = Date row, 2 = Time row)
   row: 2
 

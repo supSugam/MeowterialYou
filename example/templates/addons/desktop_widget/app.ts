@@ -13,6 +13,7 @@ import GTop from "gi://GTop?version=2.0";
 import Wnck from "gi://Wnck?version=3.0";
 import yaml from 'js-yaml';
 
+
 const log = (msg: string) => print(msg);
 
 GLib.set_prgname('meowterialyou-widget');
@@ -73,41 +74,21 @@ class SystemMonitor {
   }
 
   // 1. CPU: /proc/stat
+  // Replace lines 77-107 with this:
   private static async updateCpu() {
-    try {
-      const data = await readFileAsync('/proc/stat');
-      const lines = data.split('\n');
-      const cpuLine = lines.find((l) => l.startsWith('cpu '));
+    const cpu = new GTop.glibtop_cpu();
+    GTop.glibtop_get_cpu(cpu);
 
-      if (cpuLine) {
-        const parts = cpuLine.split(/\s+/).slice(1).map(Number);
-        const user = parts[0];
-        const nice = parts[1];
-        const system = parts[2];
-        const idle = parts[3];
-        const iowait = parts[4];
-        const irq = parts[5];
-        const softirq = parts[6];
-        const steal = parts[7];
+    const total = cpu.total;
+    const idle = cpu.idle;
 
-        const totalIdle = idle + iowait;
-        const totalNonIdle = user + nice + system + irq + softirq + steal;
-        const total = totalIdle + totalNonIdle;
+    const diffIdle = idle - this.cpu_prev.idle;
+    const diffTotal = total - this.cpu_prev.total;
 
-        const diffIdle = totalIdle - this.cpu_prev.idle;
-        const diffTotal = total - this.cpu_prev.total;
-
-        if (diffTotal > 0) {
-          this.current.cpu = Math.round(
-            ((diffTotal - diffIdle) / diffTotal) * 100
-          );
-        }
-
-        this.cpu_prev = { total, idle: totalIdle };
-      }
-    } catch (e) {
-      log(`[Error] CPU: ${e}`);
+    if (diffTotal > 0) {
+      this.current.cpu = Math.round(((diffTotal - diffIdle) / diffTotal) * 100);
     }
+    this.cpu_prev = { total, idle };
   }
 
   // 2. RAM: /proc/meminfo
@@ -211,9 +192,9 @@ class SystemMonitor {
                   } catch (e) {
                     reject(e);
                   }
-                }
+                },
               );
-            }
+            },
           );
 
           let info;
@@ -254,7 +235,7 @@ class SystemMonitor {
           this.temp_path = acpiCandidate;
         } else if (!this.temp_path) {
           const f = Gio.File.new_for_path(
-            '/sys/class/thermal/thermal_zone0/temp'
+            '/sys/class/thermal/thermal_zone0/temp',
           );
           if (f.query_exists(null))
             this.temp_path = '/sys/class/thermal/thermal_zone0/temp';
@@ -348,7 +329,7 @@ interface Config {
   };
 }
 
-const CONFIG_DIR = GLib.get_user_config_dir() + "/ags/meowterialyou";
+const CONFIG_DIR = GLib.get_user_config_dir() + '/meowterialyou-widget';
 const CONFIG_PATH = CONFIG_DIR + "/config.yaml";
 const THEME_CSS_PATH = CONFIG_DIR + "/theme.css";
 
@@ -664,7 +645,7 @@ win.set_app_paintable(true);
 const visual = win.get_screen()?.get_rgba_visual();
 if (visual) win.set_visual(visual);
 
-win.set_type_hint(Gdk.WindowTypeHint.NORMAL);
+win.set_type_hint(Gdk.WindowTypeHint.DOCK);
 win.set_keep_below(true);
 win.stick();
 
@@ -716,7 +697,7 @@ const createEmojiLabel = () => {
     emojiLabel.get_style_context().add_class('emoji-custom');
 
     if (config.emoji.rotate) {
-      emojiLabel.set_angle(config.emoji.rotate);
+      emojiLabel.set_angle(-config.emoji.rotate);
     }
 
     return emojiLabel;
@@ -860,7 +841,7 @@ content.pack_start(timeRow, false, false, 0);
 // Row 3: Weather
 const weatherRow = new Gtk.Box({
   orientation: Gtk.Orientation.HORIZONTAL,
-  spacing: s(124),
+  spacing: s(192),
 });
 
 const tempBox = new Gtk.Box({

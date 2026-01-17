@@ -767,34 +767,8 @@ class ApplierDomain:
         home = os.path.expanduser("~")
         lightmode_enabled = self._generation_options.lightmode_enabled
 
-        # === Read widget configuration ===
-        widget_config_file = os.path.join(addon_dir, "widget.conf")
-        widget_cfg = {
-            "POSITION": "bottom_left",
-            "GAP_X": "24",
-            "GAP_Y": "24",
-            "BACKGROUND_MODE": "solid",
-            "BACKGROUND_OPACITY": "50",
-            "CORNER_RADIUS": "24",
-            "FONT_FAMILY": "Inter",
-            "ICON_FONT": "MesloLGS Nerd Font Mono",
-            "TIME_FONT_SIZE": "48",
-            "WEATHER_INTERVAL": "900",
-            "PADDING": "20",
-        }
-
-        if os.path.exists(widget_config_file):
-            try:
-                with open(widget_config_file, "r") as f:
-                    for line in f:
-                        line = line.strip()
-                        if line and not line.startswith("#") and "=" in line:
-                            key, _, value = line.partition("=")
-                            widget_cfg[key.strip()] = (
-                                value.strip().strip('"').strip("'")
-                            )
-            except OSError as e:
-                log.warning(f"Could not read widget config: {e}")
+        # === Widget Configuration ===
+        # Replaced custom config logic with simplified build
 
         # Check if gjs is installed (part of GNOME, usually available)
         if not shutil.which("gjs"):
@@ -820,152 +794,32 @@ class ApplierDomain:
         text_color = scheme.get("onSurfaceVariant", "#c6c8b9")
         primary_color = scheme.get("primary", "#b2d274")
 
-        # Map position to AGS anchor
-        position = widget_cfg.get("POSITION", "bottom_left").lower()
-        anchor_map = {
-            "bottom_left": "Astal.WindowAnchor.BOTTOM | Astal.WindowAnchor.LEFT",
-            "bottom_right": "Astal.WindowAnchor.BOTTOM | Astal.WindowAnchor.RIGHT",
-            "top_left": "Astal.WindowAnchor.TOP | Astal.WindowAnchor.LEFT",
-            "top_right": "Astal.WindowAnchor.TOP | Astal.WindowAnchor.RIGHT",
-        }
-        anchor = anchor_map.get(position, anchor_map["bottom_left"])
-
-        # Create AGS config directory
-        ags_dir = os.path.join(home, ".config/ags/meowterialyou")
-        os.makedirs(ags_dir, exist_ok=True)
+        # Create widget config directory
+        widget_dir = os.path.join(home, ".config/meowterialyou-widget")
+        if os.path.islink(widget_dir) and not os.path.exists(widget_dir):
+            try:
+                os.unlink(widget_dir)
+                log.info(f"Removed broken symlink at {widget_dir}")
+            except OSError as e:
+                log.warning(f"Failed to remove broken symlink {widget_dir}: {e}")
+        os.makedirs(widget_dir, exist_ok=True)
 
         # Localized Theme Generation
-        # 1. Load config for position
-        import yaml
-        from PIL import Image, ImageStat
-        import math
+        # (Simplified: Just generating theme.css)
 
-        config_path = os.path.join(ags_dir, "config.yaml")
-        widget_pos = "bottom_left"
-        gap_x = 24
-        gap_y = 64
-        # Default size estimation (approximate, since we don't know exact rendered size yet)
-        w_width = 350
-        w_height = 200
+        # Default scheme extraction
+        scheme_to_use = scheme
 
-        if os.path.exists(config_path):
-            try:
-                with open(config_path, "r") as f:
-                    w_conf = yaml.safe_load(f)
-                    if w_conf:
-                        layout = w_conf.get("layout", {})
-                        widget_pos = layout.get("position", widget_pos)
-                        gap_x = layout.get("gap_x", gap_x)
-                        gap_y = layout.get("gap_y", gap_y)
-            except Exception as e:
-                log.warning(f"Failed to parse config.yaml for positioning: {e}")
-
-        # 2. Load and crop wallpaper
-        wallpaper_path = self._generation_options.wallpaper_path
-        scheme_to_use = scheme  # Default to global scheme
-        is_dark_bg = True
-
-        if False and os.path.exists(
-            wallpaper_path
-        ):  # DISABLED: Force use of global scheme for consistency
-            try:
-                img = Image.open(wallpaper_path)
-                sw, sh = img.size
-
-                # Calculate simple crop box based on position
-                # Assuming top-left origin
-                left = 0
-                top = 0
-
-                if widget_pos == "bottom_left":
-                    left = gap_x
-                    top = sh - w_height - gap_y
-                elif widget_pos == "bottom_right":
-                    left = sw - w_width - gap_x
-                    top = sh - w_height - gap_y
-                elif widget_pos == "top_left":
-                    left = gap_x
-                    top = gap_y
-                elif widget_pos == "top_right":
-                    left = sw - w_width - gap_x
-                    top = gap_y
-
-                # Clamp coordinates
-                left = max(0, min(sw - 1, left))
-                top = max(0, min(sh - 1, top))
-                right = min(sw, left + w_width)
-                bottom = min(sh, top + w_height)
-
-                crop = img.crop((left, top, right, bottom))
-
-                # 3. Analyze Luminance (0-255)
-                # Convert to grayscale and get mean
-                grayscale = crop.convert("L")
-                stat = ImageStat.Stat(grayscale)
-                mean_lum = stat.mean[0]
-
-                # If luminance > 128 (bright), force LIGHT mode (dark text)
-                # If luminance < 128 (dark), force DARK mode (light text)
-                required_dark_mode = mean_lum < 128
-                log.info(
-                    f"Widget Region Luminance: {mean_lum:.2f} -> Using {'Dark' if required_dark_mode else 'Light'} scheme"
-                )
-
-                # 4. Generate Local Palette
-                # Use mean color of the crop as source? Or standard extraction?
-                # Let's use the standard extraction on the crop by resizing it down to 1px to get average color
-                # straightforward way:
-                avg_color_img = crop.resize((1, 1))
-                r, g, b = avg_color_img.getpixel((0, 0))[:3]
-                source_color_hex = "#{:02x}{:02x}{:02x}".format(r, g, b)
-
-                # Generate scheme from this local color
-                from src.material_color_utilities_python.utils.theme_utils import (
-                    themeFromSourceColor,
-                )
-
-                theme = themeFromSourceColor(
-                    int(f"FF{r:02x}{g:02x}{b:02x}", 16),
-                    style=self._generation_options.scheme_variant,
-                )
-
-                scheme_to_use = theme["schemes"][
-                    "dark" if required_dark_mode else "light"
-                ]
-
-                # Flatten the scheme to simple hex values
-                # The library returns integers, convert to hex strings
-                new_scheme = {}
-                for k, v in scheme_to_use.props.items():
-                    # v is int ARGB, we need RGB hex (strip alpha if present, usually FF)
-                    # actually utils usually returns standard int. format {:06x}
-                    new_scheme[k] = "#{:06x}".format(v & 0xFFFFFF)
-
-                scheme_to_use = new_scheme
-
-            except Exception as e:
-                log.error(f"Localized theme extraction failed: {e}")
-
-        # 5. Generate theme.css with FULL palette
+        # Generate theme.css with FULL palette
         css_lines = []
         for name, hex_val in scheme_to_use.items():
             css_lines.append(f"@define-color {name} {hex_val};")
-
-        # Legacy mappings for backward compatibility (if needed)
-        # But app.ts will be updated to use new tokens.
-        # We also need widget_bg with opacity
 
         bg_color = scheme_to_use.get("surface", "#000000")  # Base background
         # Convert hex to rgb for rgba usage
         br = int(bg_color[1:3], 16)
         bg = int(bg_color[3:5], 16)
         bb = int(bg_color[5:7], 16)
-
-        # Opacity comes from config usually, but we want config.yaml to control it runtime.
-        # However, theme.css defines the base color.
-        # We expose @widget_bg_rgb as a color without alpha? No, GTK colors usually include alpha or not.
-        # Let's define @surfaceRGBA for the app.ts to use with alpha() function?
-        # Actually app.ts uses alpha(@widget_bg, ...) which works if widget_bg is a color.
 
         css_lines.append(f"@define-color widget_bg rgb({br}, {bg}, {bb});")
         css_lines.append(
@@ -975,20 +829,18 @@ class ApplierDomain:
             f"@define-color widget_primary {scheme_to_use.get('primary', '#00ff00')};"
         )
 
-        with open(os.path.join(ags_dir, "theme.css"), "w") as f:
+        with open(os.path.join(widget_dir, "theme.css"), "w") as f:
             f.write("\n".join(css_lines))
-        log.info(f"Generated localized theme: {ags_dir}/theme.css")
-
-        # 6. Blurred background generation removed (using dynamic compositor blur)
+        log.info(f"Generated localized theme: {widget_dir}/theme.css")
 
         # Copy config.yaml
         config_src = os.path.join(addon_dir, "config.yaml")
         if os.path.exists(config_src):
             # Always overwrite config to ensure updates apply
-            shutil.copy(config_src, os.path.join(ags_dir, "config.yaml"))
+            shutil.copy(config_src, os.path.join(widget_dir, "config.yaml"))
 
         # Remove old config if exists
-        old_config = os.path.join(ags_dir, "config.json")
+        old_config = os.path.join(widget_dir, "config.json")
         if os.path.exists(old_config):
             try:
                 os.unlink(old_config)
@@ -999,7 +851,7 @@ class ApplierDomain:
         desktop_entry_path = os.path.join(
             home, ".local/share/applications/meowterialyou-widget.desktop"
         )
-        app_js_path = os.path.join(ags_dir, "app.mjs")
+        app_js_path = os.path.join(widget_dir, "app.mjs")
 
         try:
             desktop_content = f"""[Desktop Entry]
@@ -1027,7 +879,7 @@ X-GNOME-SingleWindow=true
         if os.path.exists(app_ts_src):
             # Use local esbuild if available
             esbuild_path = os.path.join(addon_dir, "node_modules/.bin/esbuild")
-            app_js_out = os.path.join(ags_dir, "app.mjs")
+            app_js_out = os.path.join(widget_dir, "app.mjs")
 
             if os.path.exists(esbuild_path):
                 result = subprocess.run(
@@ -1054,8 +906,9 @@ X-GNOME-SingleWindow=true
         # Verify it's dead? pkill returns 0 if it matched, 1 if not.
 
         # Make the script executable and run with gjs
-        app_js_path = os.path.join(ags_dir, "app.mjs")
-        os.chmod(app_js_path, 0o755)
+        app_js_path = os.path.join(widget_dir, "app.mjs")
+        if os.path.exists(app_js_path):
+            os.chmod(app_js_path, 0o755)
 
         # Start detached
         subprocess.Popen(
