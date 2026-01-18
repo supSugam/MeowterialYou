@@ -8,6 +8,7 @@ import Pango from 'gi://Pango?version=1.0';
 import yaml from 'js-yaml';
 
 const log = (msg: string) => print(msg);
+const Cairo = imports.cairo;
 const decoder = new TextDecoder('utf-8');
 
 // --- Config ---
@@ -135,8 +136,35 @@ const downloadArt = (url: string, callback: (path: string | null) => void) => {
 };
 
 // --- App Logic ---
+const roundPixbuf = (pixbuf: any, radius: number) => {
+  if (!pixbuf) return null;
+  const w = pixbuf.get_width();
+  const h = pixbuf.get_height();
+  const surface = new Cairo.ImageSurface(Cairo.Format.ARGB32, w, h);
+  const cr = new Cairo.Context(surface);
+
+  // Create rounded path
+  cr.arc(radius, radius, radius, Math.PI, 1.5 * Math.PI);
+  cr.arc(w - radius, radius, radius, 1.5 * Math.PI, 0);
+  cr.arc(w - radius, h - radius, radius, 0, 0.5 * Math.PI);
+  cr.arc(radius, h - radius, radius, 0.5 * Math.PI, Math.PI);
+  cr.closePath();
+  cr.clip();
+
+  // Paint pixbuf
+  Gdk.cairo_set_source_pixbuf(cr, pixbuf, 0, 0);
+  cr.paint();
+
+  // Convert back to pixbuf
+  return Gdk.pixbuf_get_from_surface(surface, 0, 0, w, h);
+};
+
 function updateUI() {
-    titleLabel.label = State.title;
+    if (titleLabel.label !== State.title) {
+      titleLabel.label = State.title;
+      if (typeof titleLabel2 !== 'undefined') titleLabel2.label = State.title;
+      if (typeof resetMarquee === 'function') resetMarquee();
+    }
     artistLabel.label = State.artist;
     const iconName = State.isPlaying ? 'media-playback-pause-symbolic' : 'media-playback-start-symbolic';
     playBtnImage.icon_name = iconName;
@@ -145,32 +173,45 @@ function updateUI() {
         downloadArt(State.artUrl, (path) => {
             if (path) {
                 try {
-                    const targetSize = 135;
-                    // Load original first to dimensions
-                    let pixbuf = GdkPixbuf.Pixbuf.new_from_file(path);
-                    let w = pixbuf.get_width();
-                    let h = pixbuf.get_height();
-                    
-                    // "Cover" logic: Scale so smallest side matches target
-                    let scale = Math.max(targetSize / w, targetSize / h);
-                    let newW = Math.floor(w * scale);
-                    let newH = Math.floor(h * scale);
-                    
-                    // Scale it up/down
-                    let scaled = pixbuf.scale_simple(newW, newH, GdkPixbuf.InterpType.BILINEAR);
-                    
-                    // Center Crop
-                    let offsetX = Math.floor((newW - targetSize) / 2);
-                    let offsetY = Math.floor((newH - targetSize) / 2);
-                    
-                    // Clamp offsets (just in case)
-                    if (offsetX < 0) offsetX = 0;
-                    if (offsetY < 0) offsetY = 0;
-                    
-                    // Create subpixbuf (Crop)
-                    let cropped = scaled.new_subpixbuf(offsetX, offsetY, Math.min(targetSize, newW), Math.min(targetSize, newH));
-                    
-                    artImage.set_from_pixbuf(cropped);
+                  const targetSize = 135;
+                  // Load original first to dimensions
+                  let pixbuf = GdkPixbuf.Pixbuf.new_from_file(path);
+                  let w = pixbuf.get_width();
+                  let h = pixbuf.get_height();
+
+                  // "Cover" logic: Scale so smallest side matches target
+                  let scale = Math.max(targetSize / w, targetSize / h);
+                  let newW = Math.floor(w * scale);
+                  let newH = Math.floor(h * scale);
+
+                  // Scale it up/down
+                  let scaled = pixbuf.scale_simple(
+                    newW,
+                    newH,
+                    GdkPixbuf.InterpType.BILINEAR,
+                  );
+
+                  // Center Crop
+                  let offsetX = Math.floor((newW - targetSize) / 2);
+                  let offsetY = Math.floor((newH - targetSize) / 2);
+
+                  // Clamp offsets (just in case)
+                  if (offsetX < 0) offsetX = 0;
+                  if (offsetY < 0) offsetY = 0;
+
+                  // Create subpixbuf (Crop)
+                  let cropped = scaled.new_subpixbuf(
+                    offsetX,
+                    offsetY,
+                    Math.min(targetSize, newW),
+                    Math.min(targetSize, newH),
+                  );
+
+                  // Round Corners
+                  let rounded = roundPixbuf(cropped, 16); // 16px radius matches container
+
+                  if (rounded) artImage.set_from_pixbuf(rounded);
+                  else artImage.set_from_pixbuf(cropped);
                 } catch (e) { artImage.set_from_icon_name('audio-x-generic', Gtk.IconSize.DIALOG); }
             } else { artImage.set_from_icon_name('audio-x-generic', Gtk.IconSize.DIALOG); }
         });
@@ -404,7 +445,8 @@ css.load_from_data(`
         background-color: @surfaceVariant;
         box-shadow: 0 4px 12px alpha(black, 0.2);
     }
-    .title { font-weight: 800; font-size: 16px; color: @widget_text; margin-bottom: 2px; }
+    .title { font-weight: 800; font-size: 16px; color: @widget_text; margin-bottom: 0px; }
+    .title-scroll { background: transparent; border: none; }
     .artist { font-size: 13px; color: @widget_text_secondary; font-weight: 600; opacity: 0.8; }
     
     .control-btn { 
@@ -463,14 +505,95 @@ artBox.get_style_context().add_class('art-container');
 // No margins - fill the box
 
 
-const detailsBox = new Gtk.Box({ orientation: Gtk.Orientation.VERTICAL });
+// Shared Vertical Gap
+const CONTENT_SPACING = 12;
+
+const detailsBox = new Gtk.Box({ orientation: Gtk.Orientation.VERTICAL, spacing: CONTENT_SPACING });
 detailsBox.set_valign(Gtk.Align.CENTER);
 detailsBox.set_hexpand(true);
 
-const titleLabel = new Gtk.Label({ label: 'Waiting...', halign: Gtk.Align.CENTER, max_width_chars: 20, wrap: true, lines: 2, ellipsize: Pango.EllipsizeMode.END });
+// --- Marquee Magic ---
+let marqueeOffset = 0;
+let marqueeWaiting = 0;
+let marqueeEnabled = false;
+let marqueeScrollLimit = 0;
+const MARQUEE_GAP = 60;
+const MARQUEE_PAUSE_FRAMES = 100;
+
+const titleAdjustment = new Gtk.Adjustment();
+const titleLabel = new Gtk.Label({ label: 'Waiting...', halign: Gtk.Align.START, wrap: false, lines: 1 });
 titleLabel.get_style_context().add_class('title');
+const titleLabel2 = new Gtk.Label({
+  label: 'Waiting...',
+  halign: Gtk.Align.START,
+  wrap: false,
+  lines: 1,
+});
+titleLabel2.get_style_context().add_class('title');
+
+const titleBox = new Gtk.Box({
+  orientation: Gtk.Orientation.HORIZONTAL,
+  spacing: MARQUEE_GAP,
+});
+titleBox.pack_start(titleLabel, false, false, 0);
+titleBox.pack_start(titleLabel2, false, false, 0);
+
+const titleScroll = new Gtk.ScrolledWindow({
+  hscrollbar_policy: Gtk.PolicyType.EXTERNAL,
+  vscrollbar_policy: Gtk.PolicyType.NEVER,
+  hadjustment: titleAdjustment,
+  hexpand: true,
+});
+titleScroll.get_style_context().add_class('title-scroll');
+titleScroll.add(titleBox);
+
+function resetMarquee() {
+  marqueeOffset = 0;
+  marqueeWaiting = MARQUEE_PAUSE_FRAMES;
+  titleAdjustment.set_value(0);
+  marqueeEnabled = false;
+  titleLabel2.hide();
+  titleBox.halign = Gtk.Align.CENTER;
+
+  GLib.timeout_add(GLib.PRIORITY_DEFAULT, 100, () => {
+    const scrollAlloc = titleScroll.get_allocation();
+    const labelAlloc = titleLabel.get_allocation();
+    if (labelAlloc.width > scrollAlloc.width) {
+      marqueeEnabled = true;
+      marqueeScrollLimit = labelAlloc.width + MARQUEE_GAP;
+      titleLabel2.show();
+      titleBox.halign = Gtk.Align.START;
+    }
+    return false;
+  });
+}
+
+function tickMarquee() {
+  if (!marqueeEnabled) return true;
+  if (marqueeWaiting > 0) {
+    marqueeWaiting--;
+    return true;
+  }
+  marqueeOffset += 1;
+  if (marqueeOffset >= marqueeScrollLimit) {
+    marqueeOffset = 0;
+    marqueeWaiting = MARQUEE_PAUSE_FRAMES;
+  }
+  titleAdjustment.set_value(marqueeOffset);
+  return true;
+}
+GLib.timeout_add(GLib.PRIORITY_DEFAULT, 30, tickMarquee);
+
 const artistLabel = new Gtk.Label({ label: 'System Check', halign: Gtk.Align.CENTER, max_width_chars: 25, ellipsize: Pango.EllipsizeMode.END });
 artistLabel.get_style_context().add_class('artist');
+
+const labelsBox = new Gtk.Box({
+  orientation: Gtk.Orientation.VERTICAL,
+  spacing: 2,
+});
+labelsBox.get_style_context().add_class('labels-container');
+labelsBox.pack_start(titleScroll, false, false, 0);
+labelsBox.pack_start(artistLabel, false, false, 0);
 
 const controlsBox = new Gtk.Box({ orientation: Gtk.Orientation.HORIZONTAL });
 controlsBox.get_style_context().add_class('controls-box');
@@ -558,8 +681,7 @@ timeBox.pack_start(lblTotal, false, false, 0);
 progressBox.pack_start(scale, false, false, 0);
 progressBox.pack_start(timeBox, false, false, 0);
 
-detailsBox.pack_start(titleLabel, false, false, 0);
-detailsBox.pack_start(artistLabel, false, false, 0);
+detailsBox.pack_start(labelsBox, false, false, 0);
 detailsBox.pack_start(controlsBox, false, false, 0);
 detailsBox.pack_start(progressBox, false, false, 0);
 mainBox.pack_start(artBox, false, false, 0);
