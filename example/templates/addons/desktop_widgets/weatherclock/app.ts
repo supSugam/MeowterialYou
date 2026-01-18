@@ -13,7 +13,6 @@ import GTop from "gi://GTop?version=2.0";
 import Wnck from 'gi://Wnck?version=3.0';
 import yaml from 'js-yaml';
 
-
 const log = (msg: string) => print(msg);
 
 GLib.set_prgname('meowterialyou-widget');
@@ -25,6 +24,7 @@ const decoder = new TextDecoder('utf-8');
 const readFileAsync = (path: string): Promise<string> => {
     return new Promise((resolve, reject) => {
         const file = Gio.File.new_for_path(path);
+        // @ts-ignore - GJS async callback types
         file.load_contents_async(null, (obj, res) => {
             try {
                 const [success, contents] = file.load_contents_finish(res);
@@ -186,6 +186,7 @@ class SystemMonitor {
                 Gio.FileQueryInfoFlags.NONE,
                 GLib.PRIORITY_DEFAULT,
                 null,
+                // @ts-ignore - GJS async callback types
                 (obj, res) => {
                   try {
                     resolve(baseDir.enumerate_children_finish(res));
@@ -659,21 +660,46 @@ const win = new Gtk.Window({
   decorated: false,
   skip_taskbar_hint: true,
   skip_pager_hint: true,
-  accept_focus: false,
+  accept_focus: true,
 });
-win.set_title('MeowterialYou Widget');
+win.set_title('MeowterialYou-Widget-weatherclock');
 
 // Set WM Class/Role for Compositor Rules
-win.set_wmclass('meowterialyou-widget', 'MeowterialYou Widget');
-win.set_role('meowterialyou-widget');
+win.set_wmclass('MeowterialYou-Widget-weatherclock', 'MeowterialYou-Widget-weatherclock');
+win.set_role('MeowterialYou-Widget-weatherclock');
 
 win.set_app_paintable(true);
 const visual = win.get_screen()?.get_rgba_visual();
 if (visual) win.set_visual(visual);
 
-win.set_type_hint(Gdk.WindowTypeHint.DOCK);
-win.set_keep_below(true);
+// INTERACTIVITY FIX:
+// "Dock" window type + Keep Below + Sticky = Desktop Widget behavior.
+win.set_titlebar(null);
+win.set_keep_above(false);
+win.set_keep_below(false); 
+win.set_type_hint(Gdk.WindowTypeHint.NORMAL);
+win.set_decorated(false); 
+win.set_skip_taskbar_hint(true);
+win.set_skip_pager_hint(true);
+win.set_accept_focus(true); // Allow clicks
 win.stick();
+
+// AGGRESSIVE LOWERING STRATEGY:
+const lowerWin = () => { const gw = win.get_window(); if(gw) gw.lower(); };
+
+// 1. Lower on startup (Standard)
+win.connect('map-event', lowerWin);
+
+// 2. Hammer 'lower()' on startup to defeat WM initial placement (Relentless)
+let lowerCount = 0;
+GLib.timeout_add(GLib.PRIORITY_LOW, 200, () => {
+    lowerWin();
+    lowerCount++;
+    return lowerCount < 20; // Run for ~4 seconds
+});
+
+// 3. Lower when losing focus (e.g. clicking wallpaper or another app)
+win.connect('focus-out-event', () => { lowerWin(); return false; });
 
 // Nested Architecture: Wrapper (Background) -> Glass Overlay -> Content (Padding)
 const wrapper = new Gtk.Box({
@@ -1063,31 +1089,63 @@ glassOverlay.pack_start(content, true, true, 0);
 wrapper.pack_start(glassOverlay, true, true, 0);
 win.add(wrapper);
 
-// --- Positioning ---
-win.connect('size-allocate', () => {
-  const display = win.get_display();
-  const monitor = display.get_primary_monitor() || display.get_monitor(0);
-  if (monitor) {
-    const geom = monitor.get_geometry();
-    const alloc = win.get_allocation();
-    let x = 0,
-      y = 0;
-    const { position, gap_x, gap_y } = config.layout;
+// --- Positioning (using server-calculated coordinates from theme.css) ---
+// Parse position from theme.css comments (set by Python)
+let serverPosX: number | null = null;
+let serverPosY: number | null = null;
 
-    if (position === 'bottom_left') {
-      x = geom.x + gap_x;
-      y = geom.y + geom.height - alloc.height - gap_y;
-    } else if (position === 'bottom_right') {
-      x = geom.x + geom.width - alloc.width - gap_x;
-      y = geom.y + geom.height - alloc.height - gap_y;
-    } else if (position === 'top_left') {
-      x = geom.x + gap_x;
-      y = geom.y + gap_y;
-    } else if (position === 'top_right') {
-      x = geom.x + geom.width - alloc.width - gap_x;
-      y = geom.y + gap_y;
+try {
+  const themeFile = Gio.File.new_for_path(THEME_CSS_PATH);
+  if (themeFile.query_exists(null)) {
+    const [success, doc] = themeFile.load_contents(null);
+    if (success && doc) {
+      // @ts-ignore
+      const decoder = new TextDecoder('utf-8');
+      const themeContent = decoder.decode(doc);
+      
+      const posXMatch = themeContent.match(/WIDGET_POSITION_X:\s*(-?\d+)/);
+      const posYMatch = themeContent.match(/WIDGET_POSITION_Y:\s*(-?\d+)/);
+      
+      if (posXMatch) serverPosX = parseInt(posXMatch[1], 10);
+      if (posYMatch) serverPosY = parseInt(posYMatch[1], 10);
     }
-    win.move(x, y);
+  }
+} catch (e) {
+  log(`[WARNING] Could not parse position from theme.css: ${e}`);
+}
+
+win.connect('size-allocate', () => {
+  const alloc = win.get_allocation();
+  log(`[DEBUG] Weather Real Alloc: ${alloc.width}x${alloc.height}`);
+
+  // Use server-calculated position if available, otherwise fallback to local calculation
+  if (serverPosX !== null && serverPosY !== null) {
+    win.move(serverPosX, serverPosY);
+  } else {
+    // Fallback: calculate locally (for backwards compatibility)
+    const display = win.get_display();
+    const monitor = display.get_primary_monitor() || display.get_monitor(0);
+    if (monitor) {
+      const geom = monitor.get_geometry();
+      const alloc = win.get_allocation();
+      let x = 0, y = 0;
+      const { position, gap_x, gap_y } = config.layout;
+
+      if (position === 'bottom_left') {
+        x = geom.x + gap_x;
+        y = geom.y + geom.height - alloc.height - gap_y;
+      } else if (position === 'bottom_right') {
+        x = geom.x + geom.width - alloc.width - gap_x;
+        y = geom.y + geom.height - alloc.height - gap_y;
+      } else if (position === 'top_left') {
+        x = geom.x + gap_x;
+        y = geom.y + gap_y;
+      } else if (position === 'top_right') {
+        x = geom.x + geom.width - alloc.width - gap_x;
+        y = geom.y + gap_y;
+      }
+      win.move(x, y);
+    }
   }
 });
 

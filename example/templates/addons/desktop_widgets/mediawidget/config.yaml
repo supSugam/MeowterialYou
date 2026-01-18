@@ -1,0 +1,28 @@
+layout:
+  # Position on screen
+  position: bottom_left
+
+  # Widget dimensions (Physical pixels for GDK_SCALE=1)
+  width: 360
+  height: 140
+
+  # Horizontal margin from screen edge (pixels)
+  gap_x: 24
+
+  # Vertical margin from screen edge (pixels)
+  gap_y: 60
+
+appearance:
+  # Corner radius (pixels)
+  corner_radius: 16
+
+  # Blur background art if true, otherwise use solid colors
+  blur_art: true
+
+background:
+  # Base opacity (used if no album art or blur_art is false)
+  style: smart_transparency
+  opacity: 80
+
+controls:
+  show_next_prev: true

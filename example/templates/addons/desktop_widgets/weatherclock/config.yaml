@@ -8,6 +8,10 @@ layout:
   # Options: bottom_left, bottom_right, top_left, top_right
   position: bottom_left
 
+  # Widget dimensions (used for multi-widget stacking calculations)
+  width: 350
+  height: 270
+
   # Horizontal margin from screen edge (pixels)
   gap_x: 24
 

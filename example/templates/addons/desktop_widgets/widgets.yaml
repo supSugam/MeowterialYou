@@ -1,0 +1,18 @@
+# MeowterialYou Desktop Widgets - Global Configuration
+# This file controls which widgets are enabled and how they're arranged.
+
+# Enabled widgets (order = render order, first = bottom layer)
+# Add widget folder names here to enable them
+enabled:
+  - weatherclock
+  - mediawidget
+
+# Layout management for multiple widgets
+layout:
+  # How to arrange widgets in the same position zone
+  # 'vertical' = stack widgets vertically (default)
+  # 'horizontal' = arrange widgets side by side
+  arrangement: vertical
+  
+  
+
