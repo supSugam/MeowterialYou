@@ -4,6 +4,7 @@
 
 import Gtk from "gi://Gtk?version=3.0";
 import Gdk from "gi://Gdk?version=3.0";
+import Pango from 'gi://Pango';
 import GLib from "gi://GLib?version=2.0";
 import Gio from "gi://Gio?version=2.0";
 import GWeather from "gi://GWeather?version=4.0";
@@ -74,7 +75,6 @@ class SystemMonitor {
   }
 
   // 1. CPU: /proc/stat
-  // Replace lines 77-107 with this:
   private static async updateCpu() {
     const cpu = new GTop.glibtop_cpu();
     GTop.glibtop_get_cpu(cpu);
@@ -287,8 +287,7 @@ class SystemMonitor {
 interface Config {
   layout: {
     padding: number;
-    gap_x: number;
-    gap_y: number;
+    gap: number[];
     position: 'bottom_left' | 'bottom_right' | 'top_left' | 'top_right';
     scale_factor: number;
     corner_radius: number;
@@ -331,15 +330,15 @@ interface Config {
   };
 }
 
-const CONFIG_DIR = GLib.get_user_config_dir() + '/meowterialyou-widget';
+const SCRIPT_DIR = GLib.path_get_dirname(imports.system.programInvocationName);
+const CONFIG_DIR = SCRIPT_DIR;
 const CONFIG_PATH = CONFIG_DIR + "/config.yaml";
 const THEME_CSS_PATH = CONFIG_DIR + "/theme.css";
 
 const defaultConfig: Config = {
   layout: {
     padding: 24,
-    gap_x: 12,
-    gap_y: 12,
+    gap: [0, 0],
     position: 'bottom_right',
     scale_factor: 1.0,
     corner_radius: 16,
@@ -383,6 +382,14 @@ const defaultConfig: Config = {
 };
 
 let config: Config = { ...defaultConfig };
+
+const Layout = {
+  gapX: 0,
+  gapY: 0,
+  stackOffsetY: 0,
+  positionMode: 'bottom_left',
+  forcedWidth: 0,
+};
 
 function loadConfig() {
   try {
@@ -504,6 +511,29 @@ function applyStyles() {
         if (styleMatch) {
           bgStyle = styleMatch[1];
         }
+
+        const xMatch = themeContent.match(/WIDGET_MARGIN_X:\s*(\d+)/);
+        if (xMatch) Layout.gapX = parseInt(xMatch[1], 10);
+        const yMatch = themeContent.match(/WIDGET_MARGIN_Y:\s*(\d+)/);
+        if (yMatch) Layout.gapY = parseInt(yMatch[1], 10);
+        const stackMatch = themeContent.match(/WIDGET_STACK_OFFSET_Y:\s*(\d+)/);
+        if (stackMatch) Layout.stackOffsetY = parseInt(stackMatch[1], 10);
+        const posMatch = themeContent.match(/WIDGET_POSITION_MODE:\s*([\w_]+)/);
+        if (posMatch) Layout.positionMode = posMatch[1];
+        const widthMatch = themeContent.match(/WIDGET_WIDTH_OVERRIDE:\s*(\d+)/);
+        if (widthMatch) Layout.forcedWidth = parseInt(widthMatch[1], 10);
+
+        // Environment variable overrides (from Manager)
+        const envX = GLib.getenv('WIDGET_MARGIN_X');
+        if (envX) Layout.gapX = parseInt(envX, 10);
+        const envY = GLib.getenv('WIDGET_MARGIN_Y');
+        if (envY) Layout.gapY = parseInt(envY, 10);
+        const envStack = GLib.getenv('WIDGET_STACK_OFFSET_Y');
+        if (envStack) Layout.stackOffsetY = parseInt(envStack, 10);
+        const envPos = GLib.getenv('WIDGET_POSITION_MODE');
+        if (envPos) Layout.positionMode = envPos;
+        const envWidth = GLib.getenv('WIDGET_WIDTH_OVERRIDE');
+        if (envWidth) Layout.forcedWidth = parseInt(envWidth, 10);
       }
     }
   } catch (e) {
@@ -657,11 +687,15 @@ const ALIGN = getAlign();
 // --- Window & UI ---
 const win = new Gtk.Window({
   type: Gtk.WindowType.TOPLEVEL,
+  name: 'meowterialyou-widget-window',
   decorated: false,
+  resizable: false,
+  app_paintable: true,
   skip_taskbar_hint: true,
   skip_pager_hint: true,
-  accept_focus: true,
 });
+win.stick();
+win.set_keep_below(true);
 win.set_title('MeowterialYou-Widget-weatherclock');
 
 // Set WM Class/Role for Compositor Rules
@@ -676,7 +710,8 @@ if (visual) win.set_visual(visual);
 // "Dock" window type + Keep Below + Sticky = Desktop Widget behavior.
 win.set_titlebar(null);
 win.set_keep_above(false);
-win.set_keep_below(false); 
+// keep_below(true) enforced for desktop pinning
+win.set_keep_below(true);
 win.set_type_hint(Gdk.WindowTypeHint.NORMAL);
 win.set_decorated(false); 
 win.set_skip_taskbar_hint(true);
@@ -684,28 +719,26 @@ win.set_skip_pager_hint(true);
 win.set_accept_focus(true); // Allow clicks
 win.stick();
 
-// AGGRESSIVE LOWERING STRATEGY:
-const lowerWin = () => { const gw = win.get_window(); if(gw) gw.lower(); };
-
-// 1. Lower on startup (Standard)
-win.connect('map-event', lowerWin);
-
-// 2. Hammer 'lower()' on startup to defeat WM initial placement (Relentless)
-let lowerCount = 0;
-GLib.timeout_add(GLib.PRIORITY_LOW, 200, () => {
-    lowerWin();
-    lowerCount++;
-    return lowerCount < 20; // Run for ~4 seconds
-});
-
-// 3. Lower when losing focus (e.g. clicking wallpaper or another app)
-win.connect('focus-out-event', () => { lowerWin(); return false; });
+// win.connect('focus-out-event', () => { lowerWin(); return false; });
 
 // Nested Architecture: Wrapper (Background) -> Glass Overlay -> Content (Padding)
 const wrapper = new Gtk.Box({
   orientation: Gtk.Orientation.VERTICAL,
 });
 wrapper.get_style_context().add_class('background-layer');
+
+// INTERACTIVITY: Enable drag
+wrapper.connect('button-press-event', (widget, event) => {
+    // @ts-ignore
+    const btn = event.get_button ? event.get_button()[1] : event.button;
+    // @ts-ignore
+    const time = event.get_time ? event.get_time() : event.time;
+
+    if (btn === 1) {
+       win.begin_move_drag(btn, event.x_root, event.y_root, time);
+    }
+    return false;
+});
 
 // Glass tint overlay
 const glassOverlay = new Gtk.Box({
@@ -715,7 +748,11 @@ glassOverlay.get_style_context().add_class('glass-overlay');
 
 const content = new Gtk.Box({
   orientation: Gtk.Orientation.VERTICAL,
-  spacing: s(6),
+  spacing: 0,
+  valign: Gtk.Align.FILL,
+  halign: Gtk.Align.FILL,
+  hexpand: true,
+  vexpand: true,
   margin: s(config.layout.padding),
 });
 
@@ -768,10 +805,12 @@ const dateLabel = new Gtk.Label({
   label: '...',
   halign: ALIGN.gtk,
   xalign: ALIGN.x,
+  ellipsize: Pango.EllipsizeMode.END,
 });
 dateLabel.get_style_context().add_class('date');
 
 const dateSpacer = new Gtk.Box({ hexpand: true }); // Spring
+
 
 // Packing Logic for Date Row
 if ((config.emoji?.row ?? 1) === 1) {
@@ -780,8 +819,8 @@ if ((config.emoji?.row ?? 1) === 1) {
     if (ALIGN.isRight) {
       // Right Align: [Emoji] <space> [Date]
       dateRow.pack_start(e, false, false, 0);
-      dateRow.pack_start(dateSpacer, true, true, 0);
-      dateRow.pack_start(dateLabel, false, false, 0);
+      // dateRow.pack_start(dateSpacer, true, true, 0);
+      dateRow.pack_start(dateLabel, true, true, 0);
     } else {
       // Left/Center Align: [Date] <space> [Emoji]
       // Note: If Center, spacer might behave oddly, but user asked for "End".
@@ -791,11 +830,11 @@ if ((config.emoji?.row ?? 1) === 1) {
       // User prompt: "ofc this flips... when alignment is right".
 
       if (ALIGN.isCenter) {
-        // Center: [Date] [Emoji] (Just packed)
+        // Center: [Date] [Emoji]
         dateRow.pack_start(dateLabel, false, false, 0);
         dateRow.pack_start(e, false, false, 0);
       } else {
-        // Left: [Date] <space> [Emoji]
+        // Left: [Date] [Spring] [Emoji]
         dateRow.pack_start(dateLabel, false, false, 0);
         dateRow.pack_start(dateSpacer, true, true, 0);
         dateRow.pack_start(e, false, false, 0);
@@ -826,7 +865,14 @@ if ((config.emoji?.row ?? 1) === 1) {
   } else dateRow.pack_start(dateLabel, false, false, 0);
 }
 
+const vSpacer = () => {
+  const s = new Gtk.Box({ orientation: Gtk.Orientation.VERTICAL });
+  s.set_vexpand(true);
+  return s;
+};
+
 content.pack_start(dateRow, false, false, 0);
+content.pack_start(vSpacer(), true, true, 0);
 
 // Row 2: Time
 const timeRow = new Gtk.Box({
@@ -840,7 +886,10 @@ const timeGroup = new Gtk.Box({
   spacing: s(6),
 });
 
-const timeLabel = new Gtk.Label({ label: '...' });
+const timeLabel = new Gtk.Label({
+  label: '...',
+  ellipsize: Pango.EllipsizeMode.END,
+});
 timeLabel.get_style_context().add_class('time');
 const ampmLabel = new Gtk.Label({
   label: '...',
@@ -860,8 +909,8 @@ if (config.emoji?.row === 2) {
     if (ALIGN.isRight) {
       // [Emoji] <space> [TimeGroup]
       timeRow.pack_start(e, false, false, 0);
-      timeRow.pack_start(timeSpacer, true, true, 0);
-      timeRow.pack_start(timeGroup, false, false, 0);
+      // timeRow.pack_start(timeSpacer, true, true, 0);
+      timeRow.pack_start(timeGroup, true, true, 0);
     } else {
       if (ALIGN.isCenter) {
         timeRow.pack_start(timeGroup, false, false, 0);
@@ -889,11 +938,12 @@ if (config.emoji?.row === 2) {
 }
 
 content.pack_start(timeRow, false, false, 0);
+content.pack_start(vSpacer(), true, true, 0);
 
 // Row 3: Weather
 const weatherRow = new Gtk.Box({
   orientation: Gtk.Orientation.HORIZONTAL,
-  spacing: s(156),
+  spacing: 0,
 });
 
 const tempBox = new Gtk.Box({
@@ -910,27 +960,32 @@ tempBox.pack_start(wTemp, false, false, s(6));
 const infoBox = new Gtk.Box({
   orientation: Gtk.Orientation.VERTICAL,
   valign: Gtk.Align.CENTER,
-  hexpand: true,
+  hexpand: false, // Let the spacer handle expansion
 });
-infoBox.set_margin_start(s(40));
+// infoBox.set_margin_start(s(40)); // Removed fixed margin
 const wDesc = new Gtk.Label({
   label: 'Unknown',
   halign: ALIGN.gtk === Gtk.Align.START ? Gtk.Align.END : Gtk.Align.START,
   xalign: ALIGN.x === 0 ? 1.0 : 0,
+  ellipsize: Pango.EllipsizeMode.END,
 });
 wDesc.get_style_context().add_class('weather-desc');
 const wCity = new Gtk.Label({
   label: 'Location',
   halign: ALIGN.gtk === Gtk.Align.START ? Gtk.Align.END : Gtk.Align.START,
   xalign: ALIGN.x === 0 ? 1.0 : 0,
+  ellipsize: Pango.EllipsizeMode.END,
 });
 wCity.get_style_context().add_class('weather-city');
 infoBox.pack_start(wDesc, false, false, 0);
 infoBox.pack_start(wCity, false, false, 0);
 
+const weatherSpring = new Gtk.Box({ hexpand: true });
 weatherRow.pack_start(tempBox, false, false, 0);
-weatherRow.pack_end(infoBox, true, true, 0);
+weatherRow.pack_start(weatherSpring, true, true, 0);
+weatherRow.pack_start(infoBox, false, false, 0); // Let infoBox grow
 content.pack_start(weatherRow, false, false, 0);
+content.pack_start(vSpacer(), true, true, 0);
 
 // Row 4: Details
 const detailRow = new Gtk.Box({
@@ -938,13 +993,21 @@ const detailRow = new Gtk.Box({
   halign: ALIGN.gtk,
   margin_top: s(6),
 });
-const windLabel = new Gtk.Label({ label: '󰖝 --' });
+const windLabel = new Gtk.Label({
+  label: '󰖝 --',
+  ellipsize: Pango.EllipsizeMode.END,
+});
 windLabel.get_style_context().add_class('detail');
-const humidLabel = new Gtk.Label({ label: '󰖎 --%', margin_left: s(16) });
+const humidLabel = new Gtk.Label({
+  label: '󰖎 --%',
+  margin_left: s(16),
+  ellipsize: Pango.EllipsizeMode.END,
+});
 humidLabel.get_style_context().add_class('detail');
 detailRow.pack_start(windLabel, false, false, 0);
 detailRow.pack_start(humidLabel, false, false, 0);
 content.pack_start(detailRow, false, false, 0);
+content.pack_start(vSpacer(), true, true, 0);
 
 // Row 5: Divider line
 const divider = new Gtk.Box({
@@ -954,6 +1017,7 @@ const divider = new Gtk.Box({
 });
 divider.get_style_context().add_class('divider');
 content.pack_start(divider, false, false, 0);
+content.pack_start(vSpacer(), true, true, 0);
 
 // Row 6: System Metrics
 const sysRow = new Gtk.Box({
@@ -1118,35 +1182,6 @@ win.connect('size-allocate', () => {
   const alloc = win.get_allocation();
   log(`[DEBUG] Weather Real Alloc: ${alloc.width}x${alloc.height}`);
 
-  // Use server-calculated position if available, otherwise fallback to local calculation
-  if (serverPosX !== null && serverPosY !== null) {
-    win.move(serverPosX, serverPosY);
-  } else {
-    // Fallback: calculate locally (for backwards compatibility)
-    const display = win.get_display();
-    const monitor = display.get_primary_monitor() || display.get_monitor(0);
-    if (monitor) {
-      const geom = monitor.get_geometry();
-      const alloc = win.get_allocation();
-      let x = 0, y = 0;
-      const { position, gap_x, gap_y } = config.layout;
-
-      if (position === 'bottom_left') {
-        x = geom.x + gap_x;
-        y = geom.y + geom.height - alloc.height - gap_y;
-      } else if (position === 'bottom_right') {
-        x = geom.x + geom.width - alloc.width - gap_x;
-        y = geom.y + geom.height - alloc.height - gap_y;
-      } else if (position === 'top_left') {
-        x = geom.x + gap_x;
-        y = geom.y + gap_y;
-      } else if (position === 'top_right') {
-        x = geom.x + geom.width - alloc.width - gap_x;
-        y = geom.y + gap_y;
-      }
-      win.move(x, y);
-    }
-  }
 });
 
 // --- Logic ---
@@ -1303,19 +1338,77 @@ win.connect("destroy", Gtk.main_quit);
 GLib.idle_add(GLib.PRIORITY_DEFAULT, () => {
     (async () => {
         try {
-            log('[INFO] Warming up system sensors...');
-            await SystemMonitor.init();
-            
-            await new Promise(resolve => GLib.timeout_add(GLib.PRIORITY_DEFAULT, 1000, () => {
-                resolve(true);
-                return false;
-            }));
-            
-            await updateMetrics();
-            
-            win.show_all();
-            log('[INFO] Widget started with valid metrics.');
-            
+          log('[INFO] Warming up system sensors...');
+          await SystemMonitor.init();
+
+          await new Promise((resolve) =>
+            GLib.timeout_add(GLib.PRIORITY_DEFAULT, 1000, () => {
+              resolve(true);
+              return false;
+            }),
+          );
+
+          await updateMetrics();
+
+          win.show_all();
+
+          // Positioning Logic
+          const display = win.get_display();
+          const monitor =
+            display.get_primary_monitor() || display.get_monitor(0);
+          if (monitor) {
+            const geo = monitor.get_geometry();
+            let alloc = win.get_allocation();
+
+            // Smart Sizing: Use forced width if available, otherwise config width
+            let w =
+              Layout.forcedWidth > 0
+                ? Layout.forcedWidth
+                : (config.layout as any).width || 360;
+
+            try {
+              const f = Gio.File.new_for_path('/tmp/weather_debug.log');
+              const s = f.append_to(Gio.FileCreateFlags.NONE, null);
+              s.write_all(
+                `Decided Width: ${w}. Layout.forcedWidth=${Layout.forcedWidth}\n`,
+                null,
+              );
+              s.close(null);
+            } catch (e) {}
+
+            let h =
+              alloc.height > 1
+                ? alloc.height
+                : (config.layout as any).height || 260;
+
+            // Enforce Min Size
+            win.set_size_request(w, h);
+            win.resize(w, h); // GTK3 resize
+
+            let x = Layout.gapX;
+            let y = Layout.gapY;
+
+            const monGeo = monitor.get_geometry();
+            const parentW = monGeo.width;
+            const parentH = monGeo.height; // Approximation
+
+            if (Layout.positionMode.includes('right')) {
+              x = parentW - alloc.width - Layout.gapX;
+            }
+
+            if (Layout.positionMode.includes('bottom')) {
+              y = parentH - alloc.height - Layout.gapY - Layout.stackOffsetY;
+            } else {
+              y = Layout.gapY + Layout.stackOffsetY;
+            }
+
+            win.move(x, y);
+            log(
+              `[INFO] Positioned at ${x}, ${y} (Mode: ${Layout.positionMode}, Stack: ${Layout.stackOffsetY}, Size: ${w}x${h})`,
+            );
+          }
+
+          log('[INFO] Widget started with valid metrics.');
         } catch (e) {
             log(`[ERROR] Startup failed: ${e}`);
             win.show_all();

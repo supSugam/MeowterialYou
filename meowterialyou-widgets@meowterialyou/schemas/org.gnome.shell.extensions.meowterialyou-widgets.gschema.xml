@@ -1,0 +1,181 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schemalist>
+  <schema id="org.gnome.shell.extensions.meowterialyou-widgets" path="/org/gnome/shell/extensions/meowterialyou-widgets/">
+    
+    <!-- WeatherClock Widget Settings -->
+    <key name="weatherclock-enabled" type="b">
+      <default>true</default>
+      <summary>Enable WeatherClock widget</summary>
+    </key>
+    <key name="weatherclock-x" type="i">
+      <default>24</default>
+      <summary>X position from left edge (negative = from right)</summary>
+    </key>
+    <key name="weatherclock-y" type="i">
+      <default>-320</default>
+      <summary>Y position from top (negative = from bottom)</summary>
+    </key>
+    <key name="weatherclock-width" type="i">
+      <default>320</default>
+      <summary>Widget width in pixels</summary>
+    </key>
+    <key name="weatherclock-height" type="i">
+      <default>270</default>
+      <summary>Widget height in pixels</summary>
+    </key>
+    <key name="weatherclock-corner-radius" type="i">
+      <default>16</default>
+      <summary>Corner radius in pixels</summary>
+    </key>
+    <key name="weatherclock-opacity" type="i">
+      <default>80</default>
+      <summary>Background opacity (0-100)</summary>
+    </key>
+    <key name="weatherclock-padding" type="i">
+      <default>20</default>
+      <summary>Internal padding in pixels</summary>
+    </key>
+    
+    <!-- Clock Settings -->
+    <key name="weatherclock-time-format" type="s">
+      <default>'12h'</default>
+      <summary>Time format</summary>
+      <description>Use '12h' for 12-hour format or '24h' for 24-hour format</description>
+    </key>
+    <key name="weatherclock-show-ampm" type="b">
+      <default>true</default>
+      <summary>Show AM/PM indicator</summary>
+    </key>
+    
+    <!-- Typography Settings -->
+    <key name="weatherclock-font-family" type="s">
+      <default>'Inter'</default>
+      <summary>Font family for text</summary>
+    </key>
+    <key name="weatherclock-icon-font" type="s">
+      <default>'MesloLGS Nerd Font Mono'</default>
+      <summary>Font family for icons (Nerd Font)</summary>
+    </key>
+    <key name="weatherclock-time-size" type="i">
+      <default>60</default>
+      <summary>Time display font size</summary>
+    </key>
+    
+    <!-- Weather Settings -->
+    <key name="weatherclock-weather-unit" type="s">
+      <default>'C'</default>
+      <summary>Temperature unit (C or F)</summary>
+    </key>
+    <key name="weatherclock-wind-unit" type="s">
+      <default>'km'</default>
+      <summary>Wind speed unit (km or mi)</summary>
+    </key>
+    <key name="weatherclock-refresh-interval" type="i">
+      <default>10</default>
+      <summary>Weather refresh interval in minutes</summary>
+    </key>
+    
+    <!-- Visibility Settings -->
+    <key name="weatherclock-show-weather" type="b">
+      <default>true</default>
+      <summary>Show weather information</summary>
+    </key>
+    <key name="weatherclock-show-metrics" type="b">
+      <default>true</default>
+      <summary>Show system metrics (CPU, RAM, etc.)</summary>
+    </key>
+    <key name="weatherclock-show-divider" type="b">
+      <default>true</default>
+      <summary>Show divider line</summary>
+    </key>
+    
+    <!-- Emoji Settings -->
+    <key name="weatherclock-emoji" type="s">
+      <default>'😼'</default>
+      <summary>Decorative emoji</summary>
+    </key>
+    <key name="weatherclock-emoji-scale" type="d">
+      <default>0.5</default>
+      <summary>Emoji scale factor</summary>
+    </key>
+    <key name="weatherclock-emoji-row" type="i">
+      <default>2</default>
+      <summary>Row to place emoji (1=date, 2=time)</summary>
+    </key>
+    <key name="weatherclock-emoji-rotate" type="i">
+      <default>20</default>
+      <summary>Emoji rotation in degrees</summary>
+    </key>
+    
+    <!-- Performance Settings -->
+    <key name="weatherclock-dynamic-refresh" type="b">
+      <default>true</default>
+      <summary>Enable dynamic refresh rate</summary>
+    </key>
+    <key name="weatherclock-refresh-normal-ms" type="i">
+      <default>2000</default>
+      <summary>Normal refresh interval in milliseconds</summary>
+    </key>
+    <key name="weatherclock-refresh-eco-ms" type="i">
+      <default>10000</default>
+      <summary>Eco refresh interval when app is maximized</summary>
+    </key>
+    
+    <!-- Media Widget Settings -->
+    <key name="media-enabled" type="b">
+      <default>true</default>
+      <summary>Enable Media widget</summary>
+    </key>
+    <key name="media-x" type="i">
+      <default>24</default>
+      <summary>X position from left edge</summary>
+    </key>
+    <key name="media-y" type="i">
+      <default>-120</default>
+      <summary>Y position from top (negative = from bottom)</summary>
+    </key>
+    <key name="media-width" type="i">
+      <default>360</default>
+      <summary>Widget width in pixels</summary>
+    </key>
+    <key name="media-height" type="i">
+      <default>190</default>
+      <summary>Widget height in pixels</summary>
+    </key>
+    <key name="media-corner-radius" type="i">
+      <default>16</default>
+      <summary>Corner radius in pixels</summary>
+    </key>
+    <key name="media-opacity" type="i">
+      <default>80</default>
+      <summary>Background opacity (0-100)</summary>
+    </key>
+    <key name="media-show-controls" type="b">
+      <default>true</default>
+      <summary>Show playback controls</summary>
+    </key>
+    <key name="media-show-progress" type="b">
+      <default>true</default>
+      <summary>Show progress bar</summary>
+    </key>
+    
+    <!-- Theme Colors (can be overridden by Material You) -->
+    <key name="theme-primary-color" type="s">
+      <default>'#8B5CF6'</default>
+      <summary>Primary accent color</summary>
+    </key>
+    <key name="theme-background-color" type="s">
+      <default>'#1E1E2E'</default>
+      <summary>Widget background color</summary>
+    </key>
+    <key name="theme-text-color" type="s">
+      <default>'#CDD6F4'</default>
+      <summary>Primary text color</summary>
+    </key>
+    <key name="theme-text-secondary-color" type="s">
+      <default>'#A6ADC8'</default>
+      <summary>Secondary text color</summary>
+    </key>
+    
+  </schema>
+</schemalist>

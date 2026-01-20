@@ -17,12 +17,10 @@ interface Config {
     position: string;
     width: number;
     height: number;
-    gap_x: number;
-    gap_y: number;
+    gap: number[];
   };
   appearance: {
     corner_radius: number;
-    blur_art: boolean;
   };
   controls: {
     show_next_prev: boolean;
@@ -30,8 +28,8 @@ interface Config {
 }
 
 let config: Config = {
-  layout: { position: 'bottom_right', width: 360, height: 140, gap_x: 24, gap_y: 60 },
-  appearance: { corner_radius: 16, blur_art: true },
+  layout: { position: 'bottom_right', width: 360, height: 140, gap: [24, 60] },
+  appearance: { corner_radius: 16 },
   controls: { show_next_prev: true },
 };
 
@@ -99,11 +97,15 @@ const State = {
   artist: 'Idle',
   artUrl: '',
   isPlaying: false,
-  length: 0, 
+  length: 0,
+  position: 0,
   position: 0,
   position: 0,
   lastUpdate: 0,
-  trackId: ''
+  trackId: '',
+  players: [] as string[],
+  currentArtPath: null as string | null,
+  lastArtSize: 0,
 };
 
 let isDragging = false;
@@ -159,63 +161,83 @@ const roundPixbuf = (pixbuf: any, radius: number) => {
   return Gdk.pixbuf_get_from_surface(surface, 0, 0, w, h);
 };
 
+const updateArt = (path: string | null, size: number) => {
+  if (!path) {
+    artImage.set_from_icon_name('audio-x-generic', Gtk.IconSize.DIALOG);
+    return;
+  }
+  // Optimization: Don't re-process if same path and size
+  // if (State.currentArtPath === path && State.lastArtSize === size) return;
+
+  try {
+    // Load original first to dimensions
+    let pixbuf = GdkPixbuf.Pixbuf.new_from_file(path);
+    let w = pixbuf.get_width();
+    let h = pixbuf.get_height();
+
+    // "Cover" logic: Scale so smallest side matches target
+    let scale = Math.max(size / w, size / h);
+    let newW = Math.floor(w * scale);
+    let newH = Math.floor(h * scale);
+
+    // Scale it up/down
+    let scaled = pixbuf.scale_simple(newW, newH, GdkPixbuf.InterpType.BILINEAR);
+
+    // Center Crop
+    let offsetX = Math.floor((newW - size) / 2);
+    let offsetY = Math.floor((newH - size) / 2);
+
+    // Clamp offsets (just in case)
+    if (offsetX < 0) offsetX = 0;
+    if (offsetY < 0) offsetY = 0;
+
+    // Create subpixbuf (Crop)
+    let cropped = scaled.new_subpixbuf(
+      offsetX,
+      offsetY,
+      Math.min(size, newW),
+      Math.min(size, newH),
+    );
+
+    // Round Corners
+    const radius = config.appearance.corner_radius || 16;
+    let rounded = roundPixbuf(cropped, radius);
+
+    if (rounded) artImage.set_from_pixbuf(rounded);
+    else artImage.set_from_pixbuf(cropped);
+
+    State.currentArtPath = path;
+    State.lastArtSize = size;
+  } catch (e) {
+    artImage.set_from_icon_name('audio-x-generic', Gtk.IconSize.DIALOG);
+  }
+};
+
 function updateUI() {
-    if (titleLabel.label !== State.title) {
-      titleLabel.label = State.title;
-      if (typeof titleLabel2 !== 'undefined') titleLabel2.label = State.title;
-      if (typeof resetMarquee === 'function') resetMarquee();
-    }
-    artistLabel.label = State.artist;
-    const iconName = State.isPlaying ? 'media-playback-pause-symbolic' : 'media-playback-start-symbolic';
-    playBtnImage.icon_name = iconName;
-    
-    if (State.artUrl) {
-        downloadArt(State.artUrl, (path) => {
-            if (path) {
-                try {
-                  const targetSize = 135;
-                  // Load original first to dimensions
-                  let pixbuf = GdkPixbuf.Pixbuf.new_from_file(path);
-                  let w = pixbuf.get_width();
-                  let h = pixbuf.get_height();
+  if (titleLabel.label !== State.title) {
+    titleLabel.label = State.title;
+    if (typeof titleLabel2 !== 'undefined') titleLabel2.label = State.title;
+    if (typeof resetMarquee === 'function') resetMarquee();
+  }
+  artistLabel.label = State.artist;
+  const iconName = State.isPlaying
+    ? 'media-playback-pause-symbolic'
+    : 'media-playback-start-symbolic';
+  playBtnImage.icon_name = iconName;
 
-                  // "Cover" logic: Scale so smallest side matches target
-                  let scale = Math.max(targetSize / w, targetSize / h);
-                  let newW = Math.floor(w * scale);
-                  let newH = Math.floor(h * scale);
-
-                  // Scale it up/down
-                  let scaled = pixbuf.scale_simple(
-                    newW,
-                    newH,
-                    GdkPixbuf.InterpType.BILINEAR,
-                  );
-
-                  // Center Crop
-                  let offsetX = Math.floor((newW - targetSize) / 2);
-                  let offsetY = Math.floor((newH - targetSize) / 2);
-
-                  // Clamp offsets (just in case)
-                  if (offsetX < 0) offsetX = 0;
-                  if (offsetY < 0) offsetY = 0;
-
-                  // Create subpixbuf (Crop)
-                  let cropped = scaled.new_subpixbuf(
-                    offsetX,
-                    offsetY,
-                    Math.min(targetSize, newW),
-                    Math.min(targetSize, newH),
-                  );
-
-                  // Round Corners
-                  let rounded = roundPixbuf(cropped, 16); // 16px radius matches container
-
-                  if (rounded) artImage.set_from_pixbuf(rounded);
-                  else artImage.set_from_pixbuf(cropped);
-                } catch (e) { artImage.set_from_icon_name('audio-x-generic', Gtk.IconSize.DIALOG); }
-            } else { artImage.set_from_icon_name('audio-x-generic', Gtk.IconSize.DIALOG); }
-        });
-    } else { artImage.set_from_icon_name('audio-x-generic', Gtk.IconSize.DIALOG); }
+  if (State.artUrl) {
+    downloadArt(State.artUrl, (path) => {
+      if (path) {
+        // Ensure we have a size to render to, else default
+        const currentSize = State.lastArtSize || 135;
+        updateArt(path, currentSize);
+      } else {
+        updateArt(null, 0);
+      }
+    });
+  } else {
+    updateArt(null, 0);
+  }
 }
 
 function updateProgress() {
@@ -312,54 +334,90 @@ function parseMetadata(metadata: any) {
 }
 
 function connectToPlayer(busName: string) {
-    currentBusName = busName;
-    log(`Connecting to ${busName}`);
-    currentPlayer = new PlayerProxy(Gio.DBus.session, busName, '/org/mpris/MediaPlayer2');
-    currentProps = new PropsProxy(Gio.DBus.session, busName, '/org/mpris/MediaPlayer2');
-    
-    currentProps.connectSignal('PropertiesChanged', (proxy: any, senderName: string, [iface, changed, invalidated]: [string, any, any]) => {
-         // Keep signal handler for responsiveness, but rely on Polling for reliability
-         if (iface !== 'org.mpris.MediaPlayer2.Player') return;
-         const changedUnpacked = changed.deep_unpack ? changed.deep_unpack() : changed;
-         if (changedUnpacked['PlaybackStatus']) {
-             State.isPlaying = (changedUnpacked['PlaybackStatus'] === 'Playing');
-             updateUI();
-         }
-    });
+  currentBusName = busName;
+  renderDots(); // Update active dot
+  log(`Connecting to ${busName}`);
+  currentPlayer = new PlayerProxy(
+    Gio.DBus.session,
+    busName,
+    '/org/mpris/MediaPlayer2',
+  );
+  currentProps = new PropsProxy(
+    Gio.DBus.session,
+    busName,
+    '/org/mpris/MediaPlayer2',
+  );
 
-    if (!pollTimeoutId) pollTimeoutId = GLib.timeout_add(GLib.PRIORITY_DEFAULT, 1000, updateProgress);
-}
+  currentProps.connectSignal(
+    'PropertiesChanged',
+    (
+      proxy: any,
+      senderName: string,
+      [iface, changed, invalidated]: [string, any, any],
+    ) => {
+      // Keep signal handler for responsiveness, but rely on Polling for reliability
+      if (iface !== 'org.mpris.MediaPlayer2.Player') return;
+      const changedUnpacked = changed.deep_unpack
+        ? changed.deep_unpack()
+        : changed;
+      if (changedUnpacked['PlaybackStatus']) {
+        State.isPlaying = changedUnpacked['PlaybackStatus'] === 'Playing';
+        updateUI();
+      }
+    },
+  );
 
-function findPlayers() {
-    Gio.DBus.session.call(
-        'org.freedesktop.DBus', '/org/freedesktop/DBus', 'org.freedesktop.DBus', 'ListNames',
-        null, null, 0, -1, null,
-        (obj, res) => {
-            try {
-                const result = Gio.DBus.session.call_finish(res);
-                const [names] = result.deep_unpack();
-                const players = names.filter((n: string) => n.startsWith('org.mpris.MediaPlayer2.'));
-                if (players.length > 0) {
-                    const spotify = players.find((n: string) => n.includes('spotify'));
-                    connectToPlayer(spotify || players[0]);
-                } else {
-                    State.title = "No Player";
-                    updateUI();
-                }
-            } catch (e) {}
-        }
+  if (!pollTimeoutId)
+    pollTimeoutId = GLib.timeout_add(
+      GLib.PRIORITY_DEFAULT,
+      1000,
+      updateProgress,
     );
 }
 
-// Watch for players
-Gio.DBus.session.signal_subscribe( 'org.freedesktop.DBus', 'org.freedesktop.DBus', 'NameOwnerChanged', '/org/freedesktop/DBus', null, Gio.DBusSignalFlags.NONE,
-    (conn, sender, path, iface, signal, p) => {
-        const [name, oldOwner, newOwner] = p.deep_unpack();
-        if (name.startsWith('org.mpris.MediaPlayer2.')) {
-            if (newOwner && !oldOwner && (!currentBusName || name.includes('spotify'))) connectToPlayer(name);
+function refreshPlayers() {
+  Gio.DBus.session.call(
+    'org.freedesktop.DBus',
+    '/org/freedesktop/DBus',
+    'org.freedesktop.DBus',
+    'ListNames',
+    null,
+    null,
+    0,
+    -1,
+    null,
+    (obj, res) => {
+      try {
+        const result = Gio.DBus.session.call_finish(res);
+        const [names] = result.deep_unpack();
+        const players = names.filter((n: string) =>
+          n.startsWith('org.mpris.MediaPlayer2.'),
+        );
+
+        State.players = players;
+        renderDots();
+
+        // Auto-select logic
+        if (players.length > 0) {
+          // If current player is gone, or none selected, pick one
+          if (!currentBusName || !players.includes(currentBusName)) {
+            const spotify = players.find((n: string) => n.includes('spotify'));
+            connectToPlayer(spotify || players[0]);
+          }
+        } else {
+          State.title = 'No Player';
+          State.artist = 'Idle';
+          State.isPlaying = false;
+          currentBusName = null;
+          currentPlayer = null;
+          updateUI();
         }
-    }
-);
+      } catch (e) {}
+    },
+  );
+}
+
+
 
 Gtk.init(null);
 
@@ -367,25 +425,56 @@ Gtk.init(null);
 let themeContent = '';
 let bgStyle = 'smart_transparency';
 let calculatedOpacity = 80;
-let stackOffsetY = 0;
-let forcedWidth: number | null = null;
+const Layout = {
+  marginX: 24,
+  marginY: 60,
+  stackOffsetY: 0,
+  positionMode: 'bottom_left',
+  forcedWidth: 0,
+};
 
 try {
   const tFile = Gio.File.new_for_path(THEME_CSS_PATH);
   const [ok, doc] = tFile.load_contents(null);
   if (ok) {
-     themeContent = decoder.decode(doc);
-     const opaMatch = themeContent.match(/WIDGET_CALCULATED_OPACITY:\s*(\d+)/);
-     if (opaMatch) calculatedOpacity = parseInt(opaMatch[1], 10);
-     const styMatch = themeContent.match(/WIDGET_BG_STYLE:\s*(\w+)/);
-     if (styMatch) bgStyle = styMatch[1];
-     
-     // Stacking & Layout Logic
-     const stackMatch = themeContent.match(/WIDGET_STACK_OFFSET_Y:\s*(\d+)/);
-     if (stackMatch) stackOffsetY = parseInt(stackMatch[1], 10);
-     
-     const widthMatch = themeContent.match(/WIDGET_FORCED_WIDTH:\s*(\d+)/);
-     if (widthMatch) forcedWidth = parseInt(widthMatch[1], 10);
+    themeContent = decoder.decode(doc);
+    const opaMatch = themeContent.match(/WIDGET_CALCULATED_OPACITY:\s*(\d+)/);
+    if (opaMatch) calculatedOpacity = parseInt(opaMatch[1], 10);
+    const styMatch = themeContent.match(/WIDGET_BG_STYLE:\s*(\w+)/);
+    if (styMatch) bgStyle = styMatch[1];
+
+    // Stacking & Layout Logic
+    const xMatch = themeContent.match(/WIDGET_MARGIN_X:\s*(\d+)/);
+    if (xMatch) Layout.marginX = parseInt(xMatch[1], 10);
+    const yMatch = themeContent.match(/WIDGET_MARGIN_Y:\s*(\d+)/);
+    if (yMatch) Layout.marginY = parseInt(yMatch[1], 10);
+
+    const stackMatch = themeContent.match(/WIDGET_STACK_OFFSET_Y:\s*(\d+)/);
+    if (stackMatch) Layout.stackOffsetY = parseInt(stackMatch[1], 10);
+    const posMatch = themeContent.match(/WIDGET_POSITION_MODE:\s*([\w_]+)/);
+    if (posMatch) Layout.positionMode = posMatch[1];
+    const widthMatch = themeContent.match(/WIDGET_WIDTH_OVERRIDE:\s*(\d+)/);
+    if (widthMatch) Layout.forcedWidth = parseInt(widthMatch[1], 10);
+
+    // Environment variable overrides (from Manager)
+    const envX = GLib.getenv('WIDGET_MARGIN_X');
+    if (envX) Layout.marginX = parseInt(envX, 10);
+    const envY = GLib.getenv('WIDGET_MARGIN_Y');
+    if (envY) Layout.marginY = parseInt(envY, 10);
+    const envStack = GLib.getenv('WIDGET_STACK_OFFSET_Y');
+    if (envStack) Layout.stackOffsetY = parseInt(envStack, 10);
+    const envPos = GLib.getenv('WIDGET_POSITION_MODE');
+    if (envPos) Layout.positionMode = envPos;
+
+    const envWidth = GLib.getenv('WIDGET_WIDTH_OVERRIDE');
+    if (envWidth) {
+      Layout.forcedWidth = parseInt(envWidth, 10);
+      print(
+        `[DEBUG] MediaWidget Env Width: ${envWidth} -> ${Layout.forcedWidth}`,
+      );
+    } else {
+      print(`[DEBUG] MediaWidget No Env Width found`);
+    }
   }
 } catch (e) {}
 
@@ -401,7 +490,10 @@ const loadConfig = () => {
         
         // Use forced width if available from stacking logic (max width in zone)
         // Otherwise use config width (default 360)
-        config.layout.width = forcedWidth || Number(config.layout.width) || 360;
+        config.layout.width =
+          Layout.forcedWidth > 0
+            ? Layout.forcedWidth
+            : Number(config.layout.width) || 360;
         config.layout.height = Number(config.layout.height) || 140;
       }
     }
@@ -426,7 +518,13 @@ win.set_role('MeowterialYou-Widget-mediawidget');
 win.set_app_paintable(true);
 const visual = win.get_screen()?.get_rgba_visual();
 if (visual) win.set_visual(visual);
-win.set_size_request(config.layout.width, config.layout.height);
+// Smart Sizing
+const w = Layout.forcedWidth > 0 ? Layout.forcedWidth : config.layout.width;
+const h = config.layout.height; 
+print(`[DEBUG] MediaWidget Setting Size: ${w} x ${h}`);
+
+win.set_size_request(w, h);
+win.resize(w, h);
 win.set_resizable(false);
 
 const css = new Gtk.CssProvider();
@@ -438,7 +536,7 @@ css.load_from_data(`
         background-color: alpha(@widget_bg, ${bgOpacity});
         border-radius: ${config.appearance.corner_radius}px;
         border: 1px solid alpha(@outline, 0.1);
-        padding: 16px;
+        padding: 20px;
     }
     .art-container {
         border-radius: 16px;
@@ -452,7 +550,7 @@ css.load_from_data(`
     .control-btn { 
         background: @surfaceVariant; 
         color: @widget_text; 
-        min-width: 42px; min-height: 42px; 
+        min-width: 38px; min-height: 38px; 
         padding: 0; margin: 0 2px; 
         border-radius: 14px; /* Squircle/Rosette hint */
         border: none;
@@ -463,7 +561,7 @@ css.load_from_data(`
     .play-btn {
         background: @widget_primary; 
         color: @onPrimary; 
-        min-width: 80px; /* Wide Pill */
+        min-width: 60px; /* Wide Pill */
         border-radius: 24px; 
         margin: 0 6px;
     }
@@ -491,25 +589,75 @@ css.load_from_data(`
         margin: -5px 0; /* Center on track */
     }
     .time-label { font-size: 11px; font-weight: 600; color: @widget_text_secondary; margin-top: 0px; }
+    .time-label { font-size: 11px; font-weight: 600; color: @widget_text_secondary; margin-top: 0px; }
+
+    .dot {
+        min-width: 8px; min-height: 8px;
+        border-radius: 50%;
+        background-color: alpha(@widget_text, 0.3);
+        margin: 4px;
+        padding: 0;
+        border: none;
+        box-shadow: none;
+    }
+    .dot.active {
+        background-color: @widget_primary;
+        box-shadow: 0 0 4px alpha(@widget_primary, 0.5);
+    }
+    .dots-box {
+        margin-top: 4px;
+    }
 `);
 Gtk.StyleContext.add_provider_for_screen(Gdk.Screen.get_default()!, css, 900);
 
-const mainBox = new Gtk.Box({ orientation: Gtk.Orientation.HORIZONTAL, spacing: 20 });
+  // Main Container with Flex Layout
+  const mainBox = new Gtk.Box({ 
+    orientation: Gtk.Orientation.HORIZONTAL, 
+    spacing: 8,
+    valign: Gtk.Align.FILL,
+    halign: Gtk.Align.FILL,
+    hexpand: true
+  });
 mainBox.get_style_context().add_class('view');
 
 const artBox = new Gtk.Box({ orientation: Gtk.Orientation.VERTICAL });
-artBox.set_valign(Gtk.Align.CENTER);
-const artImage = new Gtk.Image({ icon_name: 'audio-x-generic', pixel_size: 135 });
+artBox.set_valign(Gtk.Align.CENTER); // Art stays centered relative to its side
+artBox.set_vexpand(true); // Allow it to take height so it can center itself
+// const artImage = new Gtk.Image({ icon_name: 'audio-x-generic', pixel_size: 135 });
+const artImage = new Gtk.Image({ icon_name: 'audio-x-generic' });
+// Set a minimum to avoid collapse before first load, but small enough to not force expansion
+artImage.set_pixel_size(64); 
+
 artBox.pack_start(artImage, false, false, 0);
 artBox.get_style_context().add_class('art-container'); 
-// No margins - fill the box
+
+// RESPONSIVE ART LOGIC
+artBox.connect('size-allocate', (widget, alloc) => {
+    const newHeight = alloc.height;
+    // Debounce/Threshold: Only update if height changed significantly (>2px) and we have art
+    if (Math.abs(newHeight - State.lastArtSize) > 2) {
+        // Queue an update (avoid blocking the allocate cycle)
+        GLib.idle_add(GLib.PRIORITY_DEFAULT_IDLE, () => {
+             if (State.currentArtPath) {
+                 // Clamp art size to 145px to prevent widget width blowout
+                 // even if the widget itself is taller (e.g. 190px)
+                 const artSize = Math.min(newHeight, 145);
+                 updateArt(State.currentArtPath, artSize);
+             }
+             return GLib.SOURCE_REMOVE;
+        });
+    }
+});
 
 
 // Shared Vertical Gap
 const CONTENT_SPACING = 12;
 
-const detailsBox = new Gtk.Box({ orientation: Gtk.Orientation.VERTICAL, spacing: CONTENT_SPACING });
-detailsBox.set_valign(Gtk.Align.CENTER);
+const detailsBox = new Gtk.Box({
+  orientation: Gtk.Orientation.VERTICAL,
+  spacing: 0,
+});
+detailsBox.set_valign(Gtk.Align.FILL);
 detailsBox.set_hexpand(true);
 
 // --- Marquee Magic ---
@@ -584,7 +732,11 @@ function tickMarquee() {
 }
 GLib.timeout_add(GLib.PRIORITY_DEFAULT, 30, tickMarquee);
 
-const artistLabel = new Gtk.Label({ label: 'System Check', halign: Gtk.Align.CENTER, max_width_chars: 25, ellipsize: Pango.EllipsizeMode.END });
+const artistLabel = new Gtk.Label({
+  label: 'System Check',
+  halign: Gtk.Align.START,
+  ellipsize: Pango.EllipsizeMode.END,
+});
 artistLabel.get_style_context().add_class('artist');
 
 const labelsBox = new Gtk.Box({
@@ -602,10 +754,10 @@ const prevBtn = new Gtk.Button();
 const prevIcon = new Gtk.Image({ icon_name: 'media-skip-backward-symbolic', pixel_size: 18 });
 prevBtn.add(prevIcon);
 prevBtn.get_style_context().add_class('control-btn');
-prevBtn.connect('clicked', () => { 
-    log('[DEBUG] CLICK: Prev'); 
-    currentPlayer && currentPlayer.PreviousRemote(); 
-    lowerWin();
+prevBtn.connect('clicked', () => {
+  log('[DEBUG] CLICK: Prev');
+  currentPlayer && currentPlayer.PreviousRemote();
+  // No-op
 });
 
 const playBtn = new Gtk.Button();
@@ -613,20 +765,20 @@ const playBtnImage = new Gtk.Image({ icon_name: 'media-playback-start-symbolic',
 playBtn.add(playBtnImage);
 playBtn.get_style_context().add_class('control-btn');
 playBtn.get_style_context().add_class('play-btn');
-playBtn.connect('clicked', () => { 
-    log('[DEBUG] CLICK: Play'); 
-    currentPlayer && currentPlayer.PlayPauseRemote(); 
-    lowerWin();
+playBtn.connect('clicked', () => {
+  log('[DEBUG] CLICK: Play');
+  currentPlayer && currentPlayer.PlayPauseRemote();
+  // No-op
 });
 
 const nextBtn = new Gtk.Button();
 const nextIcon = new Gtk.Image({ icon_name: 'media-skip-forward-symbolic', pixel_size: 18 });
 nextBtn.add(nextIcon);
 nextBtn.get_style_context().add_class('control-btn');
-nextBtn.connect('clicked', () => { 
-    log('[DEBUG] CLICK: Next'); 
-    currentPlayer && currentPlayer.NextRemote(); 
-    lowerWin();
+nextBtn.connect('clicked', () => {
+  log('[DEBUG] CLICK: Next');
+  currentPlayer && currentPlayer.NextRemote();
+  // No-op
 });
 
 controlsBox.pack_start(prevBtn, false, false, 0);
@@ -642,31 +794,34 @@ scale.set_increments(5, 10);
 scale.get_style_context().add_class('progress-bar');
 // Seeking Logic
 scale.connect('change-value', (s, scrollType, value) => {
-   // Use SetPosition logic if needed, but 'change-value' is tricky in GJS sometimes.
-   // Simpler: Use 'button-release-event' to commit seek?
-   // Or standard range 'value-changed'.
-   // NOTE: We must prevent the update loop from overwriting this while dragging.
-   return false; // Propagate
+  // Use SetPosition logic if needed, but 'change-value' is tricky in GJS sometimes.
+  // Simpler: Use 'button-release-event' to commit seek?
+  // Or standard range 'value-changed'.
+  // NOTE: We must prevent the update loop from overwriting this while dragging.
+  return false; // Propagate
 });
+
 scale.connect('button-press-event', () => {
-   isDragging = true;
-   lowerWin(); // Interaction lowers window
-   return false;
+  isDragging = true;
+  return false;
 });
+
 scale.connect('button-release-event', () => {
-   isDragging = false;
-   const val = scale.get_value();
-   log(`[DEBUG] SEEK to ${val}% of ${State.length}`);
-   if (State.length > 0 && currentPlayer && State.trackId) {
-       // Calc microseconds: (val / 100) * length
-       const targetMicro = (val / 100) * State.length;
-       // Try SetPosition (requires TrackId)
-       try {
-           currentPlayer.SetPositionRemote(State.trackId, targetMicro);
-       } catch(e) { logError(e, 'Seek failed'); }
-   }
-   lowerWin();
-   return false;
+  isDragging = false;
+  const val = scale.get_value();
+  log(`[DEBUG] SEEK to ${val}% of ${State.length}`);
+  if (State.length > 0 && currentPlayer && State.trackId) {
+    // Calc microseconds: (val / 100) * length
+    const targetMicro = (val / 100) * State.length;
+    // Try SetPosition (requires TrackId)
+    try {
+      currentPlayer.SetPositionRemote(State.trackId, targetMicro);
+    } catch (e) {
+      logError(e, 'Seek failed');
+    }
+  }
+  // No-op
+  return false;
 });
 
 const timeBox = new Gtk.Box({ orientation: Gtk.Orientation.HORIZONTAL });
@@ -681,9 +836,51 @@ timeBox.pack_start(lblTotal, false, false, 0);
 progressBox.pack_start(scale, false, false, 0);
 progressBox.pack_start(timeBox, false, false, 0);
 
+const dotsBox = new Gtk.Box({
+  orientation: Gtk.Orientation.HORIZONTAL,
+  halign: Gtk.Align.CENTER,
+});
+dotsBox.get_style_context().add_class('dots-box');
+
+function renderDots() {
+  // Clear existing dots
+  dotsBox.get_children().forEach((child) => dotsBox.remove(child));
+
+  State.players.forEach((player) => {
+    const dot = new Gtk.Button();
+    dot.get_style_context().add_class('dot');
+    if (player === currentBusName) {
+      dot.get_style_context().add_class('active');
+    }
+    dot.connect('clicked', () => {
+      connectToPlayer(player);
+    });
+    dotsBox.add(dot);
+  });
+  dotsBox.show_all();
+}
+
+// Flex Spacers
+const vSpacer = () => {
+    const s = new Gtk.Box({ orientation: Gtk.Orientation.VERTICAL });
+    s.set_vexpand(true);
+    return s;
+};
+
+// Layout: [Labels] - (space) - [Dots] - (space) - [Controls] - (space) - [Progress]
+// We want "space-between" effect.
+// Top: Labels
+// Bottom: Progress
+// Center: Controls / Dots
+
 detailsBox.pack_start(labelsBox, false, false, 0);
+detailsBox.pack_start(vSpacer(), true, true, 0);
+detailsBox.pack_start(dotsBox, false, false, 0);
+detailsBox.pack_start(vSpacer(), true, true, 0);
 detailsBox.pack_start(controlsBox, false, false, 0);
+detailsBox.pack_start(vSpacer(), true, true, 0);
 detailsBox.pack_start(progressBox, false, false, 0);
+
 mainBox.pack_start(artBox, false, false, 0);
 mainBox.pack_start(detailsBox, true, true, 0);
 
@@ -693,108 +890,95 @@ win.add(mainBox);
 // "Dock" window type + Keep Below + Sticky = Desktop Widget behavior.
 win.set_titlebar(null);
 win.set_keep_above(false);
-win.set_keep_below(false); 
+// keep_below(true) enforced for desktop pinning
+win.set_keep_below(true);
 win.set_type_hint(Gdk.WindowTypeHint.NORMAL);
 win.set_decorated(false); 
 win.set_skip_taskbar_hint(true);
 win.set_skip_pager_hint(true);
 win.set_accept_focus(true); // Allow clicks
-win.stick();
 
 // AGGRESSIVE LOWERING STRATEGY:
-// KeepBelow kills clicks on XWayland. We must manually manage z-order.
-// 1. Lower on startup
-win.connect('map-event', () => { 
-    const gdkWin = win.get_window();
-    if (gdkWin) gdkWin.lower(); 
-});
-// 2. Lower when losing focus (e.g. clicking wallpaper or another app)
-// RELENTLESS LOWERING STRATEGY:
 // 1. Hammer 'lower()' on startup to defeat WM initial placement
-let lowerCount = 0;
-GLib.timeout_add(GLib.PRIORITY_LOW, 200, () => {
-    const gw = win.get_window();
-    if (gw) gw.lower();
-    lowerCount++;
-    return lowerCount < 20; // Run for ~4 seconds
-});
+// let lowerCount = 0;
+// GLib.timeout_add(GLib.PRIORITY_LOW, 200, () => {
+//   const gw = win.get_window();
+//   //     if (gw) gw.lower();
+//   lowerCount++;
+//   return lowerCount < 20; // Run for ~4 seconds
+// });
 
 // 2. Lower immediately after interaction (Fixes "Pushes apps behind")
-const lowerWin = () => { const gw = win.get_window(); if(gw) gw.lower(); };
+const lowerWin = () => {};
 
-win.connect('focus-out-event', () => { lowerWin(); return false; });
+// win.connect('focus-out-event', () => { lowerWin(); return false; });
 // Also lower on focus-in to strictly forbid raising? No, might block click.
 
 // Drag Support (Guaranteed to work on Normal windows)
 mainBox.add_events(Gdk.EventMask.BUTTON_PRESS_MASK);
 mainBox.connect('button-press-event', (widget, event) => {
     if (event.get_button()[1] === 1) {
-       win.begin_move_drag(event.get_button()[1], event.x_root, event.y_root, event.get_time());
-       lowerWin(); // Lower after drag starts
+       win.begin_move_drag(
+         event.get_button()[1],
+         event.x_root,
+         event.y_root,
+         event.get_time(),
+       );
     }
     return false;
 });
 win.stick(); // Visible on all workspaces
 
 // --- Positioning ---
-// FORCE LOCAL CALCULATION:
-// domain.py calculates physical pixels (e.g. 2496 on 2880 screen).
-// GTK on HiDPI often expects Logical pixels. Resulting in window clamping (Gap 0).
 // We calculate locally using standard Logical metrics to ensure correct placement.
+win.show_all();
 
-let initialPosSet = false;
-win.connect('size-allocate', () => {
-   if (initialPosSet) return;
-   
-   const display = win.get_display();
-   const monitor = display.get_primary_monitor() || display.get_monitor(0);
-   
-   if (monitor) {
-       const geo = monitor.get_geometry();
-       const alloc = win.get_allocation();
-       
-       const width = alloc.width; // Use REAL width, not config guess
-       const height = alloc.height; // Use REAL height
-       
-       const gapX = config.layout.gap_x;
-       const gapY = config.layout.gap_y;
-       
-       log(`[DEBUG] Screen Geometry: ${geo.width}x${geo.height}`);
-       log(`[DEBUG] Real Window Alloc: ${width}x${height}`);
-       log(`[DEBUG] Desired Gap: ${gapX}, ${gapY}`);
-       
-       log(`[DEBUG] Desired Gap: ${gapX}, ${gapY}`);
-       
-       let x = 0;
-       let y = 0;
-       const position = config.layout.position || 'bottom_right';
-       log(`[DEBUG] Align Mode: ${position}`);
+// Positioning Logic
+const display = win.get_display();
+const monitor = display.get_primary_monitor() || display.get_monitor(0);
+if (monitor) {
+  const geo = monitor.get_geometry();
+  const alloc = win.get_allocation();
+  const w = alloc.width > 40 ? alloc.width : config.layout.width || 360;
+  const h = alloc.height > 40 ? alloc.height : config.layout.height || 184;
 
-       // X Logic
-       if (position.includes('left')) {
-           x = gapX;
-       } else {
-           // Right Align
-           const shadowComp = 12; // Compensate for right-side shadow extension
-           x = geo.width - width - gapX - shadowComp;
-       }
+  let x = Layout.marginX;
+  let y = Layout.marginY;
 
-       // Y Logic
-       if (position.includes('top')) {
-           y = gapY + stackOffsetY;
-       } else {
-           // Bottom Align
-           y = geo.height - height - gapY - stackOffsetY;
-       }
-       
-       log(`[DEBUG] Calculated Position (Stack Offset ${stackOffsetY}): ${x}, ${y}`);
-       win.move(x, y);
-       initialPosSet = true;
-   }
-});
+  if (Layout.positionMode.includes('right')) {
+    x = geo.width - w - Layout.marginX;
+  }
+
+  if (Layout.positionMode.includes('bottom')) {
+    y = geo.height - h - Layout.marginY - Layout.stackOffsetY;
+  } else {
+    y = Layout.marginY + Layout.stackOffsetY;
+  }
+
+  win.move(x, y);
+  log(
+    `[INFO] Positioned at ${x}, ${y} (Mode: ${Layout.positionMode}, Stack: ${Layout.stackOffsetY}, Size: ${w}x${h})`,
+  );
+}
 
 win.connect('destroy', Gtk.main_quit);
 win.show_all();
 
-findPlayers();
+// Watch for players
+Gio.DBus.session.signal_subscribe(
+  'org.freedesktop.DBus',
+  'org.freedesktop.DBus',
+  'NameOwnerChanged',
+  '/org/freedesktop/DBus',
+  null,
+  Gio.DBusSignalFlags.NONE,
+  (conn, sender, path, iface, signal, p) => {
+    const [name, oldOwner, newOwner] = p.deep_unpack();
+    if (name.startsWith('org.mpris.MediaPlayer2.')) {
+      refreshPlayers();
+    }
+  },
+);
+
+refreshPlayers();
 Gtk.main();

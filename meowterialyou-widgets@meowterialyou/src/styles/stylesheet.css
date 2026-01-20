@@ -1,0 +1,122 @@
+/**
+ * MeowterialYou Widgets - Stylesheet
+ * All styles scoped with .meowterialyou- prefix to avoid conflicts
+ */
+
+/* === Canvas Container === */
+.meowterialyou-widget-canvas {
+  /* Transparent container spanning monitor */
+}
+
+/* === WeatherClock Widget === */
+.meowterialyou-weatherclock {
+  /* Base styles applied via inline for dynamic values */
+}
+
+.meowterialyou-weatherclock-date {
+  color: rgba(255, 255, 255, 0.95);
+}
+
+.meowterialyou-weatherclock-time {
+  color: rgba(139, 92, 246, 1); /* Primary accent */
+}
+
+.meowterialyou-weatherclock-ampm {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.meowterialyou-weatherclock-emoji {
+  /* Emoji styling */
+}
+
+.meowterialyou-weatherclock-weather-icon {
+  color: rgba(139, 92, 246, 1); /* Primary accent */
+}
+
+.meowterialyou-weatherclock-weather-temp {
+  color: rgba(255, 255, 255, 0.95);
+}
+
+.meowterialyou-weatherclock-weather-desc {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.meowterialyou-weatherclock-weather-city {
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.meowterialyou-weatherclock-divider {
+  background-color: rgba(255, 255, 255, 0.15);
+  height: 1px;
+}
+
+.meowterialyou-weatherclock-metric {
+  color: rgba(255, 255, 255, 0.8);
+}
+
+/* === Media Widget === */
+.meowterialyou-media {
+  /* Base styles applied via inline for dynamic values */
+}
+
+.meowterialyou-media-art-container {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.meowterialyou-media-art {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.meowterialyou-media-title {
+  color: rgba(255, 255, 255, 0.95);
+}
+
+.meowterialyou-media-artist {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.meowterialyou-media-control-btn {
+  transition: background-color 150ms ease;
+}
+
+.meowterialyou-media-control-btn:hover {
+  background-color: rgba(255, 255, 255, 0.15);
+}
+
+.meowterialyou-media-control-btn:active {
+  background-color: rgba(255, 255, 255, 0.2);
+}
+
+.meowterialyou-media-play-btn {
+  transition: background-color 150ms ease, box-shadow 150ms ease;
+}
+
+.meowterialyou-media-play-btn:hover {
+  background-color: rgba(139, 92, 246, 0.9);
+  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.4);
+}
+
+.meowterialyou-media-play-btn:active {
+  background-color: rgba(139, 92, 246, 0.8);
+}
+
+.meowterialyou-media-slider {
+  height: 6px;
+  -slider-height: 6px;
+  -slider-background-color: rgba(255, 255, 255, 0.1);
+  -slider-active-background-color: rgba(139, 92, 246, 1);
+  -slider-handle-radius: 8px;
+}
+
+.meowterialyou-media-slider .slider {
+  border-radius: 3px;
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.meowterialyou-media-slider .slider:active {
+  background-color: rgba(139, 92, 246, 1);
+}
+
+.meowterialyou-media-time {
+  color: rgba(255, 255, 255, 0.6);
+}

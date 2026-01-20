@@ -9,14 +9,11 @@ layout:
   position: bottom_left
 
   # Widget dimensions (used for multi-widget stacking calculations)
-  width: 350
+  width: 320
   height: 270
 
-  # Horizontal margin from screen edge (pixels)
-  gap_x: 24
-
-  # Vertical gap from screen edge (pixels)
-  gap_y: 60
+  # Gap from screen edge [x, y]
+  gap: [24, 120]
 
   # Content Alignment (left, center, right, auto)
   # auto = left for left-side widgets, right for right-side widgets

@@ -811,289 +811,69 @@ class ApplierDomain:
         else:
             widget_scheme = Scheme(theme=theme_data, lightmode=False).to_hex()
 
-        # Get screen dimensions
-        screen_width, screen_height = 1920, 1080
-        # Get screen dimensions via xrandr (reliable on X11/XWayland)
-        screen_width, screen_height = 1920, 1080
-        try:
-            # Try xrandr first
-            import subprocess
+        # Prepare environment
+        env = os.environ.copy()
+        env["GDK_BACKEND"] = "x11"
 
-            cmd = "xrandr | grep '*' | awk '{print $1}'"
-            output = subprocess.check_output(cmd, shell=True).decode().strip()
-            if output and "x" in output:
-                w, h = output.split("x")
-                screen_width, screen_height = int(w), int(h)
-                log.info(
-                    f"Detected screen resolution via xrandr: {screen_width}x{screen_height}"
-                )
-            else:
-                # Fallback to Gdk if xrandr fails or empty
-                import gi
-
-                gi.require_version("Gdk", "3.0")
-                from gi.repository import Gdk
-
-                display = Gdk.Display.get_default()
-                if display:
-                    monitor = display.get_primary_monitor()
-                    if monitor:
-                        geom = monitor.get_geometry()
-                        screen_width, screen_height = geom.width, geom.height
-        except Exception as e:
-            log.warning(f"Resolution detection failed: {e}. Defaulting to 1920x1080.")
-
-        # Kill ALL existing widget processes once
-        subprocess.run(["pkill", "-9", "-f", "gjs.*meowterialyou"], capture_output=True)
-
-        # Track cumulative offsets per zone for stacking
-        zone_offsets: dict[str, int] = {}
-
-        # Shared esbuild path (at top level of desktop_widgets)
+        # Shared esbuild path
         esbuild_path = os.path.join(widgets_dir, "node_modules/.bin/esbuild")
 
-        for widget_name in enabled_widgets:
-            # PRE-PASS: Calculate Max Widths per Zone and Load Configs
-            widget_src_dir = os.path.join(widgets_dir, widget_name)
-            cfg_path = os.path.join(widget_src_dir, "config.yaml")
+        # Runtime root
+        runtime_root = os.path.join(home, ".config/meowterialyou-widgets")
+        os.makedirs(runtime_root, exist_ok=True)
 
-        zone_max_widths: dict[str, int] = {}
-        widget_configs: dict[str, dict] = {}
+        # Output global color scheme and metadata for manager
+        import json
 
-        for widget_name in enabled_widgets:
-            widget_src_dir = os.path.join(widgets_dir, widget_name)
-            cfg_path = os.path.join(widget_src_dir, "config.yaml")
-            if os.path.exists(cfg_path):
-                try:
-                    with open(cfg_path, "r") as f:
-                        cfg = yaml.safe_load(f) or {}
-                        widget_configs[widget_name] = cfg
+        meta_data = {
+            "scheme": scheme,
+            "widget_scheme": widget_scheme,
+            "wallpaper_path": self._generation_options.wallpaper_path,
+            "lightmode": lightmode_enabled,
+        }
+        with open(os.path.join(runtime_root, "meta.json"), "w") as f:
+            json.dump(meta_data, f, indent=4)
 
-                        layout = cfg.get("layout", {})
-                        pos = layout.get("position", "bottom_left")
-                        w = layout.get("width", 350)
+        # Copy global widgets.yaml
+        shutil.copy(
+            os.path.join(widgets_dir, "widgets.yaml"),
+            os.path.join(runtime_root, "widgets.yaml"),
+        )
 
-                        current_max = zone_max_widths.get(pos, 0)
-                        if w > current_max:
-                            zone_max_widths[pos] = w
-                except:
-                    pass
+        # Build and Run Manager
+        manager_ts_src = os.path.join(widgets_dir, "manager.ts")
+        manager_js_out = os.path.join(runtime_root, "manager.mjs")
 
-        for widget_name in enabled_widgets:
-            # Prepare env per widget
-            env = os.environ.copy()
-            # Force X11 backend for positioning support (Wayland ignores window.move)
-            env["GDK_BACKEND"] = "x11"
+        # Kill existing widgets
+        subprocess.run(["pkill", "-9", "-f", "gjs.*meowterialyou"], capture_output=True)
 
-            widget_src_dir = os.path.join(widgets_dir, widget_name)
-            if not os.path.isdir(widget_src_dir):
-                log.warning(f"Widget folder not found: {widget_src_dir}")
-                continue
-
-            # Load widget-specific config
-            widget_config_path = os.path.join(widget_src_dir, "config.yaml")
-            widget_cfg = {}
-            if os.path.exists(widget_config_path):
-                try:
-                    with open(widget_config_path, "r") as f:
-                        widget_cfg = yaml.safe_load(f) or {}
-                except Exception as e:
-                    log.warning(f"Failed to parse {widget_name}/config.yaml: {e}")
-
-            # Get widget layout from its config
-            widget_layout = widget_cfg.get("layout", {})
-            position = widget_layout.get("position", "bottom_left")
-            widget_width = widget_layout.get("width", 350)
-            widget_height = widget_layout.get("height", 250)
-
-            # Use Max Width if available for this zone, else default
-            # BUT: We want to PASS this max width to the widget.
-            max_zone_width = zone_max_widths.get(position, widget_width)
-
-            # Get zone margins from global config (Default reference)
-            zone_cfg = zones_config.get(position, {"margin_x": 24, "margin_y": 60})
-            margin_x = zone_cfg.get("margin_x", 24)
-            margin_y = zone_cfg.get("margin_y", 60)
-
-            # OVERRIDE: Check if widget specific config defines specific gaps/margins
-            # Respect local 'gap_x' or 'margin_x' if present
-            local_gap_x = widget_layout.get("gap_x") or widget_layout.get("margin_x")
-            local_gap_y = widget_layout.get("gap_y") or widget_layout.get("margin_y")
-
-            if local_gap_x is not None:
-                margin_x = int(local_gap_x)
-            if local_gap_y is not None:
-                margin_y = int(local_gap_y)
-
-            # Apply cumulative offset for widgets in same zone
-            current_offset = zone_offsets.get(position, 0)
-
-            # We explicitly pass the Stacking Offset to the widget via CSS
-            stack_offset_y = current_offset
-
-            # Update offset for NEXT widget
-            # Note: We use widget_height (configured) + gap
-            zone_offsets[position] = current_offset + widget_height + gap
-
-            # Calculate base position from zone
-            if position == "bottom_left":
-                base_x = margin_x
-                base_y = screen_height - widget_height - margin_y
-            elif position == "bottom_right":
-                base_x = screen_width - widget_width - margin_x
-                base_y = screen_height - widget_height - margin_y
-            elif position == "top_left":
-                base_x = margin_x
-                base_y = margin_y
-            else:  # top_right
-                base_x = screen_width - widget_width - margin_x
-                base_y = margin_y
-
-            if arrangement == "vertical":
-                actual_x = base_x
-                actual_y = base_y - stack_offset_y
-
-            # Create widget runtime directory
-
-            # Create widget runtime directory
-            widget_runtime_dir = os.path.join(
-                home, f".config/meowterialyou-widgets/{widget_name}"
-            )
-            os.makedirs(widget_runtime_dir, exist_ok=True)
-
-            # Calculate widget region for smart transparency
-            left = actual_x / screen_width
-            top = actual_y / screen_height
-            right = (actual_x + widget_width) / screen_width
-            bottom = (actual_y + widget_height) / screen_height
-            widget_region = (
-                max(0, min(1, left)),
-                max(0, min(1, top)),
-                max(0, min(1, right)),
-                max(0, min(1, bottom)),
-            )
-
-            # Analyze region brightness
-            wallpaper_path = self._generation_options.wallpaper_path
-            region_is_dark = is_region_dark(
-                wallpaper_path, region=widget_region, threshold=128.0
-            )
-            brightness, variance, saturation = _get_image_stats(wallpaper_path)
-
-            # Calculate opacity
-            bg_config = widget_cfg.get("background", {})
-            bg_style = bg_config.get("style", "smart_transparency")
-            manual_opacity = bg_config.get("opacity", 60)
-
-            if bg_style == "smart_transparency":
-                base_opacity = 50 if region_is_dark else 70
-                calculated_opacity = min(85, max(40, base_opacity + int(variance * 20)))
-            else:
-                calculated_opacity = manual_opacity
-
-            log.info(
-                f"Widget '{widget_name}': pos=({actual_x},{actual_y}), opacity={calculated_opacity}%"
-            )
-
-            # Generate theme.css for this widget
-            dark_bg = widget_scheme.get("surface", "#1a1a1a")
-            light_text = widget_scheme.get("onSurface", "#ffffff")
-            light_text_secondary = widget_scheme.get("onSurfaceVariant", "#c0c0c0")
-            accent_color = widget_scheme.get("primary", "#00ff00")
-
-            bg_hex = dark_bg.lstrip("#")
-            br, bg_g, bb = (
-                int(bg_hex[0:2], 16),
-                int(bg_hex[2:4], 16),
-                int(bg_hex[4:6], 16),
-            )
-
-            css_lines = [f"@define-color {name} {val};" for name, val in scheme.items()]
-            css_lines.extend(
+        if os.path.exists(manager_ts_src) and os.path.exists(esbuild_path):
+            log.info("Building Widget Manager...")
+            subprocess.run(
                 [
-                    f"@define-color widget_bg rgb({br}, {bg_g}, {bb});",
-                    f"@define-color widget_text {light_text};",
-                    f"@define-color widget_text_secondary {light_text_secondary};",
-                    f"@define-color widget_primary {accent_color};",
-                    f"/* WIDGET_CALCULATED_OPACITY: {calculated_opacity} */",
-                    f"/* WIDGET_BG_STYLE: {bg_style} */",
-                    f"/* WIDGET_POSITION_X: {actual_x} */",
-                    f"/* WIDGET_POSITION_Y: {actual_y} */",
-                    f"/* WIDGET_STACK_OFFSET_Y: {stack_offset_y} */",
-                    f"/* WIDGET_FORCED_WIDTH: {max_zone_width} */",
-                ]
+                    esbuild_path,
+                    manager_ts_src,
+                    "--bundle",
+                    "--format=esm",
+                    "--platform=neutral",
+                    "--external:gi://*",
+                    f"--outfile={manager_js_out}",
+                ],
+                check=True,
             )
 
-            with open(os.path.join(widget_runtime_dir, "theme.css"), "w") as f:
-                f.write("\n".join(css_lines))
-
-            # Copy widget config
-            if os.path.exists(widget_config_path):
-                shutil.copy(
-                    widget_config_path, os.path.join(widget_runtime_dir, "config.yaml")
-                )
-
-            # Compile TypeScript
-            app_ts_src = os.path.join(widget_src_dir, "app.ts")
-            app_js_out = os.path.join(widget_runtime_dir, "app.mjs")
-
-            if os.path.exists(app_ts_src) and os.path.exists(esbuild_path):
-                result = subprocess.run(
-                    [
-                        esbuild_path,
-                        app_ts_src,
-                        "--bundle",
-                        "--format=esm",
-                        "--platform=neutral",
-                        "--external:gi://*",
-                        f"--outfile={app_js_out}",
-                    ],
-                    capture_output=True,
-                )
-                if result.returncode != 0:
-                    log.warning(
-                        f"esbuild failed for {widget_name}: {result.stderr.decode()}"
-                    )
-                    continue
-                else:
-                    log.info(f"esbuild succeeded for {widget_name}")
-
-            # Create desktop entry
-            desktop_entry_path = os.path.join(
-                home, f".local/share/applications/meowterialyou-{widget_name}.desktop"
-            )
-            try:
-                desktop_content = f"""[Desktop Entry]
-Type=Application
-Name=MeowterialYou {widget_name.title()}
-Exec=gjs -m {app_js_out}
-Icon=preferences-desktop-theme
-Terminal=false
-Categories=Utility;
-StartupNotify=false
-NoDisplay=true
-"""
-                with open(desktop_entry_path, "w") as f:
-                    f.write(desktop_content)
-            except Exception as e:
-                log.warning(f"Failed to create desktop entry for {widget_name}: {e}")
-
-            # Start widget process
-            if os.path.exists(app_js_out):
-                os.chmod(app_js_out, 0o755)
-                log_file = os.path.expanduser(
-                    f"~/.cache/meowterialyou-{widget_name}.log"
-                )
-                with open(log_file, "w") as f_log:
+            if os.path.exists(manager_js_out):
+                log.info("Launching Widget Manager...")
+                os.chmod(manager_js_out, 0o755)
+                manager_log = os.path.expanduser("~/.cache/meowterialyou-manager.log")
+                with open(manager_log, "w") as f_log:
                     subprocess.Popen(
-                        ["gjs", "-m", app_js_out],
-                        env=env,
+                        ["gjs", "-m", manager_js_out],
                         stdout=f_log,
-                        stderr=subprocess.STDOUT,
+                        stderr=f_log,
+                        env=env,
                         start_new_session=True,
                     )
-                log.info(f"Started widget: {widget_name}")
-
     def _install_system_gtk4_theme(self, variant: str, scheme: dict) -> None:
         """Install GTK4 system theme for a specific variant (dark/light).
 

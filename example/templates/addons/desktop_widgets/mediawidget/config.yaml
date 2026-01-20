@@ -4,13 +4,10 @@ layout:
 
   # Widget dimensions (Physical pixels for GDK_SCALE=1)
   width: 360
-  height: 140
+  height: 190
 
-  # Horizontal margin from screen edge (pixels)
-  gap_x: 24
-
-  # Vertical margin from screen edge (pixels)
-  gap_y: 60
+  # Gap from screen edge [x, y]
+  gap: [24, 120]
 
 appearance:
   # Corner radius (pixels)
