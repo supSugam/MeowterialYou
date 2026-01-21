@@ -35,8 +35,8 @@ export abstract class BaseWidget {
     // Create the main actor - vertical BoxLayout
     this._actor = new St.BoxLayout({
       vertical: true,
-      reactive: false,
-      track_hover: false,
+      reactive: true,
+      track_hover: true,
     });
   }
 

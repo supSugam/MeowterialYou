@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "build": "tsc && npm run copy-assets",
-    "copy-assets": "cp metadata.json dist/ && cp -r schemas dist/ && mkdir -p dist/styles && cp src/styles/stylesheet.css dist/styles/",
+    "copy-assets": "cp metadata.json dist/ && cp -r schemas dist/ && cp src/styles/stylesheet.css dist/",
     "install-extension": "npm run build && mkdir -p ~/.local/share/gnome-shell/extensions/meowterialyou-widgets@meowterialyou && cp -r dist/* ~/.local/share/gnome-shell/extensions/meowterialyou-widgets@meowterialyou/",
     "compile-schemas": "glib-compile-schemas schemas/",
     "pack": "npm run build && cd dist && zip -r ../meowterialyou-widgets@meowterialyou.zip .",

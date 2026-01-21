@@ -17,3 +17,14 @@ declare module 'resource:///org/gnome/shell/misc/weather.js' {
 declare module 'resource:///org/gnome/shell/misc/fileUtils.js' {
     export function loadInterfaceXML(iface: string): string;
 }
+
+declare const global: any;
+
+declare module 'resource:///org/gnome/shell/ui/slider.js' {
+  import St from 'gi://St';
+  export class Slider extends St.DrawingArea {
+    constructor(value: number);
+    value: number;
+    actor: St.DrawingArea;
+  }
+}

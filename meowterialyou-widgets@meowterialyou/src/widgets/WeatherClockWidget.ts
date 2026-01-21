@@ -4,6 +4,7 @@
  */
 
 import St from 'gi://St';
+import Shell from 'gi://Shell';
 import GLib from 'gi://GLib';
 import Clutter from 'gi://Clutter';
 import Pango from 'gi://Pango';
@@ -94,6 +95,11 @@ export class WeatherClockWidget extends BaseWidget {
       y_align: Clutter.ActorAlign.END,
       style: 'margin-top: 4px;',
     });
+    timeRow.reactive = true;
+    timeRow.connect('button-press-event', () => {
+      this._launchApp('org.gnome.clocks.desktop');
+      return Clutter.EVENT_STOP;
+    });
     content.add_child(timeRow);
 
     // Container for the time text (ensures it acts as a single block)
@@ -135,6 +141,11 @@ export class WeatherClockWidget extends BaseWidget {
         x_expand: true,
         y_align: Clutter.ActorAlign.CENTER,
         style: 'margin-top: 12px;',
+      });
+      weatherRow.reactive = true;
+      weatherRow.connect('button-press-event', () => {
+        this._launchApp('org.gnome.Weather.desktop');
+        return Clutter.EVENT_STOP;
       });
       content.add_child(weatherRow);
 
@@ -221,6 +232,11 @@ export class WeatherClockWidget extends BaseWidget {
         x_expand: true,
         x_align: Clutter.ActorAlign.FILL, 
         style: this._config.showDivider ? '' : 'margin-top: 12px;',
+        reactive: true,
+      });
+      this._metricsBox.connect('button-press-event', () => {
+        this._launchApp('org.gnome.SystemMonitor.desktop');
+        return Clutter.EVENT_STOP;
       });
       content.add_child(this._metricsBox);
 
@@ -433,6 +449,25 @@ export class WeatherClockWidget extends BaseWidget {
     }
     if (this._tempLabel) {
       this._tempLabel.set_text(`󰔏  ${data.temperature}°C`);
+    }
+  }
+
+
+
+  /**
+   * Launch an application by desktop ID
+   */
+  private _launchApp(desktopId: string): void {
+    try {
+      const appSys = Shell.AppSystem.get_default();
+      const app = appSys.lookup_app(desktopId);
+      if (app) {
+        app.activate();
+      } else {
+        this._logger?.warn(`App not found: ${desktopId}`);
+      }
+    } catch (e) {
+      this._logger?.error(`Failed to launch app ${desktopId}: ${e}`);
     }
   }
 

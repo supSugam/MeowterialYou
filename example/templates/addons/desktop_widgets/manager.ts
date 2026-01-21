@@ -106,95 +106,135 @@ async function main() {
         GLib.mkdir_with_parents(widgetRuntimeDir, 0o755);
 
         try {
-            // 2. Load Widget Config
-            const cfgFile = Gio.File.new_for_path(configPath);
-            if (!cfgFile.query_exists(null)) {
-                print(`[Manager] Skipped ${name}: No config found`);
-                continue;
-            }
-            const [cfgOk, cfgDoc] = cfgFile.load_contents(null);
-            const cfg = yaml.load(decoder.decode(cfgDoc)) as any;
-            const layout = cfg.layout || {};
+          // 2. Load Widget Config
+          const cfgFile = Gio.File.new_for_path(configPath);
+          if (!cfgFile.query_exists(null)) {
+            print(`[Manager] Skipped ${name}: No config found`);
+            continue;
+          }
 
-            // 3. Build Widget (If newer or missing)
-            if (GLib.file_test(appTsSrc, GLib.FileTest.EXISTS)) {
-                print(`[Manager] Building ${name}...`);
-                const buildCmd = [
-                    esbuildPath, appTsSrc, "--bundle", "--format=esm",
-                    "--platform=neutral", "--external:gi://*", `--outfile=${appJsOut}`
-                ];
-                GLib.spawn_sync(null, buildCmd, null, GLib.SpawnFlags.SEARCH_PATH, null);
-            }
+          // Copy config to runtime dir so widget can read it locally
+          const runtimeConfigPath = `${widgetRuntimeDir}/config.yaml`;
+          const cfgDest = Gio.File.new_for_path(runtimeConfigPath);
+          try {
+            cfgFile.copy(cfgDest, Gio.FileCopyFlags.OVERWRITE, null, null);
+          } catch (e) {
+            print(`[Manager] Failed to copy config for ${name}: ${e}`);
+          }
 
-            // 4. Generate Theme CSS
-            const widgetScheme = meta.widget_scheme;
-            const darkBg = widgetScheme.surface || "#1a1a1a";
-            const lightText = widgetScheme.onSurface || "#ffffff";
-            const lightTextSecondary = widgetScheme.onSurfaceVariant || "#c0c0c0";
-            const accentColor = widgetScheme.primary || "#00ff00";
+          const [cfgOk, cfgDoc] = cfgFile.load_contents(null);
+          const cfg = yaml.load(decoder.decode(cfgDoc)) as any;
+          const layout = cfg.layout || {};
 
-            // RGB for opacity support
-            const bgHex = darkBg.replace('#', '');
-            const r = parseInt(bgHex.substring(0, 2), 16);
-            const g = parseInt(bgHex.substring(2, 4), 16);
-            const b = parseInt(bgHex.substring(4, 6), 16);
-
-            let css = "";
-            for (const [k, v] of Object.entries(meta.scheme)) {
-                css += `@define-color ${k} ${v};\n`;
-            }
-            css += `@define-color widget_bg rgb(${r}, ${g}, ${b});\n`;
-            css += `@define-color widget_text ${lightText};\n`;
-            css += `@define-color widget_text_secondary ${lightTextSecondary};\n`;
-            css += `@define-color widget_primary ${accentColor};\n`;
-
-            // Placement Logic (Origins + Vertical Stacking)
-            const pos = layout.position || 'bottom_left';
-            
-            // Strict unified gap: [x, y]
-            let marginX = 24;
-            let marginY = 60;
-            
-            if (Array.isArray(layout.gap) && layout.gap.length === 2) {
-                marginX = layout.gap[0];
-                marginY = layout.gap[1];
-            }
-            
-            // Smart Sizing: Enforce Zone Max Width
-            const overrideWidth = maxZoneWidths[pos] || 0;
-
-            // Offset is sum of heights + gaps of widgets already in this zone
-            const rawStackOffset = zoneOffsets[pos] || 0;
-            const isStacked = (zoneOffsets[pos] !== undefined);
-            
-            // If stacked, we subtract the widget's own marginY so it snaps to the calculated stack line
-            const effectiveStackOffset = isStacked ? (rawStackOffset - marginY) : rawStackOffset;
-
-            css += `/* WIDGET_MARGIN_X: ${marginX} */\n`;
-            css += `/* WIDGET_MARGIN_Y: ${marginY} */\n`;
-            css += `/* WIDGET_STACK_OFFSET_Y: ${effectiveStackOffset} */\n`;
-            css += `/* WIDGET_POSITION_MODE: ${pos} */\n`;
-            css += `/* WIDGET_WIDTH_OVERRIDE: ${overrideWidth} */\n`;
-
-            const cssFile = Gio.File.new_for_path(`${widgetRuntimeDir}/theme.css`);
-            cssFile.replace_contents(css, null, false, Gio.FileCreateFlags.REPLACE_DESTINATION, null);
-
-            // 5. Launch Widget
-            print(`[Manager] Launching ${name} at ${pos} (Stack Offset: ${effectiveStackOffset}, Width: ${overrideWidth})`);
-            const env = [
-                ...GLib.get_environ(),
-                `GDK_BACKEND=x11`,
-                `WIDGET_WIDTH_OVERRIDE=${overrideWidth}`
+          // 3. Build Widget (If newer or missing)
+          if (GLib.file_test(appTsSrc, GLib.FileTest.EXISTS)) {
+            print(`[Manager] Building ${name}...`);
+            const buildCmd = [
+              esbuildPath,
+              appTsSrc,
+              '--bundle',
+              '--format=esm',
+              '--platform=neutral',
+              '--external:gi://*',
+              `--outfile=${appJsOut}`,
             ];
+            GLib.spawn_sync(
+              null,
+              buildCmd,
+              null,
+              GLib.SpawnFlags.SEARCH_PATH,
+              null,
+            );
+          }
 
-            GLib.spawn_async(null, ['gjs', '-m', appJsOut], env, GLib.SpawnFlags.SEARCH_PATH, null);
+          // 4. Generate Theme CSS
+          const widgetScheme = meta.widget_scheme;
+          const darkBg = widgetScheme.surface || '#1a1a1a';
+          const lightText = widgetScheme.onSurface || '#ffffff';
+          const lightTextSecondary = widgetScheme.onSurfaceVariant || '#c0c0c0';
+          const accentColor = widgetScheme.primary || '#00ff00';
 
-            // 6. Update Stack Offset for NEXT widget in this zone
-            // We use the ACTUAL top position (effectiveStackOffset + marginY) as the base
-            const height = layout.height || 250;
-            const globalSpacing = (widgetsConfig.spacing !== undefined) ? widgetsConfig.spacing : 0;
-            zoneOffsets[pos] = (effectiveStackOffset + marginY) + height + 2 + globalSpacing;
+          // RGB for opacity support
+          const bgHex = darkBg.replace('#', '');
+          const r = parseInt(bgHex.substring(0, 2), 16);
+          const g = parseInt(bgHex.substring(2, 4), 16);
+          const b = parseInt(bgHex.substring(4, 6), 16);
 
+          let css = '';
+          for (const [k, v] of Object.entries(meta.scheme)) {
+            css += `@define-color ${k} ${v};\n`;
+          }
+          css += `@define-color widget_bg rgb(${r}, ${g}, ${b});\n`;
+          css += `@define-color widget_text ${lightText};\n`;
+          css += `@define-color widget_text_secondary ${lightTextSecondary};\n`;
+          css += `@define-color widget_primary ${accentColor};\n`;
+
+          // Placement Logic (Origins + Vertical Stacking)
+          const pos = layout.position || 'bottom_left';
+
+          // Strict unified gap: [x, y]
+          let marginX = 24;
+          let marginY = 60;
+
+          if (Array.isArray(layout.gap) && layout.gap.length === 2) {
+            marginX = layout.gap[0];
+            marginY = layout.gap[1];
+          }
+
+          // Smart Sizing: Enforce Zone Max Width
+          const overrideWidth = maxZoneWidths[pos] || 0;
+
+          // Offset is sum of heights + gaps of widgets already in this zone
+          const rawStackOffset = zoneOffsets[pos] || 0;
+          const isStacked = zoneOffsets[pos] !== undefined;
+
+          // If stacked, we subtract the widget's own marginY so it snaps to the calculated stack line
+          const effectiveStackOffset = isStacked
+            ? rawStackOffset - marginY
+            : rawStackOffset;
+
+          css += `/* WIDGET_MARGIN_X: ${marginX} */\n`;
+          css += `/* WIDGET_MARGIN_Y: ${marginY} */\n`;
+          css += `/* WIDGET_STACK_OFFSET_Y: ${effectiveStackOffset} */\n`;
+          css += `/* WIDGET_POSITION_MODE: ${pos} */\n`;
+          css += `/* WIDGET_WIDTH_OVERRIDE: ${overrideWidth} */\n`;
+
+          const cssFile = Gio.File.new_for_path(
+            `${widgetRuntimeDir}/theme.css`,
+          );
+          cssFile.replace_contents(
+            css,
+            null,
+            false,
+            Gio.FileCreateFlags.REPLACE_DESTINATION,
+            null,
+          );
+
+          // 5. Launch Widget
+          print(
+            `[Manager] Launching ${name} at ${pos} (Stack Offset: ${effectiveStackOffset}, Width: ${overrideWidth})`,
+          );
+          const env = [
+            ...GLib.get_environ(),
+            `GDK_BACKEND=x11`,
+            `WIDGET_WIDTH_OVERRIDE=${overrideWidth}`,
+          ];
+
+          GLib.spawn_async(
+            null,
+            ['gjs', '-m', appJsOut],
+            env,
+            GLib.SpawnFlags.SEARCH_PATH,
+            null,
+          );
+
+          // 6. Update Stack Offset for NEXT widget in this zone
+          // We use the ACTUAL top position (effectiveStackOffset + marginY) as the base
+          const height = layout.height || 250;
+          const globalSpacing =
+            widgetsConfig.spacing !== undefined ? widgetsConfig.spacing : 0;
+          zoneOffsets[pos] =
+            effectiveStackOffset + marginY + height + 2 + globalSpacing;
         } catch (e) {
             print(`[Manager] Error processing ${name}: ${e}`);
         }

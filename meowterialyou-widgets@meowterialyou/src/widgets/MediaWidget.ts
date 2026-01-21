@@ -7,6 +7,7 @@ import St from 'gi://St';
 import GLib from 'gi://GLib';
 import Clutter from 'gi://Clutter';
 import Gio from 'gi://Gio';
+import * as Slider from 'resource:///org/gnome/shell/ui/slider.js';
 import { BaseWidget, Monitor } from './BaseWidget.js';
 import { SettingsManager, MediaConfig } from '../services/SettingsManager.js';
 import { Logger } from '../utils/logger.js';
@@ -186,13 +187,13 @@ export class MediaWidget extends BaseWidget {
       progressRow.add_child(this._currentTimeLabel);
 
       // Slider
-      const Slider = (St as any).Slider;
-      this._progressSlider = new Slider({
-        x_expand: true,
-        style_class: 'meowterialyou-media-slider',
-        style: 'margin: 0 8px;',
-        value: 0,
-      });
+      this._progressSlider = new Slider.Slider(0);
+      this._progressSlider.actor.x_expand = true;
+      this._progressSlider.actor.add_style_class_name(
+        'meowterialyou-media-slider',
+      );
+      this._progressSlider.actor.set_style('margin: 0 8px;');
+
       this._progressSlider.connect('notify::value', () => {
         if (this._isDragging) return;
         // Value changed by user
@@ -204,7 +205,9 @@ export class MediaWidget extends BaseWidget {
         this._isDragging = false;
         const state = this._mediaPlayer?.getState();
         if (state && state.metadata.length > 0) {
-          const newPosition = Math.floor(this._progressSlider!.value * state.metadata.length);
+          const newPosition = Math.floor(
+            this._progressSlider!.value * state.metadata.length,
+          );
           this._mediaPlayer?.seek(newPosition);
         }
       });

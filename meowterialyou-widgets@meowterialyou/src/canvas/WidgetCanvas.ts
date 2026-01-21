@@ -37,20 +37,25 @@ export class WidgetCanvas {
     // Create container spanning the primary monitor
     this._container = new St.Widget({
       name: 'MeowterialYouWidgetsCanvas',
-      reactive: false,
       x: monitor.x,
       y: monitor.y,
       width: monitor.width,
       height: monitor.height,
     });
+    // Container should NOT be reactive, only children widgets should be
+    // This allows clicks to pass through empty areas to the wallpaper
+    this._container.reactive = false;
 
-    // Add to background group (behind windows, on desktop)
+    // Strict Background Layering
+    // We add explicitly to the background group to ensure we are behind everything.
+    // NOTE: If DING (Desktop Icons) is enabled, it covers this layer, blocking clicks.
+    // This is a known platform limitation. We prioritize visual correctness (not floating above windows).
     const bgGroup = Main.layoutManager._backgroundGroup;
     if (bgGroup) {
       bgGroup.add_child(this._container);
       this._logger.info('Canvas added to background group');
     } else {
-      // Fallback to uiGroup if backgroundGroup not available
+      // Fallback
       Main.layoutManager.uiGroup.add_child(this._container);
       this._logger.warn('backgroundGroup not found, using uiGroup');
     }
