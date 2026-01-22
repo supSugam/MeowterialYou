@@ -1,5 +1,5 @@
 use gtk4::gdk;
-use gtk4::prelude::*;
+// use gtk4::prelude::*; // Unused
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 use once_cell::sync::Lazy;
@@ -8,7 +8,7 @@ use once_cell::sync::Lazy;
 type TextureCache = Arc<Mutex<HashMap<String, gdk::Texture>>>;
 static CACHE: Lazy<TextureCache> = Lazy::new(|| Arc::new(Mutex::new(HashMap::new())));
 
-pub fn load_art(url: &str, art_size: i32, sender: async_channel::Sender<Option<gdk::Texture>>) {
+pub fn load_art(url: &str, _art_size: i32, sender: async_channel::Sender<Option<gdk::Texture>>) {
     let url = url.to_string();
     let cache = CACHE.clone();
 

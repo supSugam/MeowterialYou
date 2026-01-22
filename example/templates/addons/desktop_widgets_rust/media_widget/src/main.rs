@@ -29,29 +29,22 @@ fn main() {
 }
 
 fn build_ui(app: &Application) {
-    let conf = config::CONFIG.read().unwrap();
-    let scale = conf.layout.scale;
-    drop(conf);
-
     // MPRIS Channels - async_channel for both, bridge to glib main thread
     let (ui_sender, ui_receiver) = async_channel::unbounded::<()>();
     let (cmd_sender, cmd_receiver) = async_channel::unbounded::<crate::mpris::MprisCommand>();
 
     // Read config & calculate scaled dimensions
-    let (width, height, scale, decorated) = {
+    let width = {
         let conf = config::CONFIG.read().unwrap();
         let s = conf.layout.scale;
-        let w = (340.0_f64 * s).round() as i32;
-        let h = (152.0_f64 * s).round() as i32;
-        (w, h, s, false)
+        (400.0_f64 * s).round() as i32
     };
 
     let window = ApplicationWindow::builder()
         .application(app)
         .title("MeowterialYou MediaWidget")
         .default_width(width)
-        .default_height(height)
-        .decorated(decorated)
+        .decorated(false)
         .build();
 
     // Pass sender to UI
@@ -61,45 +54,51 @@ fn build_ui(app: &Application) {
     let conf = config::CONFIG.read().unwrap();
     let widgets = ui::build(&window, cmd_sender, &conf);
 
-    // Init Layer Shell
-    window.init_layer_shell();
-    window.set_layer(gtk4_layer_shell::Layer::Top);
-    window.auto_exclusive_zone_enable();
-    
-    // Positioning based on config
-    let pos = {
-        let conf = config::CONFIG.read().unwrap();
-        conf.layout.position.clone()
-    };
-    
-    match pos.as_str() {
-        "top_left" => {
-            window.set_anchor(gtk4_layer_shell::Edge::Top, true);
-            window.set_anchor(gtk4_layer_shell::Edge::Left, true);
-            window.set_margin(gtk4_layer_shell::Edge::Top, 24);
-            window.set_margin(gtk4_layer_shell::Edge::Left, 24);
-        },
-        "top_right" => {
-            window.set_anchor(gtk4_layer_shell::Edge::Top, true);
-            window.set_anchor(gtk4_layer_shell::Edge::Right, true);
-            window.set_margin(gtk4_layer_shell::Edge::Top, 24);
-            window.set_margin(gtk4_layer_shell::Edge::Right, 24);
-        },
-        "bottom_left" => {
-            window.set_anchor(gtk4_layer_shell::Edge::Bottom, true);
-            window.set_anchor(gtk4_layer_shell::Edge::Left, true);
-            window.set_margin(gtk4_layer_shell::Edge::Bottom, 24);
-            window.set_margin(gtk4_layer_shell::Edge::Left, 24);
-        },
-        "bottom_right" | _ => {
-            window.set_anchor(gtk4_layer_shell::Edge::Bottom, true);
-            window.set_anchor(gtk4_layer_shell::Edge::Right, true);
-            window.set_margin(gtk4_layer_shell::Edge::Bottom, 24);
-            window.set_margin(gtk4_layer_shell::Edge::Right, 24);
+    // Init Layer Shell (only on native Wayland)
+    if gtk4_layer_shell::is_supported() {
+        window.init_layer_shell();
+        window.set_layer(gtk4_layer_shell::Layer::Top);
+        window.auto_exclusive_zone_enable();
+        
+        // Positioning based on config
+        let pos = {
+            let conf = config::CONFIG.read().unwrap();
+            conf.layout.position.clone()
+        };
+        
+        match pos.as_str() {
+            "top_left" => {
+                window.set_anchor(gtk4_layer_shell::Edge::Top, true);
+                window.set_anchor(gtk4_layer_shell::Edge::Left, true);
+                window.set_margin(gtk4_layer_shell::Edge::Top, 24);
+                window.set_margin(gtk4_layer_shell::Edge::Left, 24);
+            },
+            "top_right" => {
+                window.set_anchor(gtk4_layer_shell::Edge::Top, true);
+                window.set_anchor(gtk4_layer_shell::Edge::Right, true);
+                window.set_margin(gtk4_layer_shell::Edge::Top, 24);
+                window.set_margin(gtk4_layer_shell::Edge::Right, 24);
+            },
+            "bottom_left" => {
+                window.set_anchor(gtk4_layer_shell::Edge::Bottom, true);
+                window.set_anchor(gtk4_layer_shell::Edge::Left, true);
+                window.set_margin(gtk4_layer_shell::Edge::Bottom, 24);
+                window.set_margin(gtk4_layer_shell::Edge::Left, 24);
+            },
+            "bottom_right" | _ => {
+                window.set_anchor(gtk4_layer_shell::Edge::Bottom, true);
+                window.set_anchor(gtk4_layer_shell::Edge::Right, true);
+                window.set_margin(gtk4_layer_shell::Edge::Bottom, 24);
+                window.set_margin(gtk4_layer_shell::Edge::Right, 24);
+            }
         }
-    }
 
-    window.set_keyboard_mode(gtk4_layer_shell::KeyboardMode::None); 
+        window.set_keyboard_mode(gtk4_layer_shell::KeyboardMode::None);
+    } else {
+        eprintln!("Layer shell not supported - running in regular window mode");
+        eprintln!("Hint: Make sure you're running on native Wayland (not XWayland)");
+        eprintln!("Try: GDK_BACKEND=wayland cargo run");
+    } 
 
     window.present();
     

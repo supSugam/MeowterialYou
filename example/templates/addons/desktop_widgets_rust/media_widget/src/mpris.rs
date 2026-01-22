@@ -2,8 +2,8 @@ use zbus::{Connection, Result, fdo};
 use zbus::proxy;
 use crate::state::{STATE};
 use std::collections::HashMap;
-use gtk4::prelude::*;
-use gtk4::glib; // Added import
+// use gtk4::prelude::*; // Unused
+// use gtk4::glib; // Unused
 use zbus::zvariant::Value;
 
 macro_rules! debug_log {

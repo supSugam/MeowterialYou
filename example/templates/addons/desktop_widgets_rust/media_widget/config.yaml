@@ -6,14 +6,14 @@ layout:
   scale: 1.0
   
   # Padding inside the widget (pixels, scaled) - Default 16 for pro align
-  padding: 16
+  padding: 20
   
   # Offset from screen edges [x, y]
   gap: [24, 80]
 
 appearance:
   # Corner radius (pixels, scaled) - Default 24 for modern soft look
-  corner_radius: 12
+  corner_radius: 8
 
 background:
   # Background opacity (0-100, used with smart_transparency)

@@ -2,7 +2,7 @@ use gtk4::prelude::*;
 use gtk4::{Align, Box, Label, Orientation, ScrolledWindow, PolicyType, Adjustment};
 use std::cell::RefCell;
 use std::rc::Rc;
-use gtk4::glib;
+// use gtk4::glib; // Unused
 
 #[derive(Clone)]
 pub struct MarqueeLabel {

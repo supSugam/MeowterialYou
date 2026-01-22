@@ -1,5 +1,5 @@
 use gtk4::prelude::*;
-use gtk4::{Align, Box, Button, Image, Label, Orientation, Scale, Adjustment, Picture, AspectFrame};
+use gtk4::{Align, Box, Button, Image, Label, Orientation, Scale, Adjustment, Picture};
 use gtk4::glib;
 use crate::config::Config;
 use crate::marquee::{MarqueeLabel, Direction};
@@ -27,38 +27,46 @@ pub fn build(window: &gtk4::ApplicationWindow, cmd_sender: async_channel::Sender
     let scale = config.layout.scale;
     
     // Base dimensions (Pro Standard)
-    let base_width = 340.0;
-    let base_height = 124.0;
+    let base_width = 400.0;
     
     // Scale helper
     let s = |v: f64| -> i32 { (v * scale).round() as i32 };
     
     // Calculated dimensions
     let widget_width = s(base_width);
-    let widget_height = s(base_height);
     let padding_val = config.layout.padding as f64;
-    let art_size = s(base_height - (padding_val * 2.0));
-    let art_spacing = s(0.0);
     
-    // Content area = widget - padding*2 - art - spacing
+    // Internal heights (Base)
+    let labels_height_base = 42.0;
+    let controls_height_base = 38.0;
+    let progress_height_base = 28.0;
+    let details_spacing_base = 6.0;
+
+    // Stack height = components + spacing
+    let stack_height_base = labels_height_base + controls_height_base + progress_height_base + (2.0 * details_spacing_base);
+    
+    // Art size is 1.1x the details stack
+    let art_size_base = stack_height_base * 1.15;
+    let art_size = s(art_size_base);
+    let art_spacing = s(0.0); // Consistent with CSS
+    
+    // Content width
     let content_width = widget_width - s(padding_val * 2.0) - art_size - art_spacing;
     
-    // --- ROOT WRAPPER: Fixed size ---
+    // --- ROOT WRAPPER: Width fixed, Height AUTO ---
     let root_wrapper = Box::builder()
         .orientation(Orientation::Vertical)
         .width_request(widget_width)
-        .height_request(widget_height)
+        .spacing(0) // Ensure no implicit spacing
         .build();
     root_wrapper.add_css_class("view");
 
-    // --- MAIN BOX: Fixed size ---
+    // --- MAIN BOX: Width fixed, Height determined by largest child (art) ---
     let main_box = Box::builder()
         .orientation(Orientation::Horizontal)
-        .spacing(0)
+        .spacing(art_spacing)
         .hexpand(false)
         .vexpand(false)
-        .width_request(widget_width - s(padding_val * 2.0))
-        .height_request(art_size)
         .build();
 
     // --- ART SECTION: Fixed square ---
@@ -82,39 +90,23 @@ pub fn build(window: &gtk4::ApplicationWindow, cmd_sender: async_channel::Sender
         .valign(Align::Fill)
         .build();
     art_image.add_css_class("art-image");
-
-    let art_frame = AspectFrame::builder()
-        .xalign(0.5)
-        .yalign(0.5)
-        .ratio(1.0)
-        .obey_child(false)
-        .child(&art_image)
-        .width_request(art_size)
-        .height_request(art_size)
-        .build();
     
-    art_box.append(&art_frame);
-
-    // --- SPACER between art and details ---
-    let art_details_spacer = Box::builder()
-        .orientation(Orientation::Horizontal)
-        .width_request(art_spacing)
-        .hexpand(false)
-        .build();
+    art_box.set_overflow(gtk4::Overflow::Hidden);
+    art_box.append(&art_image);
 
     // --- DETAILS SECTION: Fixed width, vertical layout ---
     let details_box = Box::builder()
         .orientation(Orientation::Vertical)
-        .valign(Align::Center)
+        .valign(Align::Center) // Center details relative to the larger album art
         .halign(Align::Fill)
         .width_request(content_width)
         .hexpand(false)
         .vexpand(false)
-        .spacing(s(6.0))
+        .spacing(s(details_spacing_base))
         .build();
 
     // A. Labels (Marquee) - Fixed height
-    let labels_height = s(42.0); // Title ~20 + Artist ~18 + spacing
+    let labels_height = s(labels_height_base);
     let labels_box = Box::builder()
         .orientation(Orientation::Vertical)
         .spacing(s(2.0))
@@ -130,7 +122,7 @@ pub fn build(window: &gtk4::ApplicationWindow, cmd_sender: async_channel::Sender
     labels_box.append(&artist_marquee.container);
 
     // B. Controls - Fixed height
-    let controls_height = s(38.0);
+    let controls_height = s(controls_height_base);
     let controls_box = Box::builder()
         .orientation(Orientation::Horizontal)
         .halign(Align::Start)
@@ -161,7 +153,7 @@ pub fn build(window: &gtk4::ApplicationWindow, cmd_sender: async_channel::Sender
     controls_box.append(&next_btn);
 
     // C. Progress - Fixed height
-    let progress_height = s(28.0);
+    let progress_height = s(progress_height_base);
     let progress_box = Box::builder()
         .orientation(Orientation::Vertical)
         .spacing(0)
@@ -213,17 +205,15 @@ pub fn build(window: &gtk4::ApplicationWindow, cmd_sender: async_channel::Sender
 
     // Assemble main
     main_box.append(&art_box);
-    main_box.append(&art_details_spacer);
     main_box.append(&details_box);
     
     root_wrapper.append(&main_box);
     
-    // Dots - Fixed height, minimal
-    let dots_height = s(16.0);
+    // Dots - Natural height
     let dots_box = Box::builder()
         .orientation(Orientation::Horizontal)
         .halign(Align::Center)
-        .height_request(dots_height)
+        .hexpand(true)
         .vexpand(false)
         .build();
     dots_box.add_css_class("dots-box");

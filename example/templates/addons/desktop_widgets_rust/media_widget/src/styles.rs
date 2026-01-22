@@ -1,4 +1,4 @@
-use gtk4::prelude::*;
+// use gtk4::prelude::*; // Unused
 use gtk4::{gdk, CssProvider};
 use std::fs;
 use std::path::Path;
@@ -24,23 +24,17 @@ pub fn load_css(config: &Config) {
     let art_size = s(base_height - (art_padding * 2.0));
     
     // Font sizes (scaled)
-    let font_title = s(16.0);
+    let font_title = s(20.0);
     let font_artist = s(13.0);
     let font_time = s(11.0);
     
     // Button sizes (scaled)
     let btn_size = s(38.0);
     let btn_radius = s(14.0);
-    let play_width = s(60.0);
+    let play_width = s(80.0);
     let play_radius = s(24.0);
     let icon_margin = s(2.0);
     let play_margin = s(6.0);
-    
-    // Slider sizes (scaled)
-    let slider_height = s(6.0);
-    let slider_radius = s(3.0);
-    let slider_knob = s(16.0);
-    let slider_margin = s(-5.0);
     
     // Spacing (scaled)
     let art_spacing = s(16.0); // Tighter 16px gap for pro look
@@ -56,6 +50,7 @@ pub fn load_css(config: &Config) {
             background-color: alpha(@widget_bg, {opacity});
             border-radius: {radius}px;
             padding: {padding}px;
+            padding-bottom: 12px;
         }}
         
         .art-container {{
@@ -68,6 +63,8 @@ pub fn load_css(config: &Config) {
         
         .art-image {{
             border-radius: {radius}px;
+            min-width: {art_size}px;
+            min-height: {art_size}px;
         }}
         
         .title {{ 
@@ -171,7 +168,8 @@ pub fn load_css(config: &Config) {
             background-color: @widget_primary;
         }}
         .dots-box {{
-            margin-top: 8px;
+            margin-top: 4px;
+            margin-bottom: 0px;
         }}
     "#, 
         theme = theme_content,
