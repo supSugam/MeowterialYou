@@ -50,10 +50,40 @@ export const setCallbacks = (callbacks: { updateUI: () => void, renderDots: () =
 };
 
 let _callbacks = { updateUI: () => {}, renderDots: () => {} };
+let pollTimeoutId: number | null = null;
+
+// Internal updateProgress function matching backup pattern
+function updateProgress() {
+  if (!currentPlayer) return true;
+
+  // Explicit Polling for Metadata/Status to fix "Not Synced"
+  // Many players (e.g. Spotify) are lazy with signals.
+  try {
+    const metadata = currentPlayer.Metadata;
+    parseMetadata(metadata);
+
+    const status = currentPlayer.PlaybackStatus;
+    State.isPlaying = status === 'Playing';
+  } catch (e) {}
+
+  // Position Update
+  try {
+    const now = GLib.get_monotonic_time();
+    if (State.isPlaying) {
+      const delta = now - State.lastUpdate;
+      State.position += delta;
+      State.lastUpdate = now;
+    }
+    if (State.position > State.length) State.position = State.length;
+  } catch (e) {}
+
+  _callbacks.updateUI(); // Keep UI fresh
+  return true;
+}
 
 export function connectToPlayer(busName: string) {
   currentBusName = busName;
-  _callbacks.renderDots(); 
+  _callbacks.renderDots();
   log(`Connecting to ${busName}`);
   currentPlayer = new PlayerProxy(
     Gio.DBus.session,
@@ -80,10 +110,22 @@ export function connectToPlayer(busName: string) {
         : changed;
       if (changedUnpacked['PlaybackStatus']) {
         State.isPlaying = changedUnpacked['PlaybackStatus'] === 'Playing';
-        _callbacks.updateUI();
       }
+      if (changedUnpacked['Metadata']) {
+        parseMetadata(changedUnpacked['Metadata']);
+      }
+      _callbacks.updateUI();
     },
   );
+
+  // Start polling timeout (matching backup lines 370-375)
+  if (!pollTimeoutId) {
+    pollTimeoutId = GLib.timeout_add(
+      GLib.PRIORITY_DEFAULT,
+      1000,
+      updateProgress,
+    );
+  }
 }
 
 export function refreshPlayers() {
@@ -183,3 +225,4 @@ export function parseMetadata(metadata: any) {
         }
     }
 }
+

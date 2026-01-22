@@ -37,6 +37,9 @@ GLib.timeout_add_seconds(GLib.PRIORITY_DEFAULT, 5, () => {
   return true;
 });
 
+// Note: Metadata polling is now handled inside connectToPlayer() in mpris.ts
+// matching the backup pattern (lines 370-375)
+
 // Start UI
 startWindow(config);
 

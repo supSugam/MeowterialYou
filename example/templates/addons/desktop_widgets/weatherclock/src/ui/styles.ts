@@ -76,7 +76,7 @@ export const applyStyles = (config: Config) => {
     const scale = config.layout.scale_factor || 1.0;
     const s = (v: number) => Math.round(v * scale);
     const padding = s(config.layout.padding || 24);
-    const radius = s(config.layout.corner_radius || 16);
+    const radius = s(config.layout.corner_radius ?? 16);
     const borderWidth = s(config.layout.border_width || 1);
     
     // Typography defaults

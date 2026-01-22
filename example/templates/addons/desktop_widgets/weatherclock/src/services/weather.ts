@@ -133,7 +133,9 @@ export const getWeather = (config: Config) => {
     if (_location) {
         const locName = _location.get_name();
         if (locName && desc.includes(locName)) {
-            desc = desc.replace(locName, '').trim();
+          desc = desc.replace(locName, '').trim();
+          // Remove leading punctuation (colon, dash, comma) that might remain
+          desc = desc.replace(/^[:,\-\s]+/, '');
         }
     }
     if (desc.length > 20) desc = desc.substring(0, 20) + '...';

@@ -9,11 +9,11 @@ layout:
   position: bottom_left
 
   # Widget dimensions (used for multi-widget stacking calculations)
-  width: 320
+  width: 380
   height: 270
 
   # Gap from screen edge [x, y]
-  gap: [24, 120]
+  gap: [24, 80]
 
   # Content Alignment (left, center, right, auto)
   # auto = left for left-side widgets, right for right-side widgets
@@ -26,7 +26,7 @@ layout:
   padding: 20
 
   # Corner radius of the widget background (pixels)
-  corner_radius: 8
+  corner_radius: 0
 
   # Border thickness (pixels)
   # Set to 0 to remove border

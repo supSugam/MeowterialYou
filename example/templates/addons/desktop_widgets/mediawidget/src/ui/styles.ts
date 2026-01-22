@@ -63,16 +63,21 @@ export const updateLayoutFromEnv = () => {
 };
 
 export const applyStyles = (config: Config) => {
-    const css = new Gtk.CssProvider();
-    const bgOpacity = bgStyle === 'smart_transparency' ? calculatedOpacity / 100 : 0.8;
-    
-    const scale = config.layout.scale_factor || 1.0;
-    const s = (v: number) => Math.round(v * scale);
-    const padding = s(config.layout.padding || 20);
-    const radius = s(config.layout.corner_radius || 8);
-    const borderWidth = s(config.layout.border_width || 0);
+  const css = new Gtk.CssProvider();
+  const bgOpacity =
+    bgStyle === 'smart_transparency' ? calculatedOpacity / 100 : 0.8;
 
-    css.load_from_data(`
+  const scale = config.layout.scale_factor || 1.0;
+  const s = (v: number) => Math.round(v * scale);
+  const padding = s(config.layout.padding || 20);
+  // Use appearance.corner_radius as primary, layout.corner_radius as fallback
+  // Use nullish coalescing to allow 0 as valid radius
+  const radius = s(
+    config.appearance?.corner_radius ?? config.layout.corner_radius ?? 16,
+  );
+  const borderWidth = s(config.layout.border_width || 0);
+
+  css.load_from_data(`
         ${themeContent}
         .view {
             background-color: alpha(@widget_bg, ${bgOpacity});
@@ -81,7 +86,7 @@ export const applyStyles = (config: Config) => {
             padding: ${padding}px;
         }
         .art-container {
-            border-radius: ${s(16)}px;
+            border-radius: ${radius}px;
             background-color: @surfaceVariant;
             box-shadow: 0 4px 12px alpha(black, 0.2);
         }
@@ -146,12 +151,12 @@ export const applyStyles = (config: Config) => {
             box-shadow: 0 0 4px alpha(@widget_primary, 0.5);
         }
         .dots-box {
-            margin-top: 4px;
+            margin-top: 0px;
         }
     `);
-    
-    const screen = Gdk.Screen.get_default();
-    if (screen) {
-        Gtk.StyleContext.add_provider_for_screen(screen, css, 900);
-    }
-};
+
+  const screen = Gdk.Screen.get_default();
+  if (screen) {
+    Gtk.StyleContext.add_provider_for_screen(screen, css, 900);
+  }
+};;;;

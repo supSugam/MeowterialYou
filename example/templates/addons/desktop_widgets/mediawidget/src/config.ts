@@ -15,21 +15,29 @@ export interface Config {
     corner_radius?: number;
     border_width?: number;
   };
+  appearance: {
+    corner_radius: number;
+    blur_art?: boolean;
+  };
   controls: {
     show_next_prev: boolean;
   };
 }
 
 export const defaultConfig: Config = {
-  layout: { 
-    position: 'bottom_right', 
-    width: 360, 
-    height: 140, 
+  layout: {
+    position: 'bottom_right',
+    width: 360,
+    height: 140,
     gap: [24, 60],
     scale_factor: 1.0,
     padding: 20,
-    corner_radius: 8,
-    border_width: 0 
+    corner_radius: 16,
+    border_width: 0,
+  },
+  appearance: {
+    corner_radius: 16,
+    blur_art: true,
   },
   controls: { show_next_prev: true },
 };
@@ -50,11 +58,16 @@ export const loadConfig = (): Config => {
       if (parsed) {
         // Deep merge layout
         if (parsed.layout) config.layout = { ...config.layout, ...parsed.layout };
+        if (parsed.appearance)
+          config.appearance = { ...config.appearance, ...parsed.appearance };
         if (parsed.controls) config.controls = { ...config.controls, ...parsed.controls };
       }
     }
   } catch (e) {
     log(`[WARN] Failed to load config: ${e}`);
   }
+  log(
+    `[DEBUG] Loaded Config: radius=${config.appearance?.corner_radius}, layout_radius=${config.layout.corner_radius}`,
+  );
   return config;
 };

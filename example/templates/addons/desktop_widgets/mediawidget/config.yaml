@@ -1,17 +1,17 @@
 layout:
   # Position on screen
-  position: bottom_left
+  position: bottom_right
 
   # Widget dimensions (Physical pixels for GDK_SCALE=1)
-  width: 360
+  width: 380
   height: 190
 
   # Gap from screen edge [x, y]
-  gap: [24, 120]
+  gap: [24, 80]
 
 appearance:
   # Corner radius (pixels)
-  corner_radius: 16
+  corner_radius: 0
 
   # Blur background art if true, otherwise use solid colors
   blur_art: true

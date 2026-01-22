@@ -4,10 +4,10 @@ import GLib from 'gi://GLib?version=2.0';
 import Gdk from 'gi://Gdk?version=3.0';
 import GdkPixbuf from 'gi://GdkPixbuf?version=2.0';
 import Gtk from 'gi://Gtk?version=3.0';
-// @ts-ignore
-import Cairo from 'cairo';
 import { State } from '../state.js';
 import { defaultConfig } from '../config.js';
+import { log } from '../utils.js';
+
 
 // We need config for corner radius, but config is loaded at runtime.
 // We can pass it or check it. 
@@ -43,6 +43,9 @@ export const downloadArt = (url: string, callback: (path: string | null) => void
 
 export const roundPixbuf = (pixbuf: any, radius: number) => {
   if (!pixbuf) return null;
+  // @ts-ignore - GJS legacy import for Cairo
+  const Cairo = imports.cairo;
+
   const w = pixbuf.get_width();
   const h = pixbuf.get_height();
   const surface = new Cairo.ImageSurface(Cairo.Format.ARGB32, w, h);
@@ -62,9 +65,12 @@ export const roundPixbuf = (pixbuf: any, radius: number) => {
 
   // Convert back to pixbuf
   return Gdk.pixbuf_get_from_surface(surface, 0, 0, w, h);
-};
+};;
 
 export const updateArtWidget = (artImage: Gtk.Image, path: string | null, size: number, cornerRadius: number) => {
+  log(
+    `[DEBUG] updateArtWidget: path=${path}, size=${size}, radius=${cornerRadius}`,
+  );
   if (!path) {
     artImage.set_from_icon_name('audio-x-generic', Gtk.IconSize.DIALOG);
     return;

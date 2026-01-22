@@ -1,0 +1,26 @@
+layout:
+  # Screen anchor position: top_left, top_right, bottom_left, bottom_right
+  position: "bottom_right"
+  
+  # Scale factor (1.0 = 340x152 base size - Pro Standard)
+  scale: 2.0
+  
+  # Padding inside the widget (pixels, scaled) - Default 16 for pro align
+  padding: 16
+  
+  # Offset from screen edges [x, y]
+  gap: [24, 80]
+
+appearance:
+  # Corner radius (pixels, scaled) - Default 24 for modern soft look
+  corner_radius: 12
+
+background:
+  # Background opacity (0-100, used with smart_transparency)
+  opacity: 80
+  # Options: "blur", "transparent", "smart_transparency"
+  style: "smart_transparency"
+
+controls:
+  # Show Next/Prev buttons
+  show_next_prev: true

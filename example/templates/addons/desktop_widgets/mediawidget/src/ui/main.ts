@@ -8,7 +8,11 @@ import { State } from '../state.js';
 import { createMarquee } from './components/marquee.js';
 import { Layout } from './styles.js';
 import { log, formatTime } from '../utils.js';
-import { currentPlayer, connectToPlayer } from '../services/mpris.js';
+import {
+  currentPlayer,
+  connectToPlayer,
+  currentBusName,
+} from '../services/mpris.js';
 import { downloadArt, updateArtWidget } from '../services/art.js';
 
 let win: Gtk.Window;
@@ -23,164 +27,220 @@ let lblTotal: Gtk.Label;
 let dotsBox: Gtk.Box;
 
 let isDragging = false;
+let currentConfig: Config = defaultConfig;
 
 export const buildUI = (config: Config) => {
-    win = new Gtk.Window({
-        type: Gtk.WindowType.TOPLEVEL,
-        title: 'MeowterialYou-Widget-mediawidget',
-        decorated: false,
-        skip_taskbar_hint: true,
-        skip_pager_hint: true,
-        accept_focus: true,
-    });
-    
-    win.set_wmclass('MeowterialYou-Widget-mediawidget', 'MeowterialYou-Widget-mediawidget');
-    win.set_role('MeowterialYou-Widget-mediawidget');
-    win.set_app_paintable(true);
-    
-    const visual = win.get_screen()?.get_rgba_visual();
-    if (visual) win.set_visual(visual);
-    
-    const w = Layout.forcedWidth > 0 ? Layout.forcedWidth : config.layout.width;
-    const h = config.layout.height;
-    win.set_size_request(w, h);
-    win.resize(w, h);
-    
-    mainBox = new Gtk.Box({ 
-        orientation: Gtk.Orientation.HORIZONTAL, 
-        spacing: 8,
-        valign: Gtk.Align.FILL,
-        halign: Gtk.Align.FILL,
-        hexpand: true
-    });
-    mainBox.get_style_context().add_class('view');
-    
-    // Art Section
-    const artBox = new Gtk.Box({ orientation: Gtk.Orientation.VERTICAL });
-    artBox.set_valign(Gtk.Align.CENTER);
-    artBox.set_vexpand(true);
-    artImage = new Gtk.Image({ icon_name: 'audio-x-generic' });
-    artImage.set_pixel_size(64);
-    artBox.pack_start(artImage, false, false, 0);
-    artBox.get_style_context().add_class('art-container');
-    
-    // Responsive Art
-    artBox.connect('size-allocate', (widget, alloc) => {
-        const newHeight = alloc.height;
-        if (Math.abs(newHeight - State.lastArtSize) > 2) {
-             GLib.idle_add(GLib.PRIORITY_DEFAULT_IDLE, () => {
-                 if (State.currentArtPath) {
-                     const artSize = Math.min(newHeight, 145);
-                     // We need radius here, config is available
-                     const s = config.layout.scale_factor || 1.0;
-                     const radius = Math.round((config.layout.corner_radius || 8) * s);
-                     updateArtWidget(artImage, State.currentArtPath, artSize, radius);
-                 }
-                 return GLib.SOURCE_REMOVE;
-             });
+  currentConfig = config;
+  win = new Gtk.Window({
+    type: Gtk.WindowType.TOPLEVEL,
+    title: 'MeowterialYou-Widget-mediawidget',
+    decorated: false,
+    skip_taskbar_hint: true,
+    skip_pager_hint: true,
+    accept_focus: true,
+  });
+
+  win.set_wmclass(
+    'MeowterialYou-Widget-mediawidget',
+    'MeowterialYou-Widget-mediawidget',
+  );
+  win.set_role('MeowterialYou-Widget-mediawidget');
+  win.set_app_paintable(true);
+
+  const visual = win.get_screen()?.get_rgba_visual();
+  if (visual) win.set_visual(visual);
+
+  const w = Layout.forcedWidth > 0 ? Layout.forcedWidth : config.layout.width;
+  const h = config.layout.height;
+  win.set_size_request(w, h);
+  win.resize(w, h);
+
+  mainBox = new Gtk.Box({
+    orientation: Gtk.Orientation.HORIZONTAL,
+    spacing: 24, // Generous spacing
+    valign: Gtk.Align.FILL,
+    halign: Gtk.Align.FILL,
+    hexpand: true,
+  });
+  // mainBox.get_style_context().add_class('view'); // Moved to rootWrapper
+
+  // Art Section
+  const artBox = new Gtk.Box({ orientation: Gtk.Orientation.VERTICAL });
+  artBox.set_valign(Gtk.Align.CENTER);
+  artBox.set_halign(Gtk.Align.CENTER);
+  artBox.set_vexpand(false);
+  artBox.set_hexpand(false);
+  artImage = new Gtk.Image({ icon_name: 'audio-x-generic' });
+  artImage.set_pixel_size(64);
+  artBox.pack_start(artImage, false, false, 0);
+  artBox.get_style_context().add_class('art-container');
+
+  // Responsive Art
+  artBox.connect('size-allocate', (widget, alloc) => {
+    const newHeight = alloc.height;
+    if (Math.abs(newHeight - State.lastArtSize) > 2) {
+      GLib.idle_add(GLib.PRIORITY_DEFAULT_IDLE, () => {
+        if (State.currentArtPath) {
+          // Use full available height for art to be responsive
+          // Subtract a small margin for safety if needed, but usually full height is fine
+          // assuming mainBox height is constrained by widget height - padding
+          const artSize = Math.max(newHeight, 64);
+
+          // Use corner radius from config appearance section (allow 0)
+          const s = config.layout.scale_factor || 1.0;
+          const radius = Math.round(
+            (config.appearance?.corner_radius ?? 16) * s,
+          );
+          updateArtWidget(artImage, State.currentArtPath, artSize, radius);
         }
-    });
-    
-    // Details Section
-    const detailsBox = new Gtk.Box({
-      orientation: Gtk.Orientation.VERTICAL,
-      spacing: 0,
-    });
-    detailsBox.set_valign(Gtk.Align.FILL);
-    detailsBox.set_hexpand(true);
-    
-    // Marquee
-    titleMarquee = createMarquee('title');
-    artistMarquee = createMarquee('artist');
-    
-    const labelsBox = new Gtk.Box({ orientation: Gtk.Orientation.VERTICAL, spacing: 2 });
-    labelsBox.get_style_context().add_class('labels-container');
-    labelsBox.pack_start(titleMarquee.container, false, false, 0);
-    labelsBox.pack_start(artistMarquee.container, false, false, 0);
-    
-    // Controls
-    const controlsBox = new Gtk.Box({ orientation: Gtk.Orientation.HORIZONTAL });
-    controlsBox.get_style_context().add_class('controls-box');
-    
-    const prevBtn = createControlBtn('media-skip-backward-symbolic', 18, () => currentPlayer && currentPlayer.PreviousRemote());
-    const playBtn = new Gtk.Button();
-    playBtnImage = new Gtk.Image({ icon_name: 'media-playback-start-symbolic', pixel_size: 28 });
-    playBtn.add(playBtnImage);
-    playBtn.get_style_context().add_class('control-btn');
-    playBtn.get_style_context().add_class('play-btn');
-    playBtn.connect('clicked', () => { currentPlayer && currentPlayer.PlayPauseRemote(); });
-    const nextBtn = createControlBtn('media-skip-forward-symbolic', 18, () => currentPlayer && currentPlayer.NextRemote());
-    
-    controlsBox.pack_start(prevBtn, false, false, 0);
-    controlsBox.pack_start(playBtn, false, false, 0);
-    controlsBox.pack_start(nextBtn, false, false, 0);
-    
-    // Progress
-    const progressBox = new Gtk.Box({ orientation: Gtk.Orientation.VERTICAL, spacing: 0 });
-    scale = new Gtk.Scale({ orientation: Gtk.Orientation.HORIZONTAL, draw_value: false });
-    scale.set_range(0, 100);
-    scale.set_increments(5, 10);
-    scale.get_style_context().add_class('progress-bar');
-    
-    scale.connect('button-press-event', () => { isDragging = true; return false; });
-    scale.connect('button-release-event', () => {
-        isDragging = false;
-        const val = scale.get_value();
-        if (State.length > 0 && currentPlayer && State.trackId) {
-            const targetMicro = (val / 100) * State.length;
-            try { currentPlayer.SetPositionRemote(State.trackId, targetMicro); } catch(e) {}
-        }
-        return false;
-    });
-    
-    const timeBox = new Gtk.Box({ orientation: Gtk.Orientation.HORIZONTAL });
-    lblCurrent = new Gtk.Label({ label: '0:00', halign: Gtk.Align.START });
-    lblCurrent.get_style_context().add_class('time-label');
-    lblTotal = new Gtk.Label({ label: '0:00', halign: Gtk.Align.END });
-    lblTotal.get_style_context().add_class('time-label');
-    const spacer = new Gtk.Label({ label: '' }); spacer.set_hexpand(true);
-    timeBox.pack_start(lblCurrent, false, false, 0);
-    timeBox.pack_start(spacer, true, true, 0);
-    timeBox.pack_start(lblTotal, false, false, 0);
-    
-    progressBox.pack_start(scale, false, false, 0);
-    progressBox.pack_start(timeBox, false, false, 0);
-    
-    // Dots
-    dotsBox = new Gtk.Box({ orientation: Gtk.Orientation.HORIZONTAL, halign: Gtk.Align.CENTER });
-    dotsBox.get_style_context().add_class('dots-box');
-    
-    // Assembly
-    const vSpacer = () => { const s = new Gtk.Box({ orientation: Gtk.Orientation.VERTICAL }); s.set_vexpand(true); return s; };
-    
-    detailsBox.pack_start(labelsBox, false, false, 0);
-    detailsBox.pack_start(vSpacer(), true, true, 0);
-    detailsBox.pack_start(dotsBox, false, false, 0);
-    detailsBox.pack_start(vSpacer(), true, true, 0);
-    detailsBox.pack_start(controlsBox, false, false, 0);
-    detailsBox.pack_start(vSpacer(), true, true, 0);
-    detailsBox.pack_start(progressBox, false, false, 0);
-    
-    mainBox.pack_start(artBox, false, false, 0);
-    mainBox.pack_start(detailsBox, true, true, 0);
-    
-    win.add(mainBox);
-    
-    // Interactivity & Behavior
-    win.set_titlebar(null);
-    win.set_keep_below(true);
-    win.stick();
-    
-    mainBox.add_events(Gdk.EventMask.BUTTON_PRESS_MASK);
-    mainBox.connect('button-press-event', (widget, event) => {
-        if (event.get_button()[1] === 1) {
-           win.begin_move_drag(event.get_button()[1], event.x_root, event.y_root, event.get_time());
-        }
-        return false;
-    });
-    
-    win.connect('destroy', Gtk.main_quit);
-};
+        return GLib.SOURCE_REMOVE;
+      });
+    }
+  });
+
+  // Details Section
+  const detailsBox = new Gtk.Box({
+    orientation: Gtk.Orientation.VERTICAL,
+    spacing: 0,
+  });
+  detailsBox.set_valign(Gtk.Align.FILL);
+  detailsBox.set_hexpand(true);
+
+  // Marquee - Title scrolls left, Artist scrolls right when overflow
+  titleMarquee = createMarquee('title', 'left');
+  artistMarquee = createMarquee('artist', 'right');
+
+  const labelsBox = new Gtk.Box({
+    orientation: Gtk.Orientation.VERTICAL,
+    spacing: 2,
+  });
+  labelsBox.get_style_context().add_class('labels-container');
+  labelsBox.pack_start(titleMarquee.container, false, false, 0);
+  labelsBox.pack_start(artistMarquee.container, false, false, 0);
+
+  // Controls
+  const controlsBox = new Gtk.Box({ orientation: Gtk.Orientation.HORIZONTAL });
+  controlsBox.get_style_context().add_class('controls-box');
+
+  const prevBtn = createControlBtn(
+    'media-skip-backward-symbolic',
+    18,
+    () => currentPlayer && currentPlayer.PreviousRemote(),
+  );
+  const playBtn = new Gtk.Button();
+  playBtnImage = new Gtk.Image({
+    icon_name: 'media-playback-start-symbolic',
+    pixel_size: 28,
+  });
+  playBtn.add(playBtnImage);
+  playBtn.get_style_context().add_class('control-btn');
+  playBtn.get_style_context().add_class('play-btn');
+  playBtn.connect('clicked', () => {
+    currentPlayer && currentPlayer.PlayPauseRemote();
+  });
+  const nextBtn = createControlBtn(
+    'media-skip-forward-symbolic',
+    18,
+    () => currentPlayer && currentPlayer.NextRemote(),
+  );
+
+  controlsBox.pack_start(prevBtn, false, false, 0);
+  controlsBox.pack_start(playBtn, false, false, 0);
+  controlsBox.pack_start(nextBtn, false, false, 0);
+
+  // Progress
+  const progressBox = new Gtk.Box({
+    orientation: Gtk.Orientation.VERTICAL,
+    spacing: 0,
+  });
+  scale = new Gtk.Scale({
+    orientation: Gtk.Orientation.HORIZONTAL,
+    draw_value: false,
+  });
+  scale.set_range(0, 100);
+  scale.set_increments(5, 10);
+  scale.get_style_context().add_class('progress-bar');
+
+  scale.connect('button-press-event', () => {
+    isDragging = true;
+    return false;
+  });
+  scale.connect('button-release-event', () => {
+    isDragging = false;
+    const val = scale.get_value();
+    if (State.length > 0 && currentPlayer && State.trackId) {
+      const targetMicro = (val / 100) * State.length;
+      try {
+        currentPlayer.SetPositionRemote(State.trackId, targetMicro);
+      } catch (e) {}
+    }
+    return false;
+  });
+
+  const timeBox = new Gtk.Box({ orientation: Gtk.Orientation.HORIZONTAL });
+  lblCurrent = new Gtk.Label({ label: '0:00', halign: Gtk.Align.START });
+  lblCurrent.get_style_context().add_class('time-label');
+  lblTotal = new Gtk.Label({ label: '0:00', halign: Gtk.Align.END });
+  lblTotal.get_style_context().add_class('time-label');
+  const spacer = new Gtk.Label({ label: '' });
+  spacer.set_hexpand(true);
+  timeBox.pack_start(lblCurrent, false, false, 0);
+  timeBox.pack_start(spacer, true, true, 0);
+  timeBox.pack_start(lblTotal, false, false, 0);
+
+  progressBox.pack_start(scale, false, false, 0);
+  progressBox.pack_start(timeBox, false, false, 0);
+
+  // Assembly
+  const vSpacer = () => {
+    const s = new Gtk.Box({ orientation: Gtk.Orientation.VERTICAL });
+    s.set_vexpand(true);
+    return s;
+  };
+
+  detailsBox.pack_start(labelsBox, false, false, 0);
+  detailsBox.pack_start(vSpacer(), true, true, 0);
+  detailsBox.pack_start(controlsBox, false, false, 0);
+  detailsBox.pack_start(vSpacer(), true, true, 0);
+  detailsBox.pack_start(progressBox, false, false, 0);
+
+  const rootWrapper = new Gtk.Box({ orientation: Gtk.Orientation.VERTICAL });
+  rootWrapper.get_style_context().add_class('view');
+  mainBox.pack_start(artBox, false, false, 0);
+  mainBox.pack_start(detailsBox, true, true, 0);
+
+  // Dots
+  dotsBox = new Gtk.Box({
+    orientation: Gtk.Orientation.HORIZONTAL,
+    halign: Gtk.Align.CENTER,
+  });
+  dotsBox.get_style_context().add_class('dots-box');
+
+  rootWrapper.pack_start(mainBox, true, true, 0);
+  // Pack dots at the very end
+  rootWrapper.pack_end(dotsBox, false, false, 0);
+  win.add(rootWrapper);
+
+  // Interactivity & Behavior
+  win.set_titlebar(null);
+  win.set_keep_below(true);
+  win.stick();
+
+  rootWrapper.add_events(Gdk.EventMask.BUTTON_PRESS_MASK);
+  rootWrapper.connect('button-press-event', (widget, event) => {
+    if (event.get_button()[1] === 1) {
+      win.begin_move_drag(
+        event.get_button()[1],
+        event.x_root,
+        event.y_root,
+        event.get_time(),
+      );
+    }
+    return false;
+  });
+
+  win.connect('destroy', Gtk.main_quit);
+};;;;;
 
 function createControlBtn(iconName: string, size: number, onClick: () => void) {
     const btn = new Gtk.Button();
@@ -216,24 +276,25 @@ export const updateUI = () => {
   // Art handling relies on the size-allocate listener mostly, but for URL changes:
   if (State.artUrl) {
       downloadArt(State.artUrl, (path) => {
-           // We trigger a redraw by just setting path, actual render happens in idle or reuse existing size
-           // If we have a last size, update immediately
-           if (State.lastArtSize > 0) {
-               // Need config again
-               const cfg = defaultConfig; // TODO: Pass config properly
-               // Actually we need the runtime config.
-               // Let's assume default for now or expose it.
-               updateArtWidget(artImage, path, State.lastArtSize, 16); 
+           if (path) {
+             // Use fallback size like backup (line 232)
+             const currentSize = State.lastArtSize || 135;
+             const s = currentConfig.layout.scale_factor || 1.0;
+             const radius = Math.round(
+               (currentConfig.appearance?.corner_radius ?? 16) * s,
+             );
+             updateArtWidget(artImage, path, currentSize, radius);
+           } else {
+             updateArtWidget(artImage, null, 0, 0);
            }
       });
   } else {
-      updateArtWidget(artImage, null, 0, 16);
+      updateArtWidget(artImage, null, 0, 0);
   }
 };
 
 export const renderDots = () => {
     dotsBox.get_children().forEach((child) => dotsBox.remove(child));
-    const { currentBusName } = require('../services/mpris');
     
     State.players.forEach((player) => {
       const dot = new Gtk.Button();
