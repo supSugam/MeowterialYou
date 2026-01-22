@@ -40,7 +40,7 @@ pub fn build(window: &gtk4::ApplicationWindow, cmd_sender: async_channel::Sender
     let labels_height_base = 42.0;
     let controls_height_base = 38.0;
     let progress_height_base = 28.0;
-    let details_spacing_base = 6.0;
+    let details_spacing_base = 10.0;
 
     // Stack height = components + spacing
     let stack_height_base = labels_height_base + controls_height_base + progress_height_base + (2.0 * details_spacing_base);
