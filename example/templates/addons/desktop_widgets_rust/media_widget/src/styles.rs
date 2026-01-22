@@ -91,7 +91,8 @@ pub fn load_css(config: &Config) {
         
         /* Control Buttons */
         .control-btn {{ 
-            background: @surfaceVariant; 
+            background-color: @surfaceVariant; 
+            background-image: linear-gradient(transparent, transparent);
             color: @widget_text; 
             min-width: {btn_size}px; 
             min-height: {btn_size}px; 
@@ -99,47 +100,54 @@ pub fn load_css(config: &Config) {
             margin: 0 {icon_margin}px; 
             border-radius: {btn_radius}px;
             border: none;
+            transition: background-image 200ms ease-out, background-color 200ms ease-out;
         }}
         .control-btn:hover {{ 
-            background: alpha(@widget_text, 0.1); 
+            background-image: linear-gradient(alpha(@widget_text, 0.12), alpha(@widget_text, 0.12));
         }}
         .control-btn:active {{ 
-            background: alpha(@widget_text, 0.2); 
+            background-image: linear-gradient(alpha(@widget_text, 0.24), alpha(@widget_text, 0.24));
         }}
         
         /* Play Button - Pill Shape */
         .play-btn {{
-            background: @widget_primary; 
+            background-color: @widget_primary;
+            background-image: linear-gradient(transparent, transparent);
             color: @onPrimary; 
             min-width: {play_width}px;
             border-radius: {play_radius}px; 
             margin: 0 {play_margin}px;
+            transition: background-image 200ms ease-out;
         }}
         .play-btn:hover {{ 
-            background: alpha(@widget_primary, 0.9); 
+            background-image: linear-gradient(alpha(@onPrimary, 0.12), alpha(@onPrimary, 0.12));
+        }}
+        .play-btn:active {{
+            background-image: linear-gradient(alpha(@onPrimary, 0.24), alpha(@onPrimary, 0.24));
         }}
     
-        /* Modern Slider */
+        /* Material You Slider - Pill style without visible knob */
         scale {{
-            margin: 0; 
+            margin: 4px 0; 
             padding: 0;
         }}
         scale trough {{
-            min-height: {slider_height}px;
-            border-radius: {slider_radius}px;
-            background: alpha(@widget_text, 0.1);
+            min-height: 10px;
+            border-radius: 5px;
+            background: alpha(@widget_text, 0.15);
         }}
         scale highlight {{
-            min-height: {slider_height}px;
-            border-radius: {slider_radius}px;
+            min-height: 10px;
+            border-radius: 5px;
             background: @widget_primary;
         }}
         scale slider {{
-            min-width: {slider_knob}px; 
-            min-height: {slider_knob}px;
-            border-radius: 50%;
-            background: @widget_primary;
-            margin: {slider_margin}px 0;
+            min-width: 1px; 
+            min-height: 10px;
+            background: transparent;
+            border: none;
+            box-shadow: none;
+            margin: 0;
         }}
         
         .time-label {{ 
@@ -181,10 +189,6 @@ pub fn load_css(config: &Config) {
         play_width = play_width,
         play_radius = play_radius,
         play_margin = play_margin,
-        slider_height = slider_height,
-        slider_radius = slider_radius,
-        slider_knob = slider_knob,
-        slider_margin = slider_margin,
     );
 
     let provider = CssProvider::new();
@@ -198,11 +202,13 @@ pub fn load_css(config: &Config) {
 }
 
 fn load_theme_colors() -> String {
+    let home = std::env::var("HOME").unwrap_or_else(|_| "/tmp".to_string());
+    let runtime_theme = format!("{}/.config/meowterialyou-widgets/mediawidget/theme.css", home);
+    
     let paths = [
-        "../../../MaterialYouColors.theme.css",
-        "../../MaterialYouColors.theme.css",
+        runtime_theme.as_str(),
+        "theme.css",
         "MaterialYouColors.theme.css",
-        "theme.css"
     ];
     
     for path in paths.iter() {
@@ -214,15 +220,93 @@ fn load_theme_colors() -> String {
         }
     }
     
+    // Try meta.json if theme.css is missing
+    let meta_path = format!("{}/.config/meowterialyou-widgets/meta.json", home);
+    if let Ok(content) = fs::read_to_string(&meta_path) {
+        if let Ok(meta) = serde_json::from_str::<serde_json::Value>(&content) {
+            println!("Generating Theme variables from: {}", meta_path);
+            return generate_css_from_meta(&meta);
+        }
+    }
+    
     // Fallback colors
     println!("Theme file not found, using fallback colors.");
     r#"
-    @define-color widget_bg rgba(30, 30, 30, 1);
-    @define-color widget_text #ffffff;
-    @define-color widget_text_secondary #aaaaaa;
-    @define-color widget_primary #7dd3fc;
-    @define-color onPrimary #000000;
-    @define-color surfaceVariant rgba(255, 255, 255, 0.1);
-    @define-color outline rgba(255, 255, 255, 0.2);
+    @define-color primary #4ddea6;
+    @define-color onPrimary #003824;
+    @define-color primaryContainer #005237;
+    @define-color onPrimaryContainer #6efbc1;
+    @define-color secondary #b3ccbd;
+    @define-color onSecondary #1f352a;
+    @define-color secondaryContainer #354b40;
+    @define-color onSecondaryContainer #cfe9d9;
+    @define-color tertiary #a4ccde;
+    @define-color onTertiary #073543;
+    @define-color tertiaryContainer #254c5b;
+    @define-color onTertiaryContainer #c0e8fb;
+    @define-color error #ffb4a9;
+    @define-color onError #680003;
+    @define-color errorContainer #930006;
+    @define-color onErrorContainer #ffb4a9;
+    @define-color background #191c1a;
+    @define-color onBackground #e1e3df;
+    @define-color surface #191c1a;
+    @define-color onSurface #e1e3df;
+    @define-color surfaceVariant #404943;
+    @define-color onSurfaceVariant #c0c9c2;
+    @define-color outline #89938c;
+    @define-color outlineVariant #404943;
+    @define-color shadow #000000;
+    @define-color scrim #000000;
+    @define-color inverseSurface #e1e3df;
+    @define-color inverseOnSurface #2d312e;
+    @define-color inversePrimary #006c4a;
+    @define-color surfaceDim #111412;
+    @define-color surfaceBright #363a37;
+    @define-color surfaceContainerLowest #0c0f0d;
+    @define-color surfaceContainerLow #191c1a;
+    @define-color surfaceContainer #1d201e;
+    @define-color surfaceContainerHigh #282b29;
+    @define-color surfaceContainerHighest #323633;
+    @define-color widget_bg rgb(25, 28, 26);
+    @define-color widget_text #e1e3df;
+    @define-color widget_text_secondary #c0c9c2;
+    @define-color widget_primary #4ddea6;
     "#.to_string()
+}
+
+fn generate_css_from_meta(meta: &serde_json::Value) -> String {
+    let mut css = String::new();
+    
+    if let Some(scheme) = meta.get("scheme").and_then(|s| s.as_object()) {
+        for (k, v) in scheme {
+            if let Some(hex) = v.as_str() {
+                css.push_str(&format!("@define-color {} {};\n", k, hex));
+            }
+        }
+    }
+    
+    if let Some(ws) = meta.get("widget_scheme").and_then(|s| s.as_object()) {
+        let dark_bg = ws.get("surface").and_then(|v| v.as_str()).unwrap_or("#1a1a1a");
+        let light_text = ws.get("onSurface").and_then(|v| v.as_str()).unwrap_or("#ffffff");
+        let light_text_secondary = ws.get("onSurfaceVariant").and_then(|v| v.as_str()).unwrap_or("#c0c0c0");
+        let primary = ws.get("primary").and_then(|v| v.as_str()).unwrap_or("#00ff00");
+        
+        // RGB for widget_bg
+        let hex = dark_bg.trim_start_matches('#');
+        if hex.len() == 6 {
+            let r = i32::from_str_radix(&hex[0..2], 16).unwrap_or(26);
+            let g = i32::from_str_radix(&hex[2..4], 16).unwrap_or(26);
+            let b = i32::from_str_radix(&hex[4..6], 16).unwrap_or(26);
+            css.push_str(&format!("@define-color widget_bg rgb({}, {}, {});\n", r, g, b));
+        } else {
+            css.push_str("@define-color widget_bg rgb(26, 26, 26);\n");
+        }
+        
+        css.push_str(&format!("@define-color widget_text {};\n", light_text));
+        css.push_str(&format!("@define-color widget_text_secondary {};\n", light_text_secondary));
+        css.push_str(&format!("@define-color widget_primary {};\n", primary));
+    }
+    
+    css
 }

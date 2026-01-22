@@ -3,6 +3,11 @@ use gtk4::{Align, Box, Button, Image, Label, Orientation, Scale, Adjustment, Pic
 use gtk4::glib;
 use crate::config::Config;
 use crate::marquee::{MarqueeLabel, Direction};
+use std::sync::atomic::{AtomicBool, Ordering};
+use once_cell::sync::Lazy;
+
+// Shared flag to prevent slider updates during drag
+static IS_DRAGGING: Lazy<AtomicBool> = Lazy::new(|| AtomicBool::new(false));
 
 #[derive(Clone)]
 pub struct Widgets {
@@ -23,7 +28,7 @@ pub fn build(window: &gtk4::ApplicationWindow, cmd_sender: async_channel::Sender
     
     // Base dimensions (Pro Standard)
     let base_width = 340.0;
-    let base_height = 152.0;
+    let base_height = 124.0;
     
     // Scale helper
     let s = |v: f64| -> i32 { (v * scale).round() as i32 };
@@ -33,7 +38,7 @@ pub fn build(window: &gtk4::ApplicationWindow, cmd_sender: async_channel::Sender
     let widget_height = s(base_height);
     let padding_val = config.layout.padding as f64;
     let art_size = s(base_height - (padding_val * 2.0));
-    let art_spacing = s(16.0);
+    let art_spacing = s(0.0);
     
     // Content area = widget - padding*2 - art - spacing
     let content_width = widget_width - s(padding_val * 2.0) - art_size - art_spacing;
@@ -227,11 +232,52 @@ pub fn build(window: &gtk4::ApplicationWindow, cmd_sender: async_channel::Sender
 
     window.set_child(Some(&root_wrapper));
     
-    // Seek interaction
+    // Use EventControllerLegacy to capture raw button events (not consumed by Scale's drag)
+    let legacy = gtk4::EventControllerLegacy::new();
     let seek_sender = cmd_sender.clone();
-    scale_widget.connect_change_value(move |_s, _scroll, val| {
-         let _ = seek_sender.send_blocking(crate::mpris::MprisCommand::SetPosition((val * 1_000_000.0) as i64));
-         glib::Propagation::Proceed
+    let scale_for_seek = scale_widget.clone();
+    
+    legacy.connect_event(move |_, event| {
+        use gtk4::gdk::EventType;
+        
+        match event.event_type() {
+            EventType::ButtonPress => {
+                IS_DRAGGING.store(true, Ordering::SeqCst);
+            }
+            EventType::ButtonRelease => {
+                // Read slider value and seek
+                let val = scale_for_seek.value(); // percentage 0-100
+                let length = crate::state::STATE.read().unwrap().length;
+                
+                if length > 0 {
+                    let target_pos = ((val / 100.0) * length as f64) as i64;
+                    let _ = seek_sender.send_blocking(crate::mpris::MprisCommand::SetPosition(target_pos));
+                }
+                
+                // Delay resetting IS_DRAGGING to give MPRIS time to process seek
+                // This prevents UI from briefly showing old position
+                glib::timeout_add_local_once(std::time::Duration::from_millis(300), || {
+                    IS_DRAGGING.store(false, Ordering::SeqCst);
+                });
+            }
+            _ => {}
+        }
+        
+        glib::Propagation::Proceed // Let Scale handle the event too
+    });
+    scale_widget.add_controller(legacy);
+    
+    // Live time preview during drag
+    let lbl_for_preview = lbl_current.clone();
+    scale_widget.connect_value_changed(move |scale| {
+        if IS_DRAGGING.load(Ordering::SeqCst) {
+            let val = scale.value(); // percentage 0-100
+            let length = crate::state::STATE.read().unwrap().length;
+            if length > 0 {
+                let preview_pos = ((val / 100.0) * length as f64) as u64;
+                lbl_for_preview.set_label(&format_time(preview_pos));
+            }
+        }
     });
 
     Widgets {
@@ -262,14 +308,20 @@ pub fn update(widgets: &Widgets) {
         }
     }
     
-    if state.length > 0 {
-         let pct = (state.position as f64 / state.length as f64) * 100.0;
-         widgets.scale.set_value(pct);
-    } else {
-        widgets.scale.set_value(0.0);
+    // Only update slider if not currently being dragged by user
+    if !IS_DRAGGING.load(Ordering::SeqCst) {
+        if state.length > 0 {
+             let pct = (state.position as f64 / state.length as f64) * 100.0;
+             widgets.scale.set_value(pct);
+        } else {
+            widgets.scale.set_value(0.0);
+        }
     }
     
-    widgets.lbl_current.set_label(&format_time(state.position));
+    // Only update current time label if not during drag (user sees preview instead)
+    if !IS_DRAGGING.load(Ordering::SeqCst) {
+        widgets.lbl_current.set_label(&format_time(state.position));
+    }
     widgets.lbl_total.set_label(&format_time(state.length));
 
     // Art Loading

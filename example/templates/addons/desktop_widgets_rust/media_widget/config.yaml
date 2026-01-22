@@ -3,7 +3,7 @@ layout:
   position: "bottom_right"
   
   # Scale factor (1.0 = 340x152 base size - Pro Standard)
-  scale: 2.0
+  scale: 1.0
   
   # Padding inside the widget (pixels, scaled) - Default 16 for pro align
   padding: 16

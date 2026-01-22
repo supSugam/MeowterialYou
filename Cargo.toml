@@ -1,0 +1,5 @@
+[workspace]
+members = [
+    "example/templates/addons/desktop_widgets_rust/media_widget",
+]
+resolver = "2"
