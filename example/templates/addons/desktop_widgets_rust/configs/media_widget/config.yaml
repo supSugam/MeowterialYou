@@ -1,6 +1,6 @@
 layout:
   # Screen anchor position: top_left, top_right, bottom_left, bottom_right
-  position: bottom_left
+  position: bottom_right
   
   # Scale factor (1.0 = 340x152 base size - Pro Standard)
   scale: 1.0

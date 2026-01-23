@@ -220,6 +220,14 @@ pub fn build(window: &gtk4::ApplicationWindow, cmd_sender: async_channel::Sender
     
     root_wrapper.append(&dots_box);
 
+    // Add Drag Controller to Root Wrapper to capture clicks
+    let drag_controller = gtk4::GestureClick::new();
+    drag_controller.set_button(0); // All buttons
+    drag_controller.connect_pressed(move |_, n_press, _, _| {
+        println!("Background clicked! Press: {}", n_press);
+    });
+    root_wrapper.add_controller(drag_controller);
+
     window.set_child(Some(&root_wrapper));
     
     // Use EventControllerLegacy to capture raw button events (not consumed by Scale's drag)

@@ -51,9 +51,12 @@ fn build_ui(app: &Application) {
         .title("MeowterialYou MediaWidget")
         .default_width(width)
         .decorated(false)
-        .focusable(false)
-        .can_focus(false)
+        .focusable(true)
+        .can_focus(true)
+        .opacity(0.0) // Start invisible
         .build();
+    
+    // window.set_accept_focus(true); // Removed as it is not valid in GTK4
 
     let conf = config::CONFIG.read().unwrap();
     let widgets = ui::build(&window, cmd_sender, &conf);
@@ -63,7 +66,7 @@ fn build_ui(app: &Application) {
     if on_wayland && gtk4_layer_shell::is_supported() {
         use gtk4_layer_shell::LayerShell;
         window.init_layer_shell();
-        window.set_layer(gtk4_layer_shell::Layer::Top);
+        window.set_layer(gtk4_layer_shell::Layer::Bottom);
         window.auto_exclusive_zone_enable();
         
         let (pos, gap_x, gap_y) = {
@@ -101,6 +104,7 @@ fn build_ui(app: &Application) {
         }
 
         window.set_keyboard_mode(gtk4_layer_shell::KeyboardMode::None);
+        window.set_opacity(1.0); // Reveal immediately on Wayland
         window.present();
     } else {
         eprintln!("Using X11/XWayland mode with widget-like window hints.");
@@ -108,74 +112,97 @@ fn build_ui(app: &Application) {
         window.set_deletable(false);
         window.set_resizable(false);
         
-        let pos = {
-            let conf = config::CONFIG.read().unwrap();
-            conf.layout.position.clone()
-        };
-        
-        let window_for_realize = window.clone();
-        let width_val = width;
-        let pos_clone = pos.clone();
-        
-        window.connect_realize(move |_| {
-            if let Some(surface) = window_for_realize.surface() {
-                if let Some(x11_surface) = surface.downcast_ref::<gdk4_x11::X11Surface>() {
-                    let xid = x11_surface.xid() as u32;
-                    
-                    // 1. Set widget hints
-                    let _ = x11_hints::set_widget_state_via_message(xid);
-                    
-                    // 2. Delayed Positioning - query geometry INSIDE the timeout
-                    let win_clone = window_for_realize.clone();
-                    let pos_for_timeout = pos_clone.clone();
-                    glib::timeout_add_local(std::time::Duration::from_millis(150), move || {
-                        if let Some(surface) = win_clone.surface() {
-                            let display = surface.display();
-                            
-                            // Get the monitor where the window currently is
-                            if let Some(monitor) = display.monitor_at_surface(&surface) {
-                                let scale_factor = monitor.scale_factor();
-                                let geo = monitor.geometry();
-                                let monitor_w = geo.width();
-                                let monitor_h = geo.height();
-                                
-                                // Query allocation NOW when it's valid (logical pixels)
-                                let alloc = win_clone.allocation();
-                                let w = if alloc.width() > 0 { alloc.width() } else { width_val };
-                                let h = if alloc.height() > 0 { alloc.height() } else { 180 };
-                                
-                                // Read gap from config
-                                let (gap_x, gap_y) = {
-                                    let conf = config::CONFIG.read().unwrap();
-                                    let gx = conf.layout.gap.get(0).copied().unwrap_or(24);
-                                    let gy = conf.layout.gap.get(1).copied().unwrap_or(24);
-                                    (gx, gy)
-                                };
-                                
-                                let (lx, ly) = match pos_for_timeout.as_str() {
-                                    "top_left" => (gap_x, gap_y),
-                                    "top_right" => (monitor_w - w - gap_x, gap_y),
-                                    "bottom_left" => (gap_x, monitor_h - h - gap_y),
-                                    "bottom_right" | _ => (monitor_w - w - gap_x, monitor_h - h - gap_y),
-                                };
-                                
-                                // X11 expects physical pixels, multiply logical coords by scale factor
-                                let x = lx * scale_factor;
-                                let y = ly * scale_factor;
-                                
-                                let _ = x11_hints::move_window(xid, x, y);
-                            }
-                        }
-                        glib::ControlFlow::Break
-                    });
-                }
-            }
-        });
-        
-        eprintln!("Configured position: {}.", pos);
-    } 
+        // Realize the window to create the GdkSurface/XID
+        gtk4::prelude::WidgetExt::realize(&window);
 
-    window.present();
+        if let Some(surface) = window.surface() {
+            if let Some(x11_surface) = surface.downcast_ref::<gdk4_x11::X11Surface>() {
+                let xid = x11_surface.xid() as u32;
+                
+                // 1. Disable Override Redirect (Managed Window for correct stacking)
+                if let Err(e) = x11_hints::set_override_redirect(xid, false) {
+                    eprintln!("Failed to set override_redirect: {}", e);
+                }
+
+                // 2. Set Widget Hints (Normal Type + Sticky/Below)
+                if let Err(e) = x11_hints::set_widget_hints(xid) {
+                    eprintln!("Failed to set X11 hints: {}", e);
+                }
+                
+                // 3. Force Input Hint (Ensures clicks work)
+                if let Err(e) = x11_hints::set_wm_hints_input(xid, true) {
+                    eprintln!("Failed to set WM_HINTS input: {}", e);
+                }
+                
+                // 4. Set Event Mask for mouse interactivity
+                if let Err(e) = x11_hints::set_event_mask(xid) {
+                    eprintln!("Failed to set event_mask: {}", e);
+                }
+
+                // 4. Calculate Position
+                let display = surface.display();
+                let monitor = display.monitor_at_surface(&surface)
+                    .or_else(|| display.monitors().item(0).and_then(|obj| obj.downcast::<gtk4::gdk::Monitor>().ok()));
+
+                if let Some(monitor) = monitor {
+                    let scale_factor = monitor.scale_factor();
+                    let geo = monitor.geometry();
+                    let monitor_w = geo.width();
+                    let monitor_h = geo.height();
+
+                    // Measure required height
+                    let (_, nat_height, _, _) = window.measure(gtk4::Orientation::Vertical, width);
+                    let h = nat_height;
+                    let w = width;
+
+                    let (gap_x, gap_y) = {
+                        let conf = config::CONFIG.read().unwrap();
+                        let gx = conf.layout.gap.get(0).copied().unwrap_or(24);
+                        let gy = conf.layout.gap.get(1).copied().unwrap_or(24);
+                        (gx, gy)
+                    };
+
+                    let pos_str = {
+                        let conf = config::CONFIG.read().unwrap();
+                        conf.layout.position.clone()
+                    };
+
+                    let (lx, ly) = match pos_str.as_str() {
+                        "top_left" => (gap_x, gap_y),
+                        "top_right" => (monitor_w - w - gap_x, gap_y),
+                        "bottom_left" => (gap_x, monitor_h - h - gap_y),
+                        "bottom_right" | _ => (monitor_w - w - gap_x, monitor_h - h - gap_y),
+                    };
+
+                    let x = lx * scale_factor;
+                    let y = ly * scale_factor;
+                    let w_phys = w * scale_factor;
+                    let h_phys = h * scale_factor;
+                    
+                    // 5. Set WM_NORMAL_HINTS (PPosition)
+                    if let Err(e) = x11_hints::set_wm_normal_hints(xid, x, y, w_phys, h_phys) {
+                        eprintln!("Failed to set WM_NORMAL_HINTS: {}", e);
+                    }
+
+                    // 6. Move Window (Physical pixels)
+                    if let Err(e) = x11_hints::move_window(xid, x, y) {
+                        eprintln!("Failed to move window: {}", e);
+                    } else {
+                        eprintln!("Positioned at {}, {} (Physical)", x, y);
+                    }
+                }
+                
+                // 7. Post-Map Enforcement - Lower window to avoid stealing focus
+                glib::timeout_add_local_once(std::time::Duration::from_millis(150), move || {
+                    let _ = x11_hints::set_widget_state_via_message(xid);
+                    let _ = x11_hints::lower_window(xid); // Push behind other windows
+                });
+            }
+        }
+        
+        window.set_opacity(1.0);
+        window.present();
+    }
 
     // MPRIS & Update Loop
     use std::thread;

@@ -68,22 +68,47 @@ pub struct ControlsConfig {
 }
 
 pub fn load() -> Result<(), Box<dyn std::error::Error>> {
+    let home = std::env::var("HOME").unwrap_or_else(|_| "/tmp".to_string());
+    
+    // Prioritize project configs first for development, XDG last for production
     let paths = [
-        Path::new("./configs/media_widget/config.yaml"),
-        Path::new("./config.yaml"),
+        // Relative path when running from Rust project directory
+        "./configs/media_widget/config.yaml".to_string(),
+        // Relative path when running from parent MeowterialYou directory
+        "./example/templates/addons/desktop_widgets_rust/configs/media_widget/config.yaml".to_string(),
+        // Fallback local config
+        "./config.yaml".to_string(),
+        // Standard XDG config path (last - for production/installed use)
+        format!("{}/.config/meowterialyou-widgets/mediawidget/config.yaml", home),
     ];
 
-    for path in paths {
+    for path_str in paths {
+        let path = Path::new(&path_str);
         if path.exists() {
-            println!("Loading config from: {:?}", path);
-            let contents = fs::read_to_string(path)?;
-            let config: Config = serde_yaml::from_str(&contents)?;
-            println!("Loaded Config: {:?}", config);
-            let mut global_conf = CONFIG.write().unwrap();
-            *global_conf = config;
-            return Ok(());
+            eprintln!("Trying config from: {:?}", path);
+            match fs::read_to_string(path) {
+                Ok(contents) => {
+                    match serde_yaml::from_str::<Config>(&contents) {
+                        Ok(config) => {
+                            eprintln!("Loaded Config: {:?}", config);
+                            let mut global_conf = CONFIG.write().unwrap();
+                            *global_conf = config;
+                            return Ok(());
+                        }
+                        Err(e) => {
+                            eprintln!("Failed to parse config {:?}: {}, trying next...", path, e);
+                            continue; // Try next path
+                        }
+                    }
+                }
+                Err(e) => {
+                    eprintln!("Failed to read config {:?}: {}, trying next...", path, e);
+                    continue; // Try next path
+                }
+            }
         }
     }
     
+    eprintln!("No valid config file found, using defaults");
     Ok(())
 }
