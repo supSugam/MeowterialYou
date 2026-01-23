@@ -37,7 +37,7 @@ pub fn build(window: &gtk4::ApplicationWindow, cmd_sender: async_channel::Sender
     let padding_val = config.layout.padding as f64;
     
     // Internal heights (Base)
-    let labels_height_base = 42.0;
+    let labels_height_base = 54.0;
     let controls_height_base = 38.0;
     let progress_height_base = 28.0;
     let details_spacing_base = 10.0;
