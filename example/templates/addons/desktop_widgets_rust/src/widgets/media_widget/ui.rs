@@ -1,5 +1,5 @@
 use gtk4::prelude::*;
-use gtk4::{Align, Box, Button, Image, Label, Orientation, Scale, Adjustment, Picture, Stack, StackTransitionType};
+use gtk4::{Align, Box, Button, Image, Label, Orientation, Scale, Adjustment, Picture, Stack, StackTransitionType, Overlay};
 use gtk4::glib;
 use crate::widgets::media_widget::config::Config;
 use crate::common::marquee::{MarqueeLabel, Direction};
@@ -16,6 +16,7 @@ static CURRENT_DISPLAYED_BUS: Lazy<Mutex<Option<String>>> = Lazy::new(|| Mutex::
 pub struct PlayerView {
     pub container: Box,
     pub art_image: Picture,
+    pub app_icon_image: Image, 
     pub title: MarqueeLabel,
     pub artist: MarqueeLabel,
     pub play_btn: Button,
@@ -142,6 +143,13 @@ where F: Fn(f64) -> i32 + Copy {
         .build();
     art_box.add_css_class("art-container");
     
+    // --- ART OVERLAY ---
+    let art_overlay = Overlay::builder()
+        .width_request(art_size)
+        .height_request(art_size)
+        .build();
+    art_overlay.add_css_class("art-overlay");
+
     let art_image = Picture::builder()
         .width_request(art_size)
         .height_request(art_size)
@@ -152,8 +160,36 @@ where F: Fn(f64) -> i32 + Copy {
         .build();
     art_image.add_css_class("art-image");
     
+    // --- APP ICON OVERLAY ---
+    let app_icon_size = s(24.0);
+    // Button for interaction + icon
+    let app_icon_btn = Button::builder()
+        .halign(Align::Start)
+        .valign(Align::End)
+        .margin_start(s(8.0))
+        .margin_bottom(s(8.0))
+        .width_request(app_icon_size)
+        .height_request(app_icon_size)
+        .build();
+    app_icon_btn.add_css_class("app-icon-btn");
+    
+    let app_icon_image = Image::builder()
+        .icon_name("audio-x-generic") // Default fallback
+        .pixel_size(app_icon_size)
+        .build();
+    app_icon_btn.set_child(Some(&app_icon_image));
+    
+    let raise_sender = cmd_sender.clone();
+    app_icon_btn.connect_clicked(move |_| {
+         let _ = raise_sender.send_blocking(crate::widgets::media_widget::mpris::MprisCommand::Raise);
+    });
+    
+    // Setup Overlay
+    art_overlay.set_child(Some(&art_image));
+    art_overlay.add_overlay(&app_icon_btn);
+    
     art_box.set_overflow(gtk4::Overflow::Hidden);
-    art_box.append(&art_image);
+    art_box.append(&art_overlay);
 
     // --- DETAILS SECTION ---
     let details_box = Box::builder()
@@ -307,6 +343,7 @@ where F: Fn(f64) -> i32 + Copy {
     PlayerView {
         container: main_box,
         art_image,
+        app_icon_image,
         title: title_marquee,
         artist: artist_marquee,
         play_btn: play_btn.downcast().unwrap(), 
@@ -416,6 +453,14 @@ fn update_view_content(view: &PlayerView, state: &crate::widgets::media_widget::
     view.title.set_text(&state.title);
     view.artist.set_text(&state.artist);
     
+    // Update App Icon
+    let raw_name = state.desktop_entry.as_deref().unwrap_or_else(|| {
+        state.identity.as_deref().unwrap_or("audio-x-generic")
+    });
+    // Sanitize: "Google Chrome" -> "google-chrome"
+    let icon_name = raw_name.replace(" ", "-").to_lowercase();
+    view.app_icon_image.set_icon_name(Some(&icon_name));
+    
     let play_icon_name = if state.is_playing { "media-playback-pause-symbolic" } else { "media-playback-start-symbolic" };
     if let Some(child) = view.play_btn.child() {
         if let Ok(img) = child.downcast::<Image>() {
@@ -452,10 +497,16 @@ fn update_view_content(view: &PlayerView, state: &crate::widgets::media_widget::
 }
 
 fn format_time(micros: u64) -> String {
-    let seconds = micros / 1_000_000;
-    let mins = seconds / 60;
-    let secs = seconds % 60;
-    format!("{}:{:02}", mins, secs)
+    let total_seconds = micros / 1_000_000;
+    let hours = total_seconds / 3600;
+    let minutes = (total_seconds % 3600) / 60;
+    let seconds = total_seconds % 60;
+    
+    if hours > 0 {
+        format!("{:02}:{:02}:{:02}", hours, minutes, seconds)
+    } else {
+        format!("{:02}:{:02}", minutes, seconds)
+    }
 }
 
 fn create_control_btn<F>(icon: &str, size: i32, on_click: F) -> Button 

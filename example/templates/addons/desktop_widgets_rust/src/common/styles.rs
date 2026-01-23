@@ -67,6 +67,28 @@ pub fn load_css(config: &Config) {
             min-height: {art_size}px;
         }}
         
+        /* App Icon Overlay */
+        .app-icon-btn {{
+            border-radius: {radius}px;
+            border: none;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+            background-color: @surface;
+            color: @widget_text;
+            padding: 0;
+            margin: 0;
+            transition: background-image 200ms ease-out;
+            min-width: 0;
+            min-height: 0;
+        }}
+        .app-icon-btn:hover {{
+            background-image: linear-gradient(rgba(255,255,255,0.15), rgba(255,255,255,0.1));
+            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+        }}
+        .app-icon-btn image {{
+            -gtk-icon-style: regular;
+            margin: 4px; /* Padding for the icon inside the button */
+        }}
+        
         .title {{ 
             font-weight: 800; 
             font-size: {font_title}px; 

@@ -14,6 +14,10 @@ pub struct MediaState {
     pub player_name: String, 
     pub track_id: String,
     
+    // Identity fields for icon and display
+    pub desktop_entry: Option<String>,
+    pub identity: Option<String>,
+    
     // Multi-player support
     pub players: Vec<String>, // List of bus names
     pub current_bus_name: Option<String>,
@@ -31,6 +35,10 @@ impl Default for MediaState {
             is_playing: false,
             player_name: "".to_string(),
             track_id: "".to_string(),
+            
+            desktop_entry: None,
+            identity: None,
+            
             players: Vec::new(),
             current_bus_name: None,
         }
