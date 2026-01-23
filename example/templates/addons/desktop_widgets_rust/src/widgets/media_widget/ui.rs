@@ -46,7 +46,7 @@ pub fn build(window: &gtk4::ApplicationWindow, cmd_sender: async_channel::Sender
     let stack_height_base = labels_height_base + controls_height_base + progress_height_base + (2.0 * details_spacing_base);
     
     // Art size is 1.1x the details stack
-    let art_size_base = stack_height_base * 1.15;
+    let art_size_base = stack_height_base * 1.1;
     let art_size = s(art_size_base);
     let art_spacing = s(0.0); // Consistent with CSS
     
