@@ -1,6 +1,6 @@
 layout:
   # Screen anchor position: top_left, top_right, bottom_left, bottom_right
-  position: "bottom_right"
+  position: bottom_left
   
   # Scale factor (1.0 = 340x152 base size - Pro Standard)
   scale: 1.0
@@ -9,7 +9,7 @@ layout:
   padding: 20
   
   # Offset from screen edges [x, y]
-  gap: [24, 80]
+  gap: [16, 80]
 
 appearance:
   # Corner radius (pixels, scaled) - Default 24 for modern soft look

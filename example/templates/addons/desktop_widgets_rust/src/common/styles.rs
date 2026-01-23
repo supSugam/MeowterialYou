@@ -2,7 +2,7 @@
 use gtk4::{gdk, CssProvider};
 use std::fs;
 use std::path::Path;
-use crate::config::Config;
+use crate::widgets::media_widget::config::Config;
 
 /// Load and apply CSS styles based on config
 pub fn load_css(config: &Config) {

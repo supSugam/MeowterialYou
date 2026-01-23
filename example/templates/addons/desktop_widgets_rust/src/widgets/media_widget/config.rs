@@ -13,6 +13,7 @@ pub struct Config {
     pub layout: LayoutConfig,
     pub appearance: AppearanceConfig,
     pub background: BackgroundConfig,
+    #[allow(dead_code)] // Reserved for future use
     pub controls: ControlsConfig,
 }
 
@@ -44,6 +45,7 @@ pub struct LayoutConfig {
     pub position: String,
     pub scale: f64,
     pub padding: i32,
+    #[allow(dead_code)] // Reserved for multi-widget layout
     pub gap: Vec<i32>,
 }
 
@@ -54,24 +56,34 @@ pub struct AppearanceConfig {
 
 #[derive(Clone, Debug, Deserialize)]
 pub struct BackgroundConfig {
+    #[allow(dead_code)] // Reserved for smart transparency mode
     pub style: String,
     pub opacity: u8,
 }
 
 #[derive(Clone, Debug, Deserialize)]
 pub struct ControlsConfig {
+    #[allow(dead_code)] // Reserved for conditional control rendering
     pub show_next_prev: bool,
 }
 
 pub fn load() -> Result<(), Box<dyn std::error::Error>> {
-    let config_path = Path::new("./config.yaml");
-    println!("Loading config from: {:?}", config_path);
-    if config_path.exists() {
-        let contents = fs::read_to_string(config_path)?;
-        let config: Config = serde_yaml::from_str(&contents)?;
-        println!("Loaded Config: {:?}", config);
-        let mut global_conf = CONFIG.write().unwrap();
-        *global_conf = config;
+    let paths = [
+        Path::new("./configs/media_widget/config.yaml"),
+        Path::new("./config.yaml"),
+    ];
+
+    for path in paths {
+        if path.exists() {
+            println!("Loading config from: {:?}", path);
+            let contents = fs::read_to_string(path)?;
+            let config: Config = serde_yaml::from_str(&contents)?;
+            println!("Loaded Config: {:?}", config);
+            let mut global_conf = CONFIG.write().unwrap();
+            *global_conf = config;
+            return Ok(());
+        }
     }
+    
     Ok(())
 }

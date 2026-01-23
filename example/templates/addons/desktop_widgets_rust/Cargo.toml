@@ -1,11 +1,13 @@
 [package]
-name = "media_widget"
+name = "meowterialyou-widgets"
 version = "0.1.0"
 edition = "2021"
 
 [dependencies]
 gtk4 = { version = "0.9", features = ["v4_10"] }
+gdk4-x11 = "0.9"
 gtk4-layer-shell = "0.4"
+x11rb = { version = "0.13", features = ["allow-unsafe-code"] }
 serde = { version = "1.0", features = ["derive"] }
 serde_yaml = "0.9"
 zbus = "4.0"
@@ -19,3 +21,12 @@ reqwest = { version = "0.11", features = ["blocking", "rustls-tls"] }
 bytes = "1.0"
 lazy_static = "1.5.0"
 serde_json = "1.0"
+futures-util = "0.3"
+
+[[bin]]
+name = "media_widget"
+path = "src/bin/media_widget.rs"
+
+[[bin]]
+name = "manager"
+path = "src/bin/manager.rs"

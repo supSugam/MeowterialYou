@@ -10,6 +10,7 @@ pub struct MarqueeLabel {
     label1: Label,
     label2: Label,
     adjustment: Adjustment,
+    #[allow(dead_code)] // Keep for potential direct access
     scroll_box: Box,
     state: Rc<RefCell<MarqueeState>>,
 }

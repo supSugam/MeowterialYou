@@ -497,7 +497,7 @@ run_interactive() {
         [[ "$input" =~ ^[Yy]$ ]] && UI_IMPROVEMENTS=true
         echo ""
         
-        echo -e "  ${BOLD}Desktop Widget${NC} (clock + weather, uses EWW) [y/N]"
+        echo -e "  ${BOLD}Desktop Widget${NC} (clock + weather, uses gtk-rust) [y/N]"
         read -rp "     ▸ " input
         [[ "$input" =~ ^[Yy]$ ]] && DESKTOP_WIDGET=true
         echo ""

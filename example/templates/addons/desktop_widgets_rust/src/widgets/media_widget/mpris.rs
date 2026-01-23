@@ -1,6 +1,6 @@
 use zbus::{Connection, Result, fdo};
 use zbus::proxy;
-use crate::state::{STATE};
+use crate::widgets::media_widget::state::{STATE};
 use std::collections::HashMap;
 // use gtk4::prelude::*; // Unused
 // use gtk4::glib; // Unused
@@ -111,7 +111,7 @@ pub async fn init(
             if let Some(bus_name) = current_bus {
                  debug_log!("Loop tick. Current bus: {}", bus_name);
                  let proxy_builder = PlayerProxy::builder(&conn_clone)
-                    .destination(bus_name.clone());
+                    .destination(zbus::names::BusName::try_from(bus_name.clone()).expect("valid bus name"));
                  
                  let proxy_res = match proxy_builder {
                      Ok(b) => b.build().await,
@@ -159,33 +159,27 @@ async fn handle_command(conn: &Connection, cmd: MprisCommand, ui_sender: &async_
     }
 
     if let Some(bus_name) = current_bus {
-        if let Ok(player) = PlayerProxy::builder(conn)
-            .destination(bus_name.clone())
-            .expect("Build proxy")
-            .build()
-            .await 
+        if let Ok(builder) = PlayerProxy::builder(conn)
+            .destination(zbus::names::BusName::try_from(bus_name.clone()).expect("valid bus name"))
         {
-            match cmd {
-                MprisCommand::PlayPause => { let _ = player.play_pause().await; },
-                MprisCommand::Next => { let _ = player.next().await; },
-                MprisCommand::Previous => { let _ = player.previous().await; },
-                MprisCommand::SetPosition(pos) => {
-                     // Need track_id from state
-                     let track_id_str = { STATE.read().unwrap().track_id.clone() };
-                     // zbus requires ObjectPath
-                     if let Ok(path) = zbus::zvariant::ObjectPath::try_from(track_id_str) {
-                         let _ = player.set_position(&path, pos).await;
-                     }
-                },
-                _ => {}
+            if let Ok(player) = builder.build().await {
+                match cmd {
+                    MprisCommand::PlayPause => { let _ = player.play_pause().await; },
+                    MprisCommand::Next => { let _ = player.next().await; },
+                    MprisCommand::Previous => { let _ = player.previous().await; },
+                    MprisCommand::SetPosition(pos) => {
+                         let track_id_str = { STATE.read().unwrap().track_id.clone() };
+                         if let Ok(path) = zbus::zvariant::ObjectPath::try_from(track_id_str) {
+                             let _ = player.set_position(&path, pos).await;
+                         }
+                    },
+                    _ => {}
+                }
+                
+                tokio::time::sleep(tokio::time::Duration::from_millis(50)).await;
+                let _ = fetch_state(&player, &bus_name).await;
+                let _ = ui_sender.send(()).await;
             }
-            
-            // Wait brief moment for state to change (debounce/latency)
-            tokio::time::sleep(tokio::time::Duration::from_millis(50)).await;
-            
-            // Fetch state immediately to update UI (optimistic update)
-            let _ = fetch_state(&player, &bus_name).await;
-            let _ = ui_sender.send(()).await;
         }
     }
 }

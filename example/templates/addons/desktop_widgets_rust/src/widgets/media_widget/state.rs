@@ -5,6 +5,7 @@ use std::sync::{Arc, RwLock};
 pub struct MediaState {
     pub title: String,
     pub artist: String,
+    #[allow(dead_code)] // Reserved for album display feature
     pub album: String,
     pub art_url: String,
     pub length: u64, // microseconds

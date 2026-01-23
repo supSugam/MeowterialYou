@@ -1,8 +1,8 @@
 use gtk4::prelude::*;
 use gtk4::{Align, Box, Button, Image, Label, Orientation, Scale, Adjustment, Picture};
 use gtk4::glib;
-use crate::config::Config;
-use crate::marquee::{MarqueeLabel, Direction};
+use crate::widgets::media_widget::config::Config;
+use crate::common::marquee::{MarqueeLabel, Direction};
 use std::sync::atomic::{AtomicBool, Ordering};
 use once_cell::sync::Lazy;
 
@@ -19,11 +19,11 @@ pub struct Widgets {
     pub lbl_current: Label,
     pub lbl_total: Label,
     pub dots_box: Box,
-    pub cmd_sender: async_channel::Sender<crate::mpris::MprisCommand>,
+    pub cmd_sender: async_channel::Sender<crate::widgets::media_widget::mpris::MprisCommand>,
     pub art_size: i32,
 }
 
-pub fn build(window: &gtk4::ApplicationWindow, cmd_sender: async_channel::Sender<crate::mpris::MprisCommand>, config: &Config) -> Widgets {
+pub fn build(window: &gtk4::ApplicationWindow, cmd_sender: async_channel::Sender<crate::widgets::media_widget::mpris::MprisCommand>, config: &Config) -> Widgets {
     let scale = config.layout.scale;
     
     // Base dimensions (Pro Standard)
@@ -134,18 +134,18 @@ pub fn build(window: &gtk4::ApplicationWindow, cmd_sender: async_channel::Sender
 
     let prev_sender = cmd_sender.clone();
     let prev_btn = create_control_btn("media-skip-backward-symbolic", s(18.0), move || {
-        let _ = prev_sender.send_blocking(crate::mpris::MprisCommand::Previous);
+        let _ = prev_sender.send_blocking(crate::widgets::media_widget::mpris::MprisCommand::Previous);
     });
     
     let play_sender = cmd_sender.clone();
     let play_btn = create_control_btn("media-playback-start-symbolic", s(28.0), move || {
-         let _ = play_sender.send_blocking(crate::mpris::MprisCommand::PlayPause);
+         let _ = play_sender.send_blocking(crate::widgets::media_widget::mpris::MprisCommand::PlayPause);
     });
     play_btn.add_css_class("play-btn"); 
     
     let next_sender = cmd_sender.clone();
     let next_btn = create_control_btn("media-skip-forward-symbolic", s(18.0), move || {
-         let _ = next_sender.send_blocking(crate::mpris::MprisCommand::Next);
+         let _ = next_sender.send_blocking(crate::widgets::media_widget::mpris::MprisCommand::Next);
     });
 
     controls_box.append(&prev_btn);
@@ -237,11 +237,11 @@ pub fn build(window: &gtk4::ApplicationWindow, cmd_sender: async_channel::Sender
             EventType::ButtonRelease => {
                 // Read slider value and seek
                 let val = scale_for_seek.value(); // percentage 0-100
-                let length = crate::state::STATE.read().unwrap().length;
+                let length = crate::widgets::media_widget::state::STATE.read().unwrap().length;
                 
                 if length > 0 {
                     let target_pos = ((val / 100.0) * length as f64) as i64;
-                    let _ = seek_sender.send_blocking(crate::mpris::MprisCommand::SetPosition(target_pos));
+                    let _ = seek_sender.send_blocking(crate::widgets::media_widget::mpris::MprisCommand::SetPosition(target_pos));
                 }
                 
                 // Delay resetting IS_DRAGGING to give MPRIS time to process seek
@@ -262,7 +262,7 @@ pub fn build(window: &gtk4::ApplicationWindow, cmd_sender: async_channel::Sender
     scale_widget.connect_value_changed(move |scale| {
         if IS_DRAGGING.load(Ordering::SeqCst) {
             let val = scale.value(); // percentage 0-100
-            let length = crate::state::STATE.read().unwrap().length;
+            let length = crate::widgets::media_widget::state::STATE.read().unwrap().length;
             if length > 0 {
                 let preview_pos = ((val / 100.0) * length as f64) as u64;
                 lbl_for_preview.set_label(&format_time(preview_pos));
@@ -285,7 +285,7 @@ pub fn build(window: &gtk4::ApplicationWindow, cmd_sender: async_channel::Sender
 }
 
 pub fn update(widgets: &Widgets) {
-    use crate::state::STATE;
+    use crate::widgets::media_widget::state::STATE;
     let state = STATE.read().unwrap();
     
     widgets.title.set_text(&state.title);
@@ -331,7 +331,7 @@ pub fn update(widgets: &Widgets) {
     
     if !state.art_url.is_empty() && should_load {
         let (sender, receiver) = async_channel::bounded(1);
-        crate::image_loader::load_art(&state.art_url, widgets.art_size, sender);
+        crate::common::image_loader::load_art(&state.art_url, widgets.art_size, sender);
         
         let img_weak = widgets.art_image.downgrade();
         gtk4::glib::MainContext::default().spawn_local(async move {
@@ -368,7 +368,7 @@ pub fn update(widgets: &Widgets) {
         let sender = widgets.cmd_sender.clone();
         let bus_name = player_bus.clone();
         dot.connect_clicked(move |_| {
-            let _ = sender.send_blocking(crate::mpris::MprisCommand::SwitchPlayer(bus_name.clone()));
+            let _ = sender.send_blocking(crate::widgets::media_widget::mpris::MprisCommand::SwitchPlayer(bus_name.clone()));
         });
         
         widgets.dots_box.append(&dot);

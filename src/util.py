@@ -104,7 +104,7 @@ def parse_arguments():
 
     parser.add_argument(
         "--desktop-widget",
-        help="enable Material You desktop widget (clock + weather, uses EWW)",
+        help="enable Material You desktop widget (clock + weather, uses gtk-rust)",
         action="store_true",
     )
 
