@@ -224,8 +224,10 @@ fn build_ui(app: &Application) {
     });
 
     glib::timeout_add_local(std::time::Duration::from_millis(33), move || {
-        widgets_marquee.title.tick();
-        widgets_marquee.artist.tick();
+        widgets_marquee.view_1.title.tick();
+        widgets_marquee.view_1.artist.tick();
+        widgets_marquee.view_2.title.tick();
+        widgets_marquee.view_2.artist.tick();
         glib::ControlFlow::Continue
     });
 }

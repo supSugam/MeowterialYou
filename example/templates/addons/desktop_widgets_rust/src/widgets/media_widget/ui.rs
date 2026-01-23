@@ -1,16 +1,20 @@
 use gtk4::prelude::*;
-use gtk4::{Align, Box, Button, Image, Label, Orientation, Scale, Adjustment, Picture};
+use gtk4::{Align, Box, Button, Image, Label, Orientation, Scale, Adjustment, Picture, Stack, StackTransitionType};
 use gtk4::glib;
 use crate::widgets::media_widget::config::Config;
 use crate::common::marquee::{MarqueeLabel, Direction};
 use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::Mutex;
 use once_cell::sync::Lazy;
 
 // Shared flag to prevent slider updates during drag
 static IS_DRAGGING: Lazy<AtomicBool> = Lazy::new(|| AtomicBool::new(false));
+// Track which bus name is currently displayed to detect changes
+static CURRENT_DISPLAYED_BUS: Lazy<Mutex<Option<String>>> = Lazy::new(|| Mutex::new(None));
 
 #[derive(Clone)]
-pub struct Widgets {
+pub struct PlayerView {
+    pub container: Box,
     pub art_image: Picture,
     pub title: MarqueeLabel,
     pub artist: MarqueeLabel,
@@ -18,9 +22,16 @@ pub struct Widgets {
     pub scale: Scale,
     pub lbl_current: Label,
     pub lbl_total: Label,
+    pub art_size: i32,
+}
+
+#[derive(Clone)]
+pub struct Widgets {
+    pub stack: Stack,
+    pub view_1: PlayerView,
+    pub view_2: PlayerView,
     pub dots_box: Box,
     pub cmd_sender: async_channel::Sender<crate::widgets::media_widget::mpris::MprisCommand>,
-    pub art_size: i32,
 }
 
 pub fn build(window: &gtk4::ApplicationWindow, cmd_sender: async_channel::Sender<crate::widgets::media_widget::mpris::MprisCommand>, config: &Config) -> Widgets {
@@ -30,10 +41,68 @@ pub fn build(window: &gtk4::ApplicationWindow, cmd_sender: async_channel::Sender
     let base_width = 400.0;
     
     // Scale helper
-    let s = |v: f64| -> i32 { (v * scale).round() as i32 };
+    let s = move |v: f64| -> i32 { (v * scale).round() as i32 };
     
     // Calculated dimensions
     let widget_width = s(base_width);
+    
+    // --- ROOT WRAPPER ---
+    let root_wrapper = Box::builder()
+        .orientation(Orientation::Vertical)
+        .width_request(widget_width)
+        .spacing(0)
+        .build();
+    root_wrapper.add_css_class("view");
+
+    // --- STACK (The Carousel) ---
+    let stack = Stack::builder()
+        .transition_type(StackTransitionType::SlideLeftRight)
+        .transition_duration(400) // 400ms smooth slide
+        .interpolate_size(false) // Fixed size
+        .build();
+
+    // Create two identical views for ping-pong buffering
+    let view_1 = build_player_view(cmd_sender.clone(), config, s);
+    let view_2 = build_player_view(cmd_sender.clone(), config, s);
+
+    stack.add_named(&view_1.container, Some("view_1"));
+    stack.add_named(&view_2.container, Some("view_2"));
+
+    root_wrapper.append(&stack);
+
+    // Dots - Fixed height
+    let dots_box = Box::builder()
+        .orientation(Orientation::Horizontal)
+        .halign(Align::Center)
+        .hexpand(true)
+        .vexpand(false)
+        .height_request(20)
+        .build();
+    dots_box.add_css_class("dots-box");
+    
+    root_wrapper.append(&dots_box);
+
+    // Add Drag Controller to Root Wrapper to capture clicks
+    let drag_controller = gtk4::GestureClick::new();
+    drag_controller.set_button(0); // All buttons
+    drag_controller.connect_pressed(move |_, n_press, _, _| {
+        println!("Background clicked! Press: {}", n_press);
+    });
+    root_wrapper.add_controller(drag_controller);
+
+    window.set_child(Some(&root_wrapper));
+
+    Widgets {
+        stack,
+        view_1,
+        view_2,
+        dots_box,
+        cmd_sender,
+    }
+}
+
+fn build_player_view<F>(cmd_sender: async_channel::Sender<crate::widgets::media_widget::mpris::MprisCommand>, config: &Config, s: F) -> PlayerView 
+where F: Fn(f64) -> i32 + Copy {
     let padding_val = config.layout.padding as f64;
     
     // Internal heights (Base)
@@ -48,20 +117,12 @@ pub fn build(window: &gtk4::ApplicationWindow, cmd_sender: async_channel::Sender
     // Art size is 1.1x the details stack
     let art_size_base = stack_height_base * 1.1;
     let art_size = s(art_size_base);
-    let art_spacing = s(0.0); // Consistent with CSS
+    let art_spacing = s(0.0);
     
-    // Content width
+    let widget_width = s(400.0);
     let content_width = widget_width - s(padding_val * 2.0) - art_size - art_spacing;
-    
-    // --- ROOT WRAPPER: Width fixed, Height AUTO ---
-    let root_wrapper = Box::builder()
-        .orientation(Orientation::Vertical)
-        .width_request(widget_width)
-        .spacing(0) // Ensure no implicit spacing
-        .build();
-    root_wrapper.add_css_class("view");
 
-    // --- MAIN BOX: Width fixed, Height determined by largest child (art) ---
+    // --- MAIN BOX ---
     let main_box = Box::builder()
         .orientation(Orientation::Horizontal)
         .spacing(art_spacing)
@@ -69,7 +130,7 @@ pub fn build(window: &gtk4::ApplicationWindow, cmd_sender: async_channel::Sender
         .vexpand(false)
         .build();
 
-    // --- ART SECTION: Fixed square ---
+    // --- ART SECTION ---
     let art_box = Box::builder()
         .orientation(Orientation::Vertical)
         .valign(Align::Center)
@@ -94,10 +155,10 @@ pub fn build(window: &gtk4::ApplicationWindow, cmd_sender: async_channel::Sender
     art_box.set_overflow(gtk4::Overflow::Hidden);
     art_box.append(&art_image);
 
-    // --- DETAILS SECTION: Fixed width, vertical layout ---
+    // --- DETAILS SECTION ---
     let details_box = Box::builder()
         .orientation(Orientation::Vertical)
-        .valign(Align::Center) // Center details relative to the larger album art
+        .valign(Align::Center)
         .halign(Align::Fill)
         .width_request(content_width)
         .hexpand(false)
@@ -105,7 +166,7 @@ pub fn build(window: &gtk4::ApplicationWindow, cmd_sender: async_channel::Sender
         .spacing(s(details_spacing_base))
         .build();
 
-    // A. Labels (Marquee) - Fixed height
+    // A. Labels
     let labels_height = s(labels_height_base);
     let labels_box = Box::builder()
         .orientation(Orientation::Vertical)
@@ -121,11 +182,11 @@ pub fn build(window: &gtk4::ApplicationWindow, cmd_sender: async_channel::Sender
     labels_box.append(&title_marquee.container);
     labels_box.append(&artist_marquee.container);
 
-    // B. Controls - Fixed height
+    // B. Controls
     let controls_height = s(controls_height_base);
     let controls_box = Box::builder()
         .orientation(Orientation::Horizontal)
-        .halign(Align::Start)
+        .halign(Align::Fill)
         .height_request(controls_height)
         .spacing(0)
         .vexpand(false)
@@ -141,7 +202,8 @@ pub fn build(window: &gtk4::ApplicationWindow, cmd_sender: async_channel::Sender
     let play_btn = create_control_btn("media-playback-start-symbolic", s(28.0), move || {
          let _ = play_sender.send_blocking(crate::widgets::media_widget::mpris::MprisCommand::PlayPause);
     });
-    play_btn.add_css_class("play-btn"); 
+    play_btn.add_css_class("play-btn");
+    play_btn.set_hexpand(true);
     
     let next_sender = cmd_sender.clone();
     let next_btn = create_control_btn("media-skip-forward-symbolic", s(18.0), move || {
@@ -152,7 +214,7 @@ pub fn build(window: &gtk4::ApplicationWindow, cmd_sender: async_channel::Sender
     controls_box.append(&play_btn);
     controls_box.append(&next_btn);
 
-    // C. Progress - Fixed height
+    // C. Progress
     let progress_height = s(progress_height_base);
     let progress_box = Box::builder()
         .orientation(Orientation::Vertical)
@@ -173,7 +235,6 @@ pub fn build(window: &gtk4::ApplicationWindow, cmd_sender: async_channel::Sender
         .orientation(Orientation::Horizontal)
         .build();
     
-    // Fixed width for time labels to prevent jumping
     let time_width = s(36.0);
     let lbl_current = Label::builder()
         .label("0:00")
@@ -198,78 +259,43 @@ pub fn build(window: &gtk4::ApplicationWindow, cmd_sender: async_channel::Sender
     progress_box.append(&scale_widget);
     progress_box.append(&time_box);
 
-    // Assemble details
     details_box.append(&labels_box);
     details_box.append(&controls_box);
     details_box.append(&progress_box);
 
-    // Assemble main
     main_box.append(&art_box);
     main_box.append(&details_box);
     
-    root_wrapper.append(&main_box);
-    
-    // Dots - Natural height
-    let dots_box = Box::builder()
-        .orientation(Orientation::Horizontal)
-        .halign(Align::Center)
-        .hexpand(true)
-        .vexpand(false)
-        .build();
-    dots_box.add_css_class("dots-box");
-    
-    root_wrapper.append(&dots_box);
-
-    // Add Drag Controller to Root Wrapper to capture clicks
-    let drag_controller = gtk4::GestureClick::new();
-    drag_controller.set_button(0); // All buttons
-    drag_controller.connect_pressed(move |_, n_press, _, _| {
-        println!("Background clicked! Press: {}", n_press);
-    });
-    root_wrapper.add_controller(drag_controller);
-
-    window.set_child(Some(&root_wrapper));
-    
-    // Use EventControllerLegacy to capture raw button events (not consumed by Scale's drag)
+    // Scale Logic
     let legacy = gtk4::EventControllerLegacy::new();
     let seek_sender = cmd_sender.clone();
     let scale_for_seek = scale_widget.clone();
     
     legacy.connect_event(move |_, event| {
         use gtk4::gdk::EventType;
-        
         match event.event_type() {
-            EventType::ButtonPress => {
-                IS_DRAGGING.store(true, Ordering::SeqCst);
-            }
+            EventType::ButtonPress => { IS_DRAGGING.store(true, Ordering::SeqCst); }
             EventType::ButtonRelease => {
-                // Read slider value and seek
-                let val = scale_for_seek.value(); // percentage 0-100
+                let val = scale_for_seek.value();
                 let length = crate::widgets::media_widget::state::STATE.read().unwrap().length;
-                
                 if length > 0 {
                     let target_pos = ((val / 100.0) * length as f64) as i64;
                     let _ = seek_sender.send_blocking(crate::widgets::media_widget::mpris::MprisCommand::SetPosition(target_pos));
                 }
-                
-                // Delay resetting IS_DRAGGING to give MPRIS time to process seek
-                // This prevents UI from briefly showing old position
                 glib::timeout_add_local_once(std::time::Duration::from_millis(300), || {
                     IS_DRAGGING.store(false, Ordering::SeqCst);
                 });
             }
             _ => {}
         }
-        
-        glib::Propagation::Proceed // Let Scale handle the event too
+        glib::Propagation::Proceed
     });
     scale_widget.add_controller(legacy);
     
-    // Live time preview during drag
     let lbl_for_preview = lbl_current.clone();
     scale_widget.connect_value_changed(move |scale| {
         if IS_DRAGGING.load(Ordering::SeqCst) {
-            let val = scale.value(); // percentage 0-100
+            let val = scale.value();
             let length = crate::widgets::media_widget::state::STATE.read().unwrap().length;
             if length > 0 {
                 let preview_pos = ((val / 100.0) * length as f64) as u64;
@@ -278,7 +304,8 @@ pub fn build(window: &gtk4::ApplicationWindow, cmd_sender: async_channel::Sender
         }
     });
 
-    Widgets {
+    PlayerView {
+        container: main_box,
         art_image,
         title: title_marquee,
         artist: artist_marquee,
@@ -286,8 +313,6 @@ pub fn build(window: &gtk4::ApplicationWindow, cmd_sender: async_channel::Sender
         scale: scale_widget,
         lbl_current,
         lbl_total,
-        dots_box,
-        cmd_sender,
         art_size,
     }
 }
@@ -295,91 +320,134 @@ pub fn build(window: &gtk4::ApplicationWindow, cmd_sender: async_channel::Sender
 pub fn update(widgets: &Widgets) {
     use crate::widgets::media_widget::state::STATE;
     let state = STATE.read().unwrap();
+
+    // 1. Determine if player switched
+    let mut current_bus_lock = CURRENT_DISPLAYED_BUS.lock().unwrap();
+    let active_bus_name = state.current_bus_name.clone().unwrap_or_default();
     
-    widgets.title.set_text(&state.title);
-    widgets.artist.set_text(&state.artist);
+    let player_switched = *current_bus_lock != Some(active_bus_name.clone());
+    
+    let visible_name = widgets.stack.visible_child_name().map(|s| s.as_str().to_string()).unwrap_or("view_1".to_string());
+    
+    // Pick target view: if switched, pick hidden one. If not, pick current.
+    let target_view = if player_switched {
+        if visible_name == "view_1" { &widgets.view_2 } else { &widgets.view_1 }
+    } else {
+        if visible_name == "view_1" { &widgets.view_1 } else { &widgets.view_2 }
+    };
+
+    // 2. Update Target View Content
+    update_view_content(target_view, &state);
+
+    // 3. Handle Switch & Transition
+    if player_switched {
+        // Calculate Direction
+        let old_idx = state.players.iter().position(|p| Some(p) == current_bus_lock.as_ref()).unwrap_or(0);
+        let new_idx = state.players.iter().position(|p| p == &active_bus_name).unwrap_or(0);
+        
+        let direction = if new_idx > old_idx {
+            StackTransitionType::SlideLeft // New enters from right
+        } else {
+            StackTransitionType::SlideRight // New enters from left
+        };
+        
+        widgets.stack.set_transition_type(direction);
+        
+        let target_name = if visible_name == "view_1" { "view_2" } else { "view_1" };
+        widgets.stack.set_visible_child_name(target_name);
+        
+        *current_bus_lock = Some(active_bus_name.clone());
+        
+        // Ensure marquee resets on the new view
+        target_view.title.set_text(&state.title); 
+        target_view.artist.set_text(&state.artist);
+    }
+
+    // 4. Update Dots (Intelligent)
+    let current_children = widgets.dots_box.observe_children();
+    let n_children = current_children.n_items();
+    let n_players = state.players.len() as u32;
+    let mut needs_rebuild = n_children != n_players;
+    
+    if !needs_rebuild {
+        for i in 0..n_children {
+            if let Some(child_obj) = current_children.item(i) {
+                if let Ok(btn) = child_obj.downcast::<Button>() {
+                     if let Some(name) = btn.widget_name().as_str().strip_prefix("player-") {
+                         if state.players.get(i as usize) != Some(&name.to_string()) {
+                             needs_rebuild = true;
+                             break;
+                         }
+                     } else { needs_rebuild = true; break; }
+                }
+            }
+        }
+    }
+
+    if needs_rebuild {
+        while let Some(child) = widgets.dots_box.first_child() { widgets.dots_box.remove(&child); }
+        for player_bus in &state.players {
+            let dot = Button::builder().name(&format!("player-{}", player_bus)).build();
+            dot.add_css_class("dot");
+            if let Some(current) = &state.current_bus_name {
+                if current == player_bus { dot.add_css_class("active"); }
+            }
+            let sender = widgets.cmd_sender.clone();
+            let bus_name = player_bus.clone();
+            dot.connect_clicked(move |_| {
+                let _ = sender.send_blocking(crate::widgets::media_widget::mpris::MprisCommand::SwitchPlayer(bus_name.clone()));
+            });
+            widgets.dots_box.append(&dot);
+        }
+    } else {
+        for i in 0..n_children {
+            if let Some(child_obj) = current_children.item(i) {
+                if let Ok(btn) = child_obj.downcast::<Button>() {
+                    let player_bus = &state.players[i as usize];
+                    let is_active = state.current_bus_name.as_ref() == Some(player_bus);
+                    if is_active { btn.add_css_class("active"); } else { btn.remove_css_class("active"); }
+                }
+            }
+        }
+    }
+}
+
+fn update_view_content(view: &PlayerView, state: &crate::widgets::media_widget::state::MediaState) {
+    view.title.set_text(&state.title);
+    view.artist.set_text(&state.artist);
     
     let play_icon_name = if state.is_playing { "media-playback-pause-symbolic" } else { "media-playback-start-symbolic" };
-    if let Some(child) = widgets.play_btn.child() {
+    if let Some(child) = view.play_btn.child() {
         if let Ok(img) = child.downcast::<Image>() {
              img.set_icon_name(Some(play_icon_name));
         }
     }
     
-    // Only update slider if not currently being dragged by user
     if !IS_DRAGGING.load(Ordering::SeqCst) {
         if state.length > 0 {
              let pct = (state.position as f64 / state.length as f64) * 100.0;
-             widgets.scale.set_value(pct);
+             view.scale.set_value(pct);
         } else {
-            widgets.scale.set_value(0.0);
+            view.scale.set_value(0.0);
         }
+        view.lbl_current.set_label(&format_time(state.position));
     }
-    
-    // Only update current time label if not during drag (user sees preview instead)
-    if !IS_DRAGGING.load(Ordering::SeqCst) {
-        widgets.lbl_current.set_label(&format_time(state.position));
-    }
-    widgets.lbl_total.set_label(&format_time(state.length));
+    view.lbl_total.set_label(&format_time(state.length));
 
-    // Art Loading
-    use std::sync::Mutex;
-    use once_cell::sync::Lazy;
-    static LAST_ART_URL: Lazy<Mutex<String>> = Lazy::new(|| Mutex::new(String::new()));
-    
-    let should_load = {
-        let mut last = LAST_ART_URL.lock().unwrap();
-        if *last != state.art_url {
-            *last = state.art_url.clone();
-            true
-        } else {
-            false
-        }
-    };
-    
-    if !state.art_url.is_empty() && should_load {
+    // Art Loading (Simplified for brevity, assuming cache handles redundant calls)
+    if !state.art_url.is_empty() {
         let (sender, receiver) = async_channel::bounded(1);
-        crate::common::image_loader::load_art(&state.art_url, widgets.art_size, sender);
-        
-        let img_weak = widgets.art_image.downgrade();
+        crate::common::image_loader::load_art(&state.art_url, view.art_size, sender);
+        let img_weak = view.art_image.downgrade();
         gtk4::glib::MainContext::default().spawn_local(async move {
-            let res = receiver.recv().await;
-            if let Some(img) = img_weak.upgrade() {
-                match res {
-                    Ok(Some(texture)) => {
-                        img.set_paintable(Some(&texture));
-                    }
-                    _ => {
-                        img.set_paintable(None::<&gtk4::gdk::Texture>);
-                    }
+            if let Ok(Some(texture)) = receiver.recv().await {
+                if let Some(img) = img_weak.upgrade() {
+                    img.set_paintable(Some(&texture));
                 }
             }
         });
-    } else if state.art_url.is_empty() {
-         widgets.art_image.set_paintable(None::<&gtk4::gdk::Texture>);
-    }
-    
-    while let Some(child) = widgets.dots_box.first_child() {
-        widgets.dots_box.remove(&child);
-    }
-    
-    for player_bus in &state.players {
-        let dot = Button::builder().build();
-        dot.add_css_class("dot");
-        
-        if let Some(current) = &state.current_bus_name {
-            if current == player_bus {
-                dot.add_css_class("active");
-            }
-        }
-        
-        let sender = widgets.cmd_sender.clone();
-        let bus_name = player_bus.clone();
-        dot.connect_clicked(move |_| {
-            let _ = sender.send_blocking(crate::widgets::media_widget::mpris::MprisCommand::SwitchPlayer(bus_name.clone()));
-        });
-        
-        widgets.dots_box.append(&dot);
+    } else {
+         view.art_image.set_paintable(None::<&gtk4::gdk::Texture>);
     }
 }
 
@@ -393,10 +461,7 @@ fn format_time(micros: u64) -> String {
 fn create_control_btn<F>(icon: &str, size: i32, on_click: F) -> Button 
 where F: Fn() + 'static {
     let btn = Button::builder().build();
-    let image = Image::builder()
-        .icon_name(icon)
-        .pixel_size(size)
-        .build();
+    let image = Image::builder().icon_name(icon).pixel_size(size).build();
     btn.set_child(Some(&image));
     btn.add_css_class("control-btn");
     btn.connect_clicked(move |_| on_click());

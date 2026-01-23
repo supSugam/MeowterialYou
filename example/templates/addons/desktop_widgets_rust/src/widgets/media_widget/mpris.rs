@@ -153,6 +153,17 @@ async fn handle_command(conn: &Connection, cmd: MprisCommand, ui_sender: &async_
             let mut state = STATE.write().unwrap();
             state.current_bus_name = Some(new_name.clone());
         } // Lock is dropped here
+        
+        // IMMEDIATE STATE FETCH for the new player
+        if let Ok(builder) = PlayerProxy::builder(conn)
+            .destination(zbus::names::BusName::try_from(new_name.clone()).expect("valid bus name"))
+        {
+            if let Ok(player) = builder.build().await {
+                 // Fetch everything immediately so UI has data BEFORE sliding
+                 let _ = fetch_state(&player, new_name).await;
+            }
+        }
+
         // Trigger update immediately to switch UI
         let _ = ui_sender.send(()).await;
         return;

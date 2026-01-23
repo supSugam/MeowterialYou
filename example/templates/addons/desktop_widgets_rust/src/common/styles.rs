@@ -163,13 +163,20 @@ pub fn load_css(config: &Config) {
             margin: 4px;
             padding: 0;
             border: none;
+            transition: all 300ms cubic-bezier(0.25, 1, 0.5, 1);
+        }}
+        .dot:hover {{
+            transform: scale(1.2);
+            background-color: alpha(@widget_text, 0.5);
         }}
         .dot.active {{
             background-color: @widget_primary;
+            transform: scale(1.4);
         }}
         .dots-box {{
             margin-top: 4px;
             margin-bottom: 0px;
+            min-height: 16px;
         }}
     "#, 
         theme = theme_content,
