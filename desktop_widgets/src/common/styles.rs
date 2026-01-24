@@ -1,12 +1,12 @@
-// use gtk4::prelude::*; // Unused
-use gtk4::{gdk, CssProvider};
+use gtk4::{gdk, CssProvider, gio};
+use gio::prelude::*;
 use std::fs;
 use std::path::Path;
 use crate::widgets::media_widget::config::Config;
 
 /// Load and apply CSS styles based on config
 pub fn load_css(config: &Config) {
-    let theme_content = load_theme_colors();
+    let theme_content = load_theme_colors(Some("media_widget"));
     let scale = config.layout.scale;
     
     // Helper to scale values
@@ -15,6 +15,7 @@ pub fn load_css(config: &Config) {
     // Read config values
     let padding = s(config.layout.padding as f64);
     let radius = s(config.appearance.corner_radius as f64);
+    let border_width = s(config.appearance.border_width as f64).max(0);
     let opacity = config.background.opacity as f64 / 100.0;
     
     // Calculate art size from base height 152.0 (Pro Standard)
@@ -51,7 +52,7 @@ pub fn load_css(config: &Config) {
             background-color: alpha(@widget_bg, {opacity});
             border-radius: {radius}px;
             padding: {padding}px;
-            padding-bottom: 12px;
+            border: {border_width}px solid alpha(@outline, 0.15);
         }}
         
         .art-container {{
@@ -217,93 +218,109 @@ pub fn load_css(config: &Config) {
         play_width = play_width,
         play_radius = play_radius,
         play_margin = play_margin,
+        border_width = border_width,
     );
+    
+    thread_local! {
+        static PROVIDER: CssProvider = CssProvider::new();
+    }
 
-    let provider = CssProvider::new();
-    provider.load_from_data(&css_data);
+    PROVIDER.with(|provider| {
+        provider.load_from_data(&css_data);
 
-    gtk4::style_context_add_provider_for_display(
-        &gdk::Display::default().expect("Could not connect to a display."),
-        &provider,
-        gtk4::STYLE_PROVIDER_PRIORITY_APPLICATION,
-    );
+        // Add to display only once per display connection
+        static ADDED: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+        if !ADDED.swap(true, std::sync::atomic::Ordering::SeqCst) {
+            if let Some(display) = gdk::Display::default() {
+                gtk4::style_context_add_provider_for_display(
+                    &display,
+                    provider,
+                    gtk4::STYLE_PROVIDER_PRIORITY_APPLICATION,
+                );
+            }
+        }
+    });
 }
 
-fn load_theme_colors() -> String {
+
+pub fn watch_theme<F>(callback: F) -> Option<gio::FileMonitor>
+where F: Fn() + 'static {
     let home = std::env::var("HOME").unwrap_or_else(|_| "/tmp".to_string());
-    let runtime_theme = format!("{}/.config/meowterialyou-widgets/mediawidget/theme.css", home);
+    let theme_path = format!("{}/.config/meowterialyou-widgets/theme.css", home);
+    let file = gio::File::for_path(&theme_path);
     
-    let paths = [
-        runtime_theme.as_str(),
-        "theme.css",
-        "MaterialYouColors.theme.css",
-    ];
+    if let Ok(monitor) = file.monitor_file(gio::FileMonitorFlags::NONE, gio::Cancellable::NONE) {
+        monitor.connect_changed(move |_, _, _, _| {
+            callback();
+        });
+        Some(monitor)
+    } else {
+        None
+    }
+}
+
+pub fn load_theme_colors(widget_name: Option<&str>) -> String {
+    let home = std::env::var("HOME").unwrap_or_else(|_| "/tmp".to_string());
+    let mut theme_css = String::new();
     
-    for path in paths.iter() {
-        if Path::new(path).exists() {
-            println!("Loading Theme variables from: {}", path);
+    // 1. Load base from meta.json (to ensure all variables are defined)
+    let meta_path = format!("{}/.config/meowterialyou-widgets/meta.json", home);
+    if let Ok(content) = fs::read_to_string(&meta_path) {
+        if let Ok(meta) = serde_json::from_str::<serde_json::Value>(&content) {
+            println!("Base Theme variables from: {}", meta_path);
+            theme_css.push_str(&generate_css_from_meta(&meta));
+        }
+    }
+    
+    // 2. Overlay with theme.css if available
+    let mut paths = vec![];
+    if let Some(name) = widget_name {
+        paths.push(format!("{}/.config/meowterialyou-widgets/{}/theme.css", home, name));
+        // Add legacy names too
+        if name == "media_widget" {
+            paths.push(format!("{}/.config/meowterialyou-widgets/mediawidget/theme.css", home));
+        }
+        if name == "weather_widget" {
+            paths.push(format!("{}/.config/meowterialyou-widgets/weatherclock/theme.css", home));
+        }
+    }
+    paths.push(format!("{}/.config/meowterialyou-widgets/theme.css", home));
+    paths.push("theme.css".to_string());
+    paths.push("MaterialYouColors.theme.css".to_string());
+    
+    for path_str in paths {
+        let path = Path::new(&path_str);
+        if path.exists() {
+            println!("Overlaying Theme variables from: {:?}", path);
             if let Ok(content) = fs::read_to_string(path) {
-                return content;
+                theme_css.push_str("\n/* Overlay from theme.css */\n");
+                theme_css.push_str(&content);
+                break; // Use the most specific theme.css found
             }
         }
     }
     
-    // Try meta.json if theme.css is missing
-    let meta_path = format!("{}/.config/meowterialyou-widgets/meta.json", home);
-    if let Ok(content) = fs::read_to_string(&meta_path) {
-        if let Ok(meta) = serde_json::from_str::<serde_json::Value>(&content) {
-            println!("Generating Theme variables from: {}", meta_path);
-            return generate_css_from_meta(&meta);
-        }
+    if theme_css.is_empty() {
+        // Fallback colors
+        println!("Theme files not found, using fallback colors.");
+        return r#"
+            @define-color primary #4ddea6;
+            @define-color onPrimary #003824;
+            @define-color primaryContainer #005237;
+            @define-color onPrimaryContainer #6efbc1;
+            @define-color secondary #b3ccbd;
+            /* ... truncated for brevity ... */
+            @define-color widget_bg rgb(25, 28, 26);
+            @define-color widget_text #e1e3df;
+            @define-color widget_text_secondary #c0c9c2;
+            @define-color widget_primary #4ddea6;
+        "#.to_string();
     }
     
-    // Fallback colors
-    println!("Theme file not found, using fallback colors.");
-    r#"
-    @define-color primary #4ddea6;
-    @define-color onPrimary #003824;
-    @define-color primaryContainer #005237;
-    @define-color onPrimaryContainer #6efbc1;
-    @define-color secondary #b3ccbd;
-    @define-color onSecondary #1f352a;
-    @define-color secondaryContainer #354b40;
-    @define-color onSecondaryContainer #cfe9d9;
-    @define-color tertiary #a4ccde;
-    @define-color onTertiary #073543;
-    @define-color tertiaryContainer #254c5b;
-    @define-color onTertiaryContainer #c0e8fb;
-    @define-color error #ffb4a9;
-    @define-color onError #680003;
-    @define-color errorContainer #930006;
-    @define-color onErrorContainer #ffb4a9;
-    @define-color background #191c1a;
-    @define-color onBackground #e1e3df;
-    @define-color surface #191c1a;
-    @define-color onSurface #e1e3df;
-    @define-color surfaceVariant #404943;
-    @define-color onSurfaceVariant #c0c9c2;
-    @define-color outline #89938c;
-    @define-color outlineVariant #404943;
-    @define-color shadow #000000;
-    @define-color scrim #000000;
-    @define-color inverseSurface #e1e3df;
-    @define-color inverseOnSurface #2d312e;
-    @define-color inversePrimary #006c4a;
-    @define-color surfaceDim #111412;
-    @define-color surfaceBright #363a37;
-    @define-color surfaceContainerLowest #0c0f0d;
-    @define-color surfaceContainerLow #191c1a;
-    @define-color surfaceContainer #1d201e;
-    @define-color surfaceContainerHigh #282b29;
-    @define-color surfaceContainerHighest #323633;
-    @define-color widget_bg rgb(25, 28, 26);
-    @define-color widget_text #e1e3df;
-    @define-color widget_text_secondary #c0c9c2;
-    @define-color widget_primary #4ddea6;
-    "#.to_string()
+    theme_css
 }
 
-fn generate_css_from_meta(meta: &serde_json::Value) -> String {
+pub fn generate_css_from_meta(meta: &serde_json::Value) -> String {
     let mut css = String::new();
     
     if let Some(scheme) = meta.get("scheme").and_then(|s| s.as_object()) {

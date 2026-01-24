@@ -83,7 +83,7 @@ pub fn build(window: &gtk4::ApplicationWindow, cmd_sender: async_channel::Sender
         .halign(Align::Center)
         .hexpand(true)
         .vexpand(false)
-        .height_request(20)
+        .height_request(s(20.0))
         .build();
     dots_box.add_css_class("dots-box");
     
@@ -115,10 +115,10 @@ where F: Fn(f64) -> i32 + Copy {
     
     // Internal heights (Base)
     // Reduce label container height in portrait to reduce gap to controls
-    let labels_height_base = if is_portrait { 44.0 } else { 54.0 };
+    let labels_height_base = if is_portrait { 52.0 } else { 54.0 };
     let controls_height_base = 38.0;
     let progress_height_base = 28.0;
-    let details_spacing_base = 10.0;
+    let details_spacing_base = 12.0;
 
     // Stack height = components + spacing
     let stack_height_base = labels_height_base + controls_height_base + progress_height_base + (2.0 * details_spacing_base);
@@ -219,7 +219,7 @@ where F: Fn(f64) -> i32 + Copy {
     art_box.append(&art_overlay);
 
     // Details spacing
-    let details_spacing = if is_portrait { s(4.0) } else { s(details_spacing_base) };
+    let details_spacing = if is_portrait { s(8.0) } else { s(details_spacing_base) };
 
     // --- DETAILS SECTION ---
     let details_box = Box::builder()

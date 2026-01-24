@@ -17,6 +17,8 @@ layout:
 appearance:
   # Corner radius (pixels, scaled) - Default 24 for modern soft look
   corner_radius: 8
+  # Border width
+  border_width: 2
 
 background:
   # Background opacity (0-100, used with smart_transparency)

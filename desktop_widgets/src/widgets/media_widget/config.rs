@@ -29,6 +29,7 @@ impl Default for Config {
             },
             appearance: AppearanceConfig {
                 corner_radius: 16,
+                border_width: 0,
             },
             background: BackgroundConfig {
                 style: "smart_transparency".to_string(),
@@ -59,6 +60,7 @@ fn default_mode() -> String {
 #[derive(Clone, Debug, Deserialize)]
 pub struct AppearanceConfig {
     pub corner_radius: i32,
+    pub border_width: i32,
 }
 
 #[derive(Clone, Debug, Deserialize)]

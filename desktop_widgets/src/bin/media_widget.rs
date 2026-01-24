@@ -31,6 +31,15 @@ fn main() {
         }
         let conf = config::CONFIG.read().unwrap();
         styles::load_css(&conf);
+        
+        // Dynamic theme reload
+        let _monitor = styles::watch_theme(move || {
+            if let Ok(conf) = config::CONFIG.read() {
+                styles::load_css(&conf);
+            }
+        });
+        // We leak the monitor intentionally because it needs to live for the app lifetime
+        std::mem::forget(_monitor);
     });
     app.connect_activate(build_ui);
     app.run();
@@ -73,8 +82,9 @@ fn build_ui(app: &Application) {
         
         let (pos, gap_x, gap_y) = {
             let conf = config::CONFIG.read().unwrap();
-            let gx = conf.layout.gap.get(0).copied().unwrap_or(24);
-            let gy = conf.layout.gap.get(1).copied().unwrap_or(24);
+            let scale = conf.layout.scale;
+            let gx = (conf.layout.gap.get(0).copied().unwrap_or(24) as f64 * scale).round() as i32;
+            let gy = (conf.layout.gap.get(1).copied().unwrap_or(24) as f64 * scale).round() as i32;
             (conf.layout.position.clone(), gx, gy)
         };
         
@@ -159,8 +169,9 @@ fn build_ui(app: &Application) {
 
                     let (gap_x, gap_y) = {
                         let conf = config::CONFIG.read().unwrap();
-                        let gx = conf.layout.gap.get(0).copied().unwrap_or(24);
-                        let gy = conf.layout.gap.get(1).copied().unwrap_or(24);
+                        let scale = conf.layout.scale;
+                        let gx = (conf.layout.gap.get(0).copied().unwrap_or(24) as f64 * scale).round() as i32;
+                        let gy = (conf.layout.gap.get(1).copied().unwrap_or(24) as f64 * scale).round() as i32;
                         (gx, gy)
                     };
 

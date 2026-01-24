@@ -55,6 +55,7 @@ SKIP_INTERACTIVE=false
 DO_UNINSTALL=false
 DO_DEFAULTS=false
 DO_REAPPLY=false
+REBUILD_WIDGETS=false
 SILENT=false
 HAS_GUM=false
 
@@ -228,6 +229,14 @@ uninstall_meowterialyou() {
     # 4. Remove MeowterialYou config directory (XDG location)
     echo -e "  ${DOT} Removing config directory..."
     rm -rf ~/.config/meowterialyou
+    rm -rf ~/.config/meowterialyou-widgets
+    rm -f /tmp/meowterialyou-widget-manager.lock
+
+    # Stop running widgets
+    echo -e "  ${DOT} Stopping widgets..."
+    pkill -f "meowterialyou-widget-manager" || true
+    pkill -f "media_widget" || true
+    pkill -f "weather_widget" || true
 
     # 5. Remove legacy installation directory (old copy-based install)
     echo -e "  ${DOT} Removing legacy installation..."
@@ -721,20 +730,30 @@ EOF
     if [ "$DESKTOP_WIDGETS" = true ]; then
         print_progress 3 3 "Installing Desktop Widgets..."
         
-        # Build
-        echo -e "\n  ${DIM}Building widgets (this may take a while)...${NC}"
-        if cd "$SCRIPT_DIR/desktop_widgets" && cargo build --release --quiet; then
-            print_success "Widgets built successfully"
+            # Build only if needed or forced
+            if [ "$REBUILD_WIDGETS" = true ] || [ ! -f "$BIN_DIR/meowterialyou-widget-manager" ]; then
+                echo -e "\n  ${DIM}Building widgets (this may take a while)...${NC}"
+                if cd "$SCRIPT_DIR/desktop_widgets" && cargo build --release --quiet; then
+                    print_success "Widgets built successfully"
+                else
+                    print_error "Failed to build widgets"
+                    cd "$SCRIPT_DIR" || exit
+                    return 1
+                fi
+            else
+                print_info "Using existing widget binaries (use --rebuild-widgets to force rebuild)"
+            fi
             
             # Stop existing instances before copying (Fixes "Text file busy")
             pkill -f "meowterialyou-widget-manager" || true
             pkill -f "media_widget" || true
+            pkill -f "weather_widget" || true
             sleep 0.5
             
             # Install binaries
             cp "$SCRIPT_DIR/target/release/manager" "$BIN_DIR/meowterialyou-widget-manager"
             cp "$SCRIPT_DIR/target/release/media_widget" "$BIN_DIR/media_widget"
-            # cp "$SCRIPT_DIR/desktop_widgets/target/release/weather_widget" "$BIN_DIR/weather_widget" # Future
+            cp "$SCRIPT_DIR/target/release/weather_widget" "$BIN_DIR/weather_widget"
             
             # Install Configs (Generic Loop for all widgets)
             local CONFIG_SRC="$SCRIPT_DIR/desktop_widgets/configs"
@@ -785,24 +804,32 @@ EOF
                  nohup "$BIN_DIR/meowterialyou-widget-manager" >/dev/null 2>&1 &
                  print_info "Started widget manager"
             fi
-            
-        else
-            print_error "Failed to build widgets"
-        fi
         cd "$SCRIPT_DIR" || exit
     else
         # Disabled - Cleanup if previously installed
+        print_info "Cleaning up desktop widgets..."
+        
+        # 1. Stop running processes
+        if pgrep -f "meowterialyou-widget-manager" > /dev/null || pgrep -f "media_widget" > /dev/null; then
+            pkill -f "meowterialyou-widget-manager" || true
+            pkill -f "media_widget" || true
+            pkill -f "weather_widget" || true # For future proofing
+            print_info "Stopped running widgets"
+        fi
+        
+        # 2. Remove binaries
+        rm -f "$BIN_DIR/meowterialyou-widget-manager"
+        rm -f "$BIN_DIR/media_widget"
+        rm -f "$BIN_DIR/weather_widget" 2>/dev/null || true
+        
+        # 3. Disable autostart
         local AUTOSTART_FILE="$HOME/.config/autostart/meowterialyou-widgets.desktop"
         if [ -f "$AUTOSTART_FILE" ]; then
             rm "$AUTOSTART_FILE"
             print_info "Disabled widget autostart"
         fi
         
-        if pgrep -f "meowterialyou-widget-manager" > /dev/null; then
-            pkill -f "meowterialyou-widget-manager"
-            pkill -f "media_widget"
-            print_info "Stopped running widgets"
-        fi
+        print_success "Desktop widgets uninstalled"
     fi
 }
 
@@ -932,6 +959,7 @@ main() {
             --uninstall)   DO_UNINSTALL=true; shift ;;
             --defaults)    DO_DEFAULTS=true; SKIP_INTERACTIVE=true; shift ;;
             --reapply)     DO_REAPPLY=true; SKIP_INTERACTIVE=true; shift ;;
+            --rebuild-widgets) REBUILD_WIDGETS=true; shift ;;
             --silent)      SILENT=true; shift ;;
             --help|-h)
                 echo "Usage: meowterialyou [OPTIONS]"
@@ -951,6 +979,7 @@ main() {
                 echo "  --desktop-widget       Enable desktop widget (clock + weather)"
                 echo "  --transparent-panel    Enable transparent panel addon"
                 echo "  --themed-folder-icons  Enable themed folder icons"
+                echo "  --rebuild-widgets      Force rebuild of Rust desktop widgets"
 
                 echo "  --silent               Disable desktop notifications"
                 echo "  --uninstall            Uninstall MeowterialYou"
