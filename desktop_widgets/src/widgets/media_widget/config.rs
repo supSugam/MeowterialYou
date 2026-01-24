@@ -24,6 +24,7 @@ impl Default for Config {
                 position: "bottom_right".to_string(),
                 scale: 1.0,
                 padding: 20,
+                mode: "landscape".to_string(), // Default
                 gap: vec![24, 80],
             },
             appearance: AppearanceConfig {
@@ -45,8 +46,14 @@ pub struct LayoutConfig {
     pub position: String,
     pub scale: f64,
     pub padding: i32,
+    #[serde(default = "default_mode")]
+    pub mode: String, // "landscape" or "portrait"
     #[allow(dead_code)] // Reserved for multi-widget layout
     pub gap: Vec<i32>,
+}
+
+fn default_mode() -> String {
+    "landscape".to_string()
 }
 
 #[derive(Clone, Debug, Deserialize)]
@@ -74,12 +81,12 @@ pub fn load() -> Result<(), Box<dyn std::error::Error>> {
     let paths = [
         // Relative path when running from Rust project directory
         "./configs/media_widget/config.yaml".to_string(),
-        // Relative path when running from parent MeowterialYou directory
-        "./example/templates/addons/desktop_widgets_rust/configs/media_widget/config.yaml".to_string(),
+        // Relative path when running from parent MeowterialYou directly
+        "./desktop_widgets/configs/media_widget/config.yaml".to_string(),
         // Fallback local config
         "./config.yaml".to_string(),
         // Standard XDG config path (last - for production/installed use)
-        format!("{}/.config/meowterialyou-widgets/mediawidget/config.yaml", home),
+        format!("{}/.config/meowterialyou-widgets/media_widget/config.yaml", home),
     ];
 
     for path_str in paths {

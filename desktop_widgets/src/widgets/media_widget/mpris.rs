@@ -29,6 +29,16 @@ trait Player {
     #[zbus(property)]
     fn position(&self) -> fdo::Result<i64>;
     
+    #[zbus(property)]
+    fn loop_status(&self) -> fdo::Result<String>;
+    #[zbus(property)]
+    fn set_loop_status(&self, value: &str) -> fdo::Result<()>;
+    
+    #[zbus(property)]
+    fn shuffle(&self) -> fdo::Result<bool>;
+    #[zbus(property)]
+    fn set_shuffle(&self, value: bool) -> fdo::Result<()>;
+
     fn play_pause(&self) -> fdo::Result<()>;
     fn next(&self) -> fdo::Result<()>;
     fn previous(&self) -> fdo::Result<()>;
@@ -59,6 +69,8 @@ pub enum MprisCommand {
     Raise, // Bring player to front
     SetPosition(i64), // microseconds
     SwitchPlayer(String), // bus_name
+    ToggleLoop,
+    ToggleShuffle,
 }
 
 pub async fn init(
@@ -214,7 +226,23 @@ async fn handle_command(conn: &Connection, cmd: MprisCommand, ui_sender: &async_
                                      let _ = player.set_position(&path, pos).await;
                                  }
                             },
-                            _ => {}
+                            MprisCommand::ToggleLoop => {
+                                 if let Ok(current) = player.loop_status().await {
+                                     let next = match current.as_str() {
+                                         "None" => "Playlist",
+                                         "Playlist" => "Track",
+                                         "Track" => "None",
+                                         _ => "Playlist",
+                                     };
+                                     let _ = player.set_loop_status(next).await;
+                                 }
+                             },
+                             MprisCommand::ToggleShuffle => {
+                                 if let Ok(current) = player.shuffle().await {
+                                     let _ = player.set_shuffle(!current).await;
+                                 }
+                             },
+                             _ => {}
                         }
                         
                         tokio::time::sleep(tokio::time::Duration::from_millis(50)).await;
@@ -237,6 +265,8 @@ fn reset_state() {
     state.position = 0;
     state.desktop_entry = None;
     state.identity = None;
+    state.loop_status = None;
+    state.shuffle = None;
 }
 
 async fn fetch_state(player: &PlayerProxy<'_>, conn: &Connection, p_name: &String) -> Result<()> {
@@ -247,12 +277,7 @@ async fn fetch_state(player: &PlayerProxy<'_>, conn: &Connection, p_name: &Strin
     // Fallback: Infer from bus name
     let bus_parts: Vec<&str> = p_name.split('.').collect();
     if bus_parts.len() >= 4 && bus_parts[0] == "org" && bus_parts[1] == "mpris" && bus_parts[2] == "MediaPlayer2" {
-         let mut app_name = bus_parts[3].to_string();
-         
-         // Force Google Chrome branding if chromium part found
-         if app_name.to_lowercase().contains("chromium") {
-             app_name = "google-chrome".to_string();
-         }
+         let app_name = sanitize_app_name(bus_parts[3]);
          
          desktop_entry = Some(app_name.clone());
          identity = Some(app_name); 
@@ -261,33 +286,28 @@ async fn fetch_state(player: &PlayerProxy<'_>, conn: &Connection, p_name: &Strin
     if let Ok(builder) = MediaPlayer2Proxy::builder(conn)
         .destination(zbus::names::BusName::try_from(p_name.clone()).expect("valid bus name"))
     {
-        if let Ok(root) = builder.build().await {
+         if let Ok(root) = builder.build().await {
              if let Ok(id) = root.identity().await { 
                  if !id.is_empty() { 
-                     // Check if it's Chromium and map to google-chrome
-                     if id.to_lowercase().contains("chromium") {
-                         identity = Some("google-chrome".to_string());
-                     } else {
-                         identity = Some(id); 
-                     }
+                     identity = Some(sanitize_app_name(&id));
                  }
              }
              if let Ok(entry) = root.desktop_entry().await { 
                  if !entry.is_empty() { 
-                     if entry.to_lowercase().contains("chromium") {
-                         desktop_entry = Some("google-chrome".to_string());
-                     } else {
-                         desktop_entry = Some(entry); 
-                     }
+                     desktop_entry = Some(sanitize_app_name(&entry));
                  }
              }
-        }
+         }
     }
 
     // 2. Fetch Player Props (Metadata / Status)
     let meta_res = player.metadata().await;
     let status_res = player.playback_status().await;
     let position_res = player.position().await;
+    
+    // Optional props (might fail if not supported)
+    let loop_res = player.loop_status().await;
+    let shuffle_res = player.shuffle().await;
 
     // 3. Update State (Locking only here)
     {
@@ -369,7 +389,7 @@ async fn fetch_state(player: &PlayerProxy<'_>, conn: &Connection, p_name: &Strin
                 
                 if let Some(val) = meta.get("mpris:artUrl") {
                     if let Some(s) = as_str(val) {
-                        state.art_url = s.to_string();
+                        state.art_url = enhance_art_url(s);
                     }
                 } else {
                     state.art_url = "".to_string();
@@ -409,7 +429,66 @@ async fn fetch_state(player: &PlayerProxy<'_>, conn: &Connection, p_name: &Strin
         if let Ok(pos) = position_res {
              state.position = pos as u64;
         }
+        
+        match loop_res {
+            Ok(status) => state.loop_status = Some(status),
+            Err(_) => state.loop_status = None, // Not supported
+        }
+        
+        match shuffle_res {
+            Ok(s) => state.shuffle = Some(s),
+            Err(_) => state.shuffle = None,
+        }
     }
     
     Ok(())
+}
+
+fn enhance_art_url(url: &str) -> String {
+    let mut new_url = url.to_string();
+    
+    // 1. YouTube / Google User Content (lh3.googleusercontent.com)
+    // Format: ...=w60-h60-l90-rj
+    // Fix: Replace size params with high res
+    if url.contains("googleusercontent.com") {
+        if let Some(idx) = new_url.rfind("=") {
+             // Keep up to '=' and add high res params
+             let base = &new_url[..idx+1];
+             // s512 is standard high res for album art
+             // w512-h512 is also used
+             return format!("{}w512-h512-l90-rj", base);
+        }
+    }
+    
+    // 2. YouTube Thumbnail (i.ytimg.com)
+    // Format: .../default.jpg, .../mqdefault.jpg
+    // Fix: Replace with maxresdefault.jpg
+    if url.contains("i.ytimg.com") {
+        new_url = new_url.replace("/default.jpg", "/maxresdefault.jpg");
+        new_url = new_url.replace("/mqdefault.jpg", "/maxresdefault.jpg");
+        new_url = new_url.replace("/hqdefault.jpg", "/maxresdefault.jpg");
+        new_url = new_url.replace("/sddefault.jpg", "/maxresdefault.jpg");
+    }
+
+    new_url
+}
+
+fn sanitize_app_name(name: &str) -> String {
+    let lower = name.to_lowercase();
+    
+    if lower.contains("firefox") {
+        return "firefox".to_string();
+    }
+    if lower.contains("chromium") {
+        return "google-chrome".to_string(); // Map to standard chrome icon
+    }
+    if lower.contains("chrome") {
+        return "google-chrome".to_string();
+    }
+    if lower.contains("spotify") {
+        return "spotify".to_string();
+    }
+    
+    // Default: clean existing
+    lower.replace(" ", "-")
 }

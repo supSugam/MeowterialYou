@@ -31,7 +31,7 @@ pub enum Direction {
 }
 
 impl MarqueeLabel {
-    pub fn new(css_class: &str, direction: Direction) -> Self {
+    pub fn new(css_class: &str, direction: Direction, align: Align) -> Self {
         let label1 = Label::builder()
             .label("...")
             .halign(Align::Start)
@@ -52,7 +52,7 @@ impl MarqueeLabel {
         let scroll_box = Box::builder()
             .orientation(Orientation::Horizontal)
             .spacing(60) // Gap between text repeats
-            .halign(Align::Start)
+            .halign(align) // Use dynamic alignment
             .build();
         
         scroll_box.append(&label1);

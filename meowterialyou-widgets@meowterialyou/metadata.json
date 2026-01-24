@@ -1,9 +1,0 @@
-{
-  "uuid": "meowterialyou-widgets@meowterialyou",
-  "name": "MeowterialYou Widgets",
-  "description": "Material You themed desktop widgets for GNOME Shell. Displays weather, clock, system metrics, and media player controls directly on your desktop.",
-  "version": 1,
-  "shell-version": ["45", "46", "47", "48"],
-  "url": "https://github.com/supSugam/MeowterialYou",
-  "settings-schema": "org.gnome.shell.extensions.meowterialyou-widgets"
-}

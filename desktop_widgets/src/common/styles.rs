@@ -24,8 +24,8 @@ pub fn load_css(config: &Config) {
     let art_size = s(base_height - (art_padding * 2.0));
     
     // Font sizes (scaled)
-    let font_title = s(20.0);
-    let font_artist = s(13.0);
+    let font_title = s(18.0);
+    let font_artist = s(12.0);
     let font_time = s(11.0);
     
     // Button sizes (scaled)
@@ -37,7 +37,8 @@ pub fn load_css(config: &Config) {
     let play_margin = s(6.0);
     
     // Spacing (scaled)
-    let art_spacing = s(16.0); // Tighter 16px gap for pro look
+    let is_portrait = config.layout.mode == "portrait";
+    let art_margin = if is_portrait { 0 } else { s(16.0) };
 
     let css_data = format!(r#"
         {theme}
@@ -58,7 +59,7 @@ pub fn load_css(config: &Config) {
             background-color: @surfaceVariant;
             min-width: {art_size}px;
             min-height: {art_size}px;
-            margin-right: {art_spacing}px;
+            margin-right: {art_margin}px;
         }}
         
         .art-image {{
@@ -76,7 +77,7 @@ pub fn load_css(config: &Config) {
             color: @widget_text;
             padding: 0;
             margin: 0;
-            transition: background-image 200ms ease-out;
+            transition: background-image 100ms ease-out;
             min-width: 0;
             min-height: 0;
         }}
@@ -90,7 +91,7 @@ pub fn load_css(config: &Config) {
         }}
         
         .title {{ 
-            font-weight: 800; 
+            font-weight: 700; 
             font-size: {font_title}px; 
             color: @widget_text; 
             margin-bottom: 0px; 
@@ -104,7 +105,7 @@ pub fn load_css(config: &Config) {
         .artist {{ 
             font-size: {font_artist}px; 
             color: @widget_text_secondary; 
-            font-weight: 600; 
+            font-weight: 500; 
             opacity: 0.8; 
         }}
         
@@ -119,7 +120,7 @@ pub fn load_css(config: &Config) {
             margin: 0 {icon_margin}px; 
             border-radius: {btn_radius}px;
             border: none;
-            transition: background-image 200ms ease-out, background-color 200ms ease-out;
+            transition: background-image 100ms ease-out, background-color 100ms ease-out;
         }}
         .control-btn:hover {{ 
             background-image: linear-gradient(alpha(@widget_text, 0.12), alpha(@widget_text, 0.12));
@@ -136,7 +137,7 @@ pub fn load_css(config: &Config) {
             min-width: {play_width}px;
             border-radius: {play_radius}px; 
             margin: 0 {play_margin}px;
-            transition: background-image 200ms ease-out;
+            transition: background-image 100ms ease-out;
         }}
         .play-btn:hover {{ 
             background-image: linear-gradient(alpha(@onPrimary, 0.12), alpha(@onPrimary, 0.12));
@@ -185,7 +186,7 @@ pub fn load_css(config: &Config) {
             margin: 4px;
             padding: 0;
             border: none;
-            transition: all 300ms cubic-bezier(0.25, 1, 0.5, 1);
+            transition: all 200ms cubic-bezier(0.25, 1, 0.5, 1);
         }}
         .dot:hover {{
             transform: scale(1.2);
@@ -206,7 +207,7 @@ pub fn load_css(config: &Config) {
         radius = radius,
         padding = padding,
         art_size = art_size,
-        art_spacing = art_spacing,
+        art_margin = art_margin,
         font_title = font_title,
         font_artist = font_artist,
         font_time = font_time,

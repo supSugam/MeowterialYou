@@ -19,7 +19,11 @@ pub struct PlayerView {
     pub app_icon_image: Image, 
     pub title: MarqueeLabel,
     pub artist: MarqueeLabel,
+    pub loop_btn: Button,
+    pub prev_btn: Button,
     pub play_btn: Button,
+    pub next_btn: Button,
+    pub shuffle_btn: Button,
     pub scale: Scale,
     pub lbl_current: Label,
     pub lbl_total: Label,
@@ -39,7 +43,9 @@ pub fn build(window: &gtk4::ApplicationWindow, cmd_sender: async_channel::Sender
     let scale = config.layout.scale;
     
     // Base dimensions (Pro Standard)
-    let base_width = 400.0;
+    // Detect Mode
+    let is_portrait = config.layout.mode == "portrait";
+    let base_width = if is_portrait { 220.0 } else { 320.0 };
     
     // Scale helper
     let s = move |v: f64| -> i32 { (v * scale).round() as i32 };
@@ -104,10 +110,12 @@ pub fn build(window: &gtk4::ApplicationWindow, cmd_sender: async_channel::Sender
 
 fn build_player_view<F>(cmd_sender: async_channel::Sender<crate::widgets::media_widget::mpris::MprisCommand>, config: &Config, s: F) -> PlayerView 
 where F: Fn(f64) -> i32 + Copy {
+    let is_portrait = config.layout.mode == "portrait";
     let padding_val = config.layout.padding as f64;
     
     // Internal heights (Base)
-    let labels_height_base = 54.0;
+    // Reduce label container height in portrait to reduce gap to controls
+    let labels_height_base = if is_portrait { 44.0 } else { 54.0 };
     let controls_height_base = 38.0;
     let progress_height_base = 28.0;
     let details_spacing_base = 10.0;
@@ -115,27 +123,46 @@ where F: Fn(f64) -> i32 + Copy {
     // Stack height = components + spacing
     let stack_height_base = labels_height_base + controls_height_base + progress_height_base + (2.0 * details_spacing_base);
     
-    // Art size is 1.1x the details stack
-    let art_size_base = stack_height_base * 1.1;
-    let art_size = s(art_size_base);
-    let art_spacing = s(0.0);
+    // In Portrait, spacing between art and content is larger
+    // Reduced from 16.0 to 10.0 to match the visual gap between artist and controls
+    let art_spacing = if is_portrait { s(10.0) } else { s(0.0) };
     
-    let widget_width = s(400.0);
-    let content_width = widget_width - s(padding_val * 2.0) - art_size - art_spacing;
+    let base_width = if is_portrait { 320.0 } else { 320.0 };
+    let widget_width = s(base_width);
+    
+    // Intermediate content width for portrait
+    let port_content_width = widget_width - s(padding_val * 2.0);
+    
+    // Art size logic
+    let art_size = if is_portrait {
+         port_content_width // 1:1 aspect ratio matching content width
+    } else {
+         let art_size_base = stack_height_base * 1.1;
+         s(art_size_base)
+    };
+    
+    let content_width = if is_portrait {
+         port_content_width
+    } else {
+         widget_width - s(padding_val * 2.0) - art_size - art_spacing
+    };
 
     // --- MAIN BOX ---
     let main_box = Box::builder()
-        .orientation(Orientation::Horizontal)
+        .orientation(if is_portrait { Orientation::Vertical } else { Orientation::Horizontal })
         .spacing(art_spacing)
         .hexpand(false)
         .vexpand(false)
+        .halign(Align::Fill)
         .build();
 
+    // --- ART SECTION ---
     // --- ART SECTION ---
     let art_box = Box::builder()
         .orientation(Orientation::Vertical)
         .valign(Align::Center)
-        .halign(Align::Start)
+        // Ensure Fill in portrait to stretch image
+        .halign(if is_portrait { Align::Fill } else { Align::Start })
         .width_request(art_size)
         .height_request(art_size)
         .hexpand(false)
@@ -191,6 +218,9 @@ where F: Fn(f64) -> i32 + Copy {
     art_box.set_overflow(gtk4::Overflow::Hidden);
     art_box.append(&art_overlay);
 
+    // Details spacing
+    let details_spacing = if is_portrait { s(4.0) } else { s(details_spacing_base) };
+
     // --- DETAILS SECTION ---
     let details_box = Box::builder()
         .orientation(Orientation::Vertical)
@@ -199,7 +229,7 @@ where F: Fn(f64) -> i32 + Copy {
         .width_request(content_width)
         .hexpand(false)
         .vexpand(false)
-        .spacing(s(details_spacing_base))
+        .spacing(details_spacing)
         .build();
 
     // A. Labels
@@ -207,13 +237,15 @@ where F: Fn(f64) -> i32 + Copy {
     let labels_box = Box::builder()
         .orientation(Orientation::Vertical)
         .spacing(s(2.0))
-        .height_request(labels_height)
+        .height_request(labels_height) 
         .vexpand(false)
+        .halign(Align::Fill) // Fill needed for Marquee to measure width properly
         .build();
     labels_box.add_css_class("labels-container");
 
-    let title_marquee = MarqueeLabel::new("title", Direction::Left);
-    let artist_marquee = MarqueeLabel::new("artist", Direction::Right);
+    let label_align = if is_portrait { Align::Center } else { Align::Start };
+    let title_marquee = MarqueeLabel::new("title", Direction::Left, label_align);
+    let artist_marquee = MarqueeLabel::new("artist", Direction::Right, label_align);
 
     labels_box.append(&title_marquee.container);
     labels_box.append(&artist_marquee.container);
@@ -246,9 +278,21 @@ where F: Fn(f64) -> i32 + Copy {
          let _ = next_sender.send_blocking(crate::widgets::media_widget::mpris::MprisCommand::Next);
     });
 
+    let loop_sender = cmd_sender.clone();
+    let loop_btn = create_control_btn("media-playlist-repeat-symbolic", s(16.0), move || {
+         let _ = loop_sender.send_blocking(crate::widgets::media_widget::mpris::MprisCommand::ToggleLoop);
+    });
+    
+    let shuffle_sender = cmd_sender.clone();
+    let shuffle_btn = create_control_btn("media-playlist-shuffle-symbolic", s(16.0), move || {
+         let _ = shuffle_sender.send_blocking(crate::widgets::media_widget::mpris::MprisCommand::ToggleShuffle);
+    });
+
+    controls_box.append(&loop_btn);
     controls_box.append(&prev_btn);
     controls_box.append(&play_btn);
     controls_box.append(&next_btn);
+    controls_box.append(&shuffle_btn);
 
     // C. Progress
     let progress_height = s(progress_height_base);
@@ -346,7 +390,11 @@ where F: Fn(f64) -> i32 + Copy {
         app_icon_image,
         title: title_marquee,
         artist: artist_marquee,
+        loop_btn,
+        prev_btn,
         play_btn: play_btn.downcast().unwrap(), 
+        next_btn,
+        shuffle_btn,
         scale: scale_widget,
         lbl_current,
         lbl_total,
@@ -465,6 +513,40 @@ fn update_view_content(view: &PlayerView, state: &crate::widgets::media_widget::
     if let Some(child) = view.play_btn.child() {
         if let Ok(img) = child.downcast::<Image>() {
              img.set_icon_name(Some(play_icon_name));
+        }
+    }
+    
+    // Update Loop Button
+    match &state.loop_status {
+        Some(status) => {
+             view.loop_btn.set_sensitive(true);
+             view.loop_btn.set_opacity(if status == "None" { 0.5 } else { 1.0 });
+             if let Some(child) = view.loop_btn.child() {
+                 if let Ok(img) = child.downcast::<Image>() {
+                      let icon = if status == "Track" { "media-playlist-repeat-song-symbolic" } else { "media-playlist-repeat-symbolic" };
+                      img.set_icon_name(Some(icon));
+                 }
+             }
+             if status != "None" { view.loop_btn.add_css_class("active"); } else { view.loop_btn.remove_css_class("active"); }
+        },
+        None => {
+             view.loop_btn.set_sensitive(false);
+             view.loop_btn.set_opacity(0.3);
+             view.loop_btn.remove_css_class("active");
+        }
+    }
+    
+    // Update Shuffle Button
+    match state.shuffle {
+        Some(is_shuffle) => {
+             view.shuffle_btn.set_sensitive(true);
+             view.shuffle_btn.set_opacity(if is_shuffle { 1.0 } else { 0.5 });
+             if is_shuffle { view.shuffle_btn.add_css_class("active"); } else { view.shuffle_btn.remove_css_class("active"); }
+        },
+        None => {
+             view.shuffle_btn.set_sensitive(false);
+             view.shuffle_btn.set_opacity(0.3);
+             view.shuffle_btn.remove_css_class("active");
         }
     }
     

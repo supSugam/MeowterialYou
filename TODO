@@ -102,3 +102,13 @@ there also shall be global config file to define how to handle multiple widgets 
 
 
   -barlevel-overdrive-color: #c01c28;
+
+
+
+    also i dont want a focus/active state for widget background, sometimes when it is focused or unfocused, i feel like the opacity darkens/fades, somewhat changes, i dont want this at all
+
+for eg, i run widget, then initially it is darkist high contrast then when i click on other app it has faded dimmer background or something, but then again idk when it high contrast again
+
+i dont think it can be doable with css, i feel like we need gtk tweak
+
+probably bad transparency persistence

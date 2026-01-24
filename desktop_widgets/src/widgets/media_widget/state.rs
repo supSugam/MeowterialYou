@@ -18,6 +18,10 @@ pub struct MediaState {
     pub desktop_entry: Option<String>,
     pub identity: Option<String>,
     
+    // Playback control state
+    pub loop_status: Option<String>, // "None", "Track", "Playlist"
+    pub shuffle: Option<bool>,
+    
     // Multi-player support
     pub players: Vec<String>, // List of bus names
     pub current_bus_name: Option<String>,
@@ -38,6 +42,9 @@ impl Default for MediaState {
             
             desktop_entry: None,
             identity: None,
+            
+            loop_status: None,
+            shuffle: None,
             
             players: Vec::new(),
             current_bus_name: None,

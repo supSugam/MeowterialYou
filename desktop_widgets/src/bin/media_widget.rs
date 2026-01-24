@@ -43,7 +43,9 @@ fn build_ui(app: &Application) {
     let width = {
         let conf = config::CONFIG.read().unwrap();
         let s = conf.layout.scale;
-        (400.0_f64 * s).round() as i32
+        let is_portrait = conf.layout.mode == "portrait";
+        let base = if is_portrait { 320.0 } else { 320.0 };
+        (base * s).round() as i32
     };
 
     let window = ApplicationWindow::builder()
@@ -190,13 +192,14 @@ fn build_ui(app: &Application) {
                     } else {
                         eprintln!("Positioned at {}, {} (Physical)", x, y);
                     }
+
+                    // 7. Post-Map Enforcement - Ensure position and state stick
+                    glib::timeout_add_local_once(std::time::Duration::from_millis(200), move || {
+                        let _ = x11_hints::move_window(xid, x, y); // Re-enforce position
+                        let _ = x11_hints::set_widget_state_via_message(xid);
+                        let _ = x11_hints::lower_window(xid); // Push behind other windows
+                    });
                 }
-                
-                // 7. Post-Map Enforcement - Lower window to avoid stealing focus
-                glib::timeout_add_local_once(std::time::Duration::from_millis(150), move || {
-                    let _ = x11_hints::set_widget_state_via_message(xid);
-                    let _ = x11_hints::lower_window(xid); // Push behind other windows
-                });
             }
         }
         

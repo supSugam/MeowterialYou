@@ -1,5 +1,5 @@
 [workspace]
 members = [
-    "example/templates/addons/desktop_widgets_rust",
+    "desktop_widgets",
 ]
 resolver = "2"

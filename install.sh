@@ -47,7 +47,7 @@ TITLE_BUTTONS="native"
 TITLE_BUTTONS_POSITION="right"
 CHROME_GTK4=false
 UI_IMPROVEMENTS=false
-DESKTOP_WIDGET=false
+DESKTOP_WIDGETS=false
 TRANSPARENT_PANEL=false
 THEMED_FOLDER_ICONS=true
 
@@ -357,11 +357,12 @@ run_interactive() {
         if gum confirm --affirmative="  Yes, enable  " --negative="  No, skip  " \
             --prompt.foreground="255" --selected.background="212" --default=false \
             "     Enable desktop widget?"; then
-            DESKTOP_WIDGET=true
+            DESKTOP_WIDGETS=true
             echo -e "     ${CHECK} Desktop Widget: ${BOLD}${GREEN}enabled${NC}"
-            echo -e "     ${DIM}Config: example/templates/addons/desktop_widget/widget.conf${NC}"
+            echo -e "     ${CHECK} Desktop Widget: ${BOLD}${GREEN}enabled${NC}"
+            echo -e "     ${DIM}Built from source (Rust)${NC}"
         else
-            DESKTOP_WIDGET=false
+            DESKTOP_WIDGETS=false
             echo -e "     ${CHECK} Desktop Widget: ${DIM}disabled${NC}"
         fi
         # ─── Transparent Panel ───
@@ -497,9 +498,9 @@ run_interactive() {
         [[ "$input" =~ ^[Yy]$ ]] && UI_IMPROVEMENTS=true
         echo ""
         
-        echo -e "  ${BOLD}Desktop Widget${NC} (clock + weather, uses gtk-rust) [y/N]"
+        echo -e "  ${BOLD}Desktop Widget${NC} (clock + media + weather, uses Rust) [y/N]"
         read -rp "     ▸ " input
-        [[ "$input" =~ ^[Yy]$ ]] && DESKTOP_WIDGET=true
+        [[ "$input" =~ ^[Yy]$ ]] && DESKTOP_WIDGETS=true
         echo ""
 
         echo -e "  ${BOLD}Transparent Panel${NC} [y/N]"
@@ -527,7 +528,7 @@ run_interactive() {
     echo -e "  ${DOT} Button Position: ${BOLD}$TITLE_BUTTONS_POSITION${NC}"
     echo -e "  ${DOT} Chrome GTK4:     ${BOLD}$([ "$CHROME_GTK4" = true ] && echo "enabled" || echo "disabled")${NC}"
     echo -e "  ${DOT} UI Improvements: ${BOLD}$([ "$UI_IMPROVEMENTS" = true ] && echo "enabled" || echo "disabled")${NC}"
-    echo -e "  ${DOT} Desktop Widget:  ${BOLD}$([ "$DESKTOP_WIDGET" = true ] && echo "enabled" || echo "disabled")${NC}"
+    echo -e "  ${DOT} Desktop Widget:  ${BOLD}$([ "$DESKTOP_WIDGETS" = true ] && echo "enabled" || echo "disabled")${NC}"
     echo -e "  ${DOT} Transp. Panel:  ${BOLD}$([ "$TRANSPARENT_PANEL" = true ] && echo "enabled" || echo "disabled")${NC}"
     echo -e "  ${DOT} Terminal Theme:  ${BOLD}$([ "$THEME_GNOME_TERMINAL" = true ] && echo "enabled" || echo "disabled")${NC}"
     echo -e "  ${DOT} Wallpaper:       ${BOLD}${WALLPAPER:-"Current system wallpaper"}${NC}"
@@ -600,6 +601,17 @@ check_requirements() {
     else
         print_info "gum not found - installing for better experience..."
         install_gum || print_info "Using fallback prompts"
+    fi
+
+    # Cargo (Rust) for Desktop Widgets
+    if [ "$DESKTOP_WIDGETS" = true ]; then
+        if command -v cargo &> /dev/null; then
+            print_success "Rust/Cargo (for widgets)"
+        else
+            print_error "Rust/Cargo not found"
+            echo -e "  ${ARROW} Please install Rust: curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh"
+            exit 1
+        fi
     fi
 }
 
@@ -701,7 +713,97 @@ THEME_OBSIDIAN=$THEME_OBSIDIAN
 THEME_VIVALDI=$THEME_VIVALDI
 EOF
     echo ""
+    # User preferences saved
+    echo ""
     print_success "User preferences saved"
+
+    # Install Desktop Widgets (Rust)
+    if [ "$DESKTOP_WIDGETS" = true ]; then
+        print_progress 3 3 "Installing Desktop Widgets..."
+        
+        # Build
+        echo -e "\n  ${DIM}Building widgets (this may take a while)...${NC}"
+        if cd "$SCRIPT_DIR/desktop_widgets" && cargo build --release --quiet; then
+            print_success "Widgets built successfully"
+            
+            # Stop existing instances before copying (Fixes "Text file busy")
+            pkill -f "meowterialyou-widget-manager" || true
+            pkill -f "media_widget" || true
+            sleep 0.5
+            
+            # Install binaries
+            cp "$SCRIPT_DIR/target/release/manager" "$BIN_DIR/meowterialyou-widget-manager"
+            cp "$SCRIPT_DIR/target/release/media_widget" "$BIN_DIR/media_widget"
+            # cp "$SCRIPT_DIR/desktop_widgets/target/release/weather_widget" "$BIN_DIR/weather_widget" # Future
+            
+            # Install Configs (Generic Loop for all widgets)
+            local CONFIG_SRC="$SCRIPT_DIR/desktop_widgets/configs"
+            local CONFIG_DEST="$HOME/.config/meowterialyou-widgets"
+            
+            if [ -d "$CONFIG_SRC" ]; then
+                for widget_dir in "$CONFIG_SRC"/*; do
+                    if [ -d "$widget_dir" ]; then
+                        local widget_name
+                        widget_name=$(basename "$widget_dir")
+                        local target_dir="$CONFIG_DEST/$widget_name"
+                        
+                        mkdir -p "$target_dir"
+                        
+                        if [ ! -f "$target_dir/config.yaml" ]; then
+                            if [ -f "$widget_dir/config.yaml" ]; then
+                                cp "$widget_dir/config.yaml" "$target_dir/config.yaml"
+                                print_info "Installed default config for $widget_name"
+                            fi
+                        else
+                             print_info "Preserving config for $widget_name"
+                        fi
+                    fi
+                done
+            fi
+            
+            # Legacy cleanup (renamed folder)
+            if [ -d "$CONFIG_DEST/mediawidget" ]; then
+                 mv "$CONFIG_DEST/mediawidget" "$CONFIG_DEST/media_widget" 2>/dev/null || true
+            fi
+            
+            # Create Autostart Entry
+            mkdir -p "$HOME/.config/autostart"
+            cat > "$HOME/.config/autostart/meowterialyou-widgets.desktop" << EOF
+[Desktop Entry]
+Type=Application
+Name=MeowterialYou Widgets
+Comment=Desktop widgets for MeowterialYou
+Exec=$BIN_DIR/meowterialyou-widget-manager
+Hidden=false
+NoDisplay=false
+X-GNOME-Autostart-enabled=true
+EOF
+            print_success "Widget autostart configured"
+            
+            # Attempt to start logic (if simple install)
+            if ! pgrep -f "meowterialyou-widget-manager" > /dev/null; then
+                 nohup "$BIN_DIR/meowterialyou-widget-manager" >/dev/null 2>&1 &
+                 print_info "Started widget manager"
+            fi
+            
+        else
+            print_error "Failed to build widgets"
+        fi
+        cd "$SCRIPT_DIR" || exit
+    else
+        # Disabled - Cleanup if previously installed
+        local AUTOSTART_FILE="$HOME/.config/autostart/meowterialyou-widgets.desktop"
+        if [ -f "$AUTOSTART_FILE" ]; then
+            rm "$AUTOSTART_FILE"
+            print_info "Disabled widget autostart"
+        fi
+        
+        if pgrep -f "meowterialyou-widget-manager" > /dev/null; then
+            pkill -f "meowterialyou-widget-manager"
+            pkill -f "media_widget"
+            print_info "Stopped running widgets"
+        fi
+    fi
 }
 
 
@@ -713,7 +815,7 @@ apply_theme() {
     [ -n "$WALLPAPER" ] && args="$args --wallpaper \"$WALLPAPER\""
     [ "$CHROME_GTK4" = true ] && args="$args --chrome-gtk4"
     [ "$UI_IMPROVEMENTS" = true ] && args="$args --ui-improvements"
-    [ "$DESKTOP_WIDGET" = true ] && args="$args --desktop-widget"
+    [ "$DESKTOP_WIDGETS" = true ] && args="$args --desktop-widget"
     [ "$TRANSPARENT_PANEL" = true ] && args="$args --transparent-panel"
     [ "$THEMED_FOLDER_ICONS" = true ] && args="$args --themed-folder-icons"
 
@@ -784,7 +886,7 @@ TITLE_BUTTONS=$TITLE_BUTTONS
 TITLE_BUTTONS_POSITION=$TITLE_BUTTONS_POSITION
 CHROME_GTK4=$CHROME_GTK4
 UI_IMPROVEMENTS=$UI_IMPROVEMENTS
-DESKTOP_WIDGET=$DESKTOP_WIDGET
+DESKTOP_WIDGETS=$DESKTOP_WIDGETS
 TRANSPARENT_PANEL=$TRANSPARENT_PANEL
 THEME_GNOME_TERMINAL=$THEME_GNOME_TERMINAL
 THEME_SPOTIFY=$THEME_SPOTIFY
@@ -823,7 +925,7 @@ main() {
             --title-buttons-position) TITLE_BUTTONS_POSITION="$2"; SKIP_INTERACTIVE=true; shift 2 ;;
             --chrome-gtk4) CHROME_GTK4=true; SKIP_INTERACTIVE=true; shift ;;
             --ui-improvements) UI_IMPROVEMENTS=true; SKIP_INTERACTIVE=true; shift ;;
-            --desktop-widget) DESKTOP_WIDGET=true; SKIP_INTERACTIVE=true; shift ;;
+            --desktop-widget) DESKTOP_WIDGETS=true; SKIP_INTERACTIVE=true; shift ;;
             --transparent-panel) TRANSPARENT_PANEL=true; SKIP_INTERACTIVE=true; shift ;;
             --themed-folder-icons) THEMED_FOLDER_ICONS=true; SKIP_INTERACTIVE=true; shift ;;
 

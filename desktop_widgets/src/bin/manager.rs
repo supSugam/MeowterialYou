@@ -16,10 +16,17 @@ fn main() {
     for widget in widgets {
         println!("Starting widget: {}", widget);
         
-        // Try relative to workspace root first, then local
+        // Try explicit paths
+        let home = std::env::var("HOME").unwrap_or_else(|_| "/tmp".to_string());
         let paths = [
-            format!("../../../../target/debug/{}", widget),
-            format!("./target/debug/{}", widget),
+            // 1. Installed location
+            format!("{}/.local/bin/{}", home, widget),
+            // 2. Relative to executable (if in same dir)
+            format!("./{}", widget),
+            // 3. Workspace dev paths
+            format!("./target/release/{}", widget),
+            format!("../../../../target/release/{}", widget),
+            // 4. PATH lookup
             widget.to_string(),
         ];
 
