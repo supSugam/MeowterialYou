@@ -107,6 +107,21 @@ def topColorsFromImage(image) -> list[int]:
     argb_pixels = argb_pixels.tolist()
 
     result = QuantizerCelebi.quantize(argb_pixels, 128)
+
+    # Filter out colors with low chroma (dull/grayish) to match matugen's logic
+    # This prevents the scorer from picking a muddy color even if it's dominant
+    from ..hct.cam16 import Cam16
+
+    filtered_result = {
+        color: count
+        for color, count in result.items()
+        if Cam16.fromInt(color).chroma >= 5.0
+    }
+
+    # Only use filtered result if we didn't filter everything out
+    if filtered_result:
+        result = filtered_result
+
     ranked = Score.score(result)
 
     # Fallback to dominant color if scoring fails (returns default blue)

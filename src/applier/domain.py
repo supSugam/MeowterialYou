@@ -778,12 +778,13 @@ class ApplierDomain:
         os.makedirs(config_root, exist_ok=True)
 
         target_files = [
-            os.path.join(config_root, "theme.css"),
             os.path.join(config_root, "media_widget/theme.css"),
             os.path.join(config_root, "weather_widget/theme.css"),
             # Legacy paths (to ensure they sync if folders exist)
             os.path.join(config_root, "mediawidget/theme.css"),
             os.path.join(config_root, "weatherclock/theme.css"),
+            # Main theme file must be last to trigger reload after others are ready
+            os.path.join(config_root, "theme.css"),
         ]
 
         # 2. Generate CSS Content

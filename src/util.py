@@ -1201,7 +1201,7 @@ class Theme:
     def _get_image_from_file(cls, image: str):
         """Get image from file and resample it"""
         img = Image.open(image)
-        basewidth = 64
+        basewidth = 128
         wpercent = basewidth / float(img.size[0])
         hsize = int((float(img.size[1]) * float(wpercent)))
         return img.resize((basewidth, hsize), Image.Resampling.LANCZOS)
