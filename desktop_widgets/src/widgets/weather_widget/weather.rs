@@ -19,6 +19,7 @@ pub async fn fetch_weather(config: &Config) -> Result<WeatherData, Box<dyn std::
     let temp_val = current["temperature"].as_f64().unwrap_or(0.0);
     let weather_code = current["weathercode"].as_u64().unwrap_or(0);
     let wind_speed = current["windspeed"].as_f64().unwrap_or(0.0);
+    let wind_direction_deg = current["winddirection"].as_f64().unwrap_or(0.0);
     
     let humidity_val = resp["current"]["relative_humidity_2m"].as_f64().unwrap_or(0.0);
 
@@ -27,8 +28,10 @@ pub async fn fetch_weather(config: &Config) -> Result<WeatherData, Box<dyn std::
     let icon_char = get_weather_icon_char(weather_code);
     let desc = get_weather_desc(weather_code);
 
-    let wind_unit = &config.weather.wind_unit;
-    let wind_str = format!("{} {}", wind_speed.round(), wind_unit);
+    let wind_unit_config = &config.weather.wind_unit;
+    let unit_label = if wind_unit_config == "mi" { "mph" } else { "km/h" };
+    let wind_str = format!("{} {}", wind_speed.round(), unit_label);
+    let wind_direction_str = get_wind_direction_str(wind_direction_deg);
 
     Ok(WeatherData {
         temp: format!("{}{}", temp_val.round(), unit_symbol),
@@ -37,7 +40,14 @@ pub async fn fetch_weather(config: &Config) -> Result<WeatherData, Box<dyn std::
         city: "Pokhara".to_string(),
         humidity: format!("{}%", humidity_val.round()),
         wind: wind_str,
+        wind_direction: wind_direction_str,
     })
+}
+
+fn get_wind_direction_str(degrees: f64) -> String {
+    let directions = ["North", "North East", "East", "South East", "South", "South West", "West", "North West"];
+    let index = ((degrees + 22.5) / 45.0).floor() as usize % 8;
+    directions[index].to_string()
 }
 
 fn get_weather_icon_char(code: u64) -> &'static str {

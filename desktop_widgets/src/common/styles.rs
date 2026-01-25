@@ -13,7 +13,6 @@ pub fn load_css(config: &Config) {
     let s = |v: f64| -> i32 { (v * scale).round() as i32 };
     
     // Read config values
-    let padding = s(config.layout.padding as f64);
     let radius = s(config.appearance.corner_radius as f64);
     let border_width = s(config.appearance.border_width as f64).max(0);
     let opacity = config.background.opacity as f64 / 100.0;
@@ -51,7 +50,6 @@ pub fn load_css(config: &Config) {
         .view {{
             background-color: alpha(@widget_bg, {opacity});
             border-radius: {radius}px;
-            padding: {padding}px;
             border: {border_width}px solid alpha(@outline, 0.15);
         }}
         
@@ -198,15 +196,14 @@ pub fn load_css(config: &Config) {
             transform: scale(1.4);
         }}
         .dots-box {{
-            margin-top: 4px;
+            margin-top: 0px;
             margin-bottom: 0px;
-            min-height: 16px;
+            min-height: 12px;
         }}
     "#, 
         theme = theme_content,
         opacity = opacity,
         radius = radius,
-        padding = padding,
         art_size = art_size,
         art_margin = art_margin,
         font_title = font_title,
@@ -246,12 +243,24 @@ pub fn load_css(config: &Config) {
 pub fn watch_theme<F>(callback: F) -> Option<gio::FileMonitor>
 where F: Fn() + 'static {
     let home = std::env::var("HOME").unwrap_or_else(|_| "/tmp".to_string());
-    let theme_path = format!("{}/.config/meowterialyou-widgets/theme.css", home);
-    let file = gio::File::for_path(&theme_path);
+    // Monitor the DIRECTORY, not the file, to handle atomic replacements (rename over)
+    let config_dir_path = format!("{}/.config/meowterialyou-widgets", home);
+    let dir = gio::File::for_path(&config_dir_path);
     
-    if let Ok(monitor) = file.monitor_file(gio::FileMonitorFlags::NONE, gio::Cancellable::NONE) {
-        monitor.connect_changed(move |_, _, _, _| {
-            callback();
+    if let Ok(monitor) = dir.monitor_directory(gio::FileMonitorFlags::WATCH_MOVES, gio::Cancellable::NONE) {
+        monitor.connect_changed(move |_, file, _, event_type| {
+             // Only react to theme.css changes
+             use gio::FileMonitorEvent;
+             let filename = file.basename().map(|p| p.to_string_lossy().to_string()).unwrap_or_default();
+             
+             if filename == "theme.css" {
+                 match event_type {
+                     FileMonitorEvent::Created | FileMonitorEvent::Changed | FileMonitorEvent::ChangesDoneHint => {
+                         callback();
+                     },
+                     _ => {}
+                 }
+             }
         });
         Some(monitor)
     } else {

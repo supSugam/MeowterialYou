@@ -26,6 +26,7 @@ impl Default for Config {
                 padding: 20,
                 mode: "landscape".to_string(), // Default
                 gap: vec![24, 80],
+                width: None,
             },
             appearance: AppearanceConfig {
                 corner_radius: 16,
@@ -51,6 +52,8 @@ pub struct LayoutConfig {
     pub mode: String, // "landscape" or "portrait"
     #[allow(dead_code)] // Reserved for multi-widget layout
     pub gap: Vec<i32>,
+    #[serde(default)]
+    pub width: Option<i32>,
 }
 
 fn default_mode() -> String {
@@ -60,6 +63,7 @@ fn default_mode() -> String {
 #[derive(Clone, Debug, Deserialize)]
 pub struct AppearanceConfig {
     pub corner_radius: i32,
+    #[serde(default)]
     pub border_width: i32,
 }
 
@@ -67,12 +71,11 @@ pub struct AppearanceConfig {
 pub struct BackgroundConfig {
     #[allow(dead_code)] // Reserved for smart transparency mode
     pub style: String,
-    pub opacity: u8,
+    pub opacity: i32,
 }
 
 #[derive(Clone, Debug, Deserialize)]
 pub struct ControlsConfig {
-    #[allow(dead_code)] // Reserved for conditional control rendering
     pub show_next_prev: bool,
 }
 
@@ -98,8 +101,29 @@ pub fn load() -> Result<(), Box<dyn std::error::Error>> {
             match fs::read_to_string(path) {
                 Ok(contents) => {
                     match serde_yaml::from_str::<Config>(&contents) {
-                        Ok(config) => {
-                            eprintln!("Loaded Config: {:?}", config);
+                        Ok(mut config) => {
+                            // Apply Env Overrides (Global Alignment)
+                            if let Ok(w) = std::env::var("MEOW_WIDGET_WIDTH") {
+                                if let Ok(val) = w.parse::<i32>() { config.layout.width = Some(val); }
+                            }
+                            if let Ok(s) = std::env::var("MEOW_WIDGET_SCALE") {
+                                if let Ok(val) = s.parse::<f64>() { config.layout.scale = val; }
+                            }
+                            if let Ok(p) = std::env::var("MEOW_WIDGET_PADDING") {
+                                if let Ok(val) = p.parse::<i32>() { config.layout.padding = val; }
+                            }
+                            if let Ok(gx) = std::env::var("MEOW_WIDGET_GAP_X") {
+                                if let Ok(val) = gx.parse::<i32>() { 
+                                    if config.layout.gap.len() >= 1 { config.layout.gap[0] = val; }
+                                }
+                            }
+                            if let Ok(gy) = std::env::var("MEOW_WIDGET_GAP_Y") {
+                                if let Ok(val) = gy.parse::<i32>() { 
+                                    if config.layout.gap.len() >= 2 { config.layout.gap[1] = val; }
+                                }
+                            }
+                            
+                            eprintln!("Loaded Config (with overrides): {:?}", config);
                             let mut global_conf = CONFIG.write().unwrap();
                             *global_conf = config;
                             return Ok(());

@@ -793,17 +793,17 @@ Type=Application
 Name=MeowterialYou Widgets
 Comment=Desktop widgets for MeowterialYou
 Exec=$BIN_DIR/meowterialyou-widget-manager
+Path=$SCRIPT_DIR
 Hidden=false
 NoDisplay=false
 X-GNOME-Autostart-enabled=true
 EOF
             print_success "Widget autostart configured"
             
-            # Attempt to start logic (if simple install)
-            if ! pgrep -f "meowterialyou-widget-manager" > /dev/null; then
-                 nohup "$BIN_DIR/meowterialyou-widget-manager" >/dev/null 2>&1 &
-                 print_info "Started widget manager"
-            fi
+            # Ensure started from repo root for local config prioritization
+            pkill -f "meowterialyou-widget-manager" || true
+            (cd "$SCRIPT_DIR" && nohup "$BIN_DIR/meowterialyou-widget-manager" >/dev/null 2>&1 &)
+            print_info "Started widget manager from repository root"
         cd "$SCRIPT_DIR" || exit
     else
         # Disabled - Cleanup if previously installed

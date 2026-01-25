@@ -98,24 +98,29 @@ pub async fn init(
             // A. Discovery Phase
             if let Ok(dbus) = zbus::fdo::DBusProxy::new(&conn_clone).await {
                 if let Ok(names) = dbus.list_names().await {
-                     let mut found_players = Vec::new();
+                     let mut valid_players = Vec::new(); // Changed from found_players
+                     
                      for name in names {
                          if name.as_str().starts_with("org.mpris.MediaPlayer2.") {
-                               found_players.push(name.to_string());
+                               // FILTER: Only include players that are "active" (Playing or have Metadata)
+                               // This prevents "zombie" Chrome instances (no media tabs) from showing as dots
+                               if is_player_active(&conn_clone, &name).await {
+                                   valid_players.push(name.to_string());
+                               }
                          }
                      }
                      
                      // Update available players in state
                      {
                         let mut state = STATE.write().unwrap();
-                        state.players = found_players.clone();
+                        state.players = valid_players.clone();
                         
                         // Auto-select logic
                         let current_valid = state.current_bus_name.as_ref()
-                            .map(|c| found_players.contains(c)).unwrap_or(false);
+                            .map(|c| valid_players.contains(c)).unwrap_or(false);
                             
                         if !current_valid {
-                            if let Some(first) = found_players.first() {
+                            if let Some(first) = valid_players.first() {
                                 debug_log!("Auto-selecting player: {}", first);
                                 state.current_bus_name = Some(first.clone());
                             } else {
@@ -133,7 +138,6 @@ pub async fn init(
             };
             
             if let Some(bus_name) = current_bus {
-                 // debug_log!("Loop tick. Current bus: {}", bus_name);
                  let proxy_builder = PlayerProxy::builder(&conn_clone)
                     .destination(zbus::names::BusName::try_from(bus_name.clone()).expect("valid bus name"));
                  
@@ -148,9 +152,27 @@ pub async fn init(
                  if let Ok(player) = proxy_res {
                      if let Err(e) = fetch_state(&player, &conn_clone, &bus_name).await {
                          debug_log!("Error fetching state from {}: {}", bus_name, e);
+                         // If we can't fetch state (e.g. process died), remove it from active list
+                         {
+                             let mut state = STATE.write().unwrap();
+                             state.players.retain(|x| x != &bus_name);
+                             if state.current_bus_name.as_ref() == Some(&bus_name) {
+                                  state.current_bus_name = None;
+                             }
+                         }
+                         reset_state();
                      }
                  } else if let Err(e) = proxy_res {
                      debug_log!("Failed to connect to player {}: {}", bus_name, e);
+                     // Proxy build failed - dead player
+                     {
+                         let mut state = STATE.write().unwrap();
+                         state.players.retain(|x| x != &bus_name);
+                         if state.current_bus_name.as_ref() == Some(&bus_name) {
+                              state.current_bus_name = None;
+                         }
+                     }
+                     reset_state();
                  }
             } else {
                  reset_state();
@@ -162,6 +184,52 @@ pub async fn init(
     });
 
     Ok(())
+}
+
+// Helper to check if a player actually has content worth showing
+async fn is_player_active(conn: &Connection, bus_name: &str) -> bool {
+    if let Ok(builder) = PlayerProxy::builder(conn)
+        .destination(zbus::names::BusName::try_from(bus_name).unwrap()) 
+    {
+        if let Ok(player) = builder.build().await {
+            // Check Status
+            if let Ok(status) = player.playback_status().await {
+                if status == "Playing" {
+                    return true;
+                }
+            }
+            // Check Metadata Title
+            if let Ok(meta) = player.metadata().await {
+                if let Some(val) = meta.get("xesam:title") {
+                    // meta is HashMap<String, OwnedValue>
+                    // OwnedValue behaves like Value but owning data.
+                    // We can try to cast or match variants.
+                    
+                    // Simple recursive helper for OwnedValue
+                    fn check_title(v: &zbus::zvariant::OwnedValue) -> bool {
+                        use zbus::zvariant::Value;
+                        // OwnedValue derefs to Value
+                        match &**v {
+                            Value::Str(title) => !title.as_str().is_empty(),
+                            Value::Value(inner) => {
+                                // inner is Box<Value>, but we need to check if it wraps a Str
+                                match &**inner {
+                                     Value::Str(title) => !title.as_str().is_empty(),
+                                     _ => false
+                                }
+                            }
+                            _ => false
+                        }
+                    }
+
+                    if check_title(val) {
+                        return true;
+                    }
+                }
+            }
+        }
+    }
+    false
 }
 
 async fn handle_command(conn: &Connection, cmd: MprisCommand, ui_sender: &async_channel::Sender<()>) {
@@ -318,9 +386,17 @@ async fn fetch_state(player: &PlayerProxy<'_>, conn: &Connection, p_name: &Strin
         if let Some(id) = identity { state.identity = Some(id); }
         if let Some(entry) = desktop_entry { state.desktop_entry = Some(entry); }
         
+        // RESET metadata fields to defaults before applying new data
+        // This prevents stale data if the player sends empty metadata (e.g. Chrome with no media tabs)
+        state.title = "No Media".to_string();
+        state.artist = "".to_string();
+        state.art_url = "".to_string();
+        state.length = 0;
+        state.track_id = "".to_string();
+        
         match meta_res {
             Ok(meta) => {
-                debug_log!("DEBUG META for {}: {:?}", p_name, meta); // <--- LOGGING ADDED FOR VLC DIAGNOSIS
+                debug_log!("DEBUG META for {}: {:?}", p_name, meta);
                 
                 fn unpack<'a>(v: &'a Value<'a>) -> &'a Value<'a> {
                     match v {

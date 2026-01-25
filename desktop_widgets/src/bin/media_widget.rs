@@ -53,7 +53,11 @@ fn build_ui(app: &Application) {
         let conf = config::CONFIG.read().unwrap();
         let s = conf.layout.scale;
         let is_portrait = conf.layout.mode == "portrait";
-        let base = if is_portrait { 320.0 } else { 320.0 };
+        let base = if let Some(w) = conf.layout.width {
+             w as f64
+        } else {
+             if is_portrait { 320.0 } else { 320.0 }
+        };
         (base * s).round() as i32
     };
 
@@ -205,10 +209,11 @@ fn build_ui(app: &Application) {
                     }
 
                     // 7. Post-Map Enforcement - Ensure position and state stick
-                    glib::timeout_add_local_once(std::time::Duration::from_millis(200), move || {
+                    glib::timeout_add_local_once(std::time::Duration::from_millis(3000), move || {
                         let _ = x11_hints::move_window(xid, x, y); // Re-enforce position
                         let _ = x11_hints::set_widget_state_via_message(xid);
                         let _ = x11_hints::lower_window(xid); // Push behind other windows
+                        
                     });
                 }
             }

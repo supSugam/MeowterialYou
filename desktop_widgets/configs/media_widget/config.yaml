@@ -1,31 +1,18 @@
 layout:
-  # Screen anchor position: top_left, top_right, bottom_left, bottom_right
-  position: top_left
-  
-  # Widget Layout Mode: landscape (default) or portrait
-  mode: portrait
-  
-  # Scale factor (1.0 = 340x152 base size - Pro Standard)
+  position: bottom_left
   scale: 1.0
-  
-  # Padding inside the widget (pixels, scaled) - Default 16 for pro align
   padding: 20
-  
-  # Offset from screen edges [x, y]
-  gap: [16, 80]
+  mode: portrait
+  gap: [24, 450]
+  width: 360
 
 appearance:
-  # Corner radius (pixels, scaled) - Default 24 for modern soft look
   corner_radius: 8
-  # Border width
   border_width: 2
 
 background:
-  # Background opacity (0-100, used with smart_transparency)
-  opacity: 80
-  # Options: "blur", "transparent", "smart_transparency"
   style: "smart_transparency"
+  opacity: 80
 
 controls:
-  # Show Next/Prev buttons
   show_next_prev: true

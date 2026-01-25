@@ -224,13 +224,38 @@ fn build_ui(app: &Application) {
 
                     let _ = x11_hints::set_override_redirect(xid, false);
                     let _ = x11_hints::set_widget_hints(xid);
+                    
+                    // Initial positioning
                     let _ = x11_hints::set_wm_normal_hints(xid, x, y, w_phys, h_phys);
                     let _ = x11_hints::move_window(xid, x, y);
 
-                    glib::timeout_add_local_once(Duration::from_millis(500), move || {
+
+                    // RE-MEASURE and RE-POSITION loop to handle dynamic content (font loading, weather text)
+                    // This ensures layout is correct even if initial measure was too small
+                    let window_loop = window.clone();
+                    glib::timeout_add_local(Duration::from_millis(1000), move || {
+                        let (_, nat_height, _, _) = window_loop.measure(gtk4::Orientation::Vertical, width);
+                        let actual_h = nat_height;
+                        
+                        // Recalculate Y
+                        let (_, new_ly) = match pos_str.as_str() {
+                            "top_left" | "top_right" => (0, gy), // Y is fixed
+                            "bottom_left" | "bottom_right" | _ => (0, monitor_h - actual_h - gy),
+                        };
+                        let new_y = new_ly * scale_factor;
+                        let new_h_phys = actual_h * scale_factor;
+
+                        let _ = x11_hints::set_wm_normal_hints(xid, x, new_y, w_phys, new_h_phys);
+                        let _ = x11_hints::move_window(xid, x, new_y);
+                        
+                        // Enforce widget state (sticky, skip_taskbar, below)
                         let _ = x11_hints::set_widget_state_via_message(xid);
                         let _ = x11_hints::lower_window(xid);
+                        
+                        // Check if we need to keep correcting (hacky but reliable for X11 docks)
+                        glib::ControlFlow::Continue
                     });
+                    
                 }
             }
         }

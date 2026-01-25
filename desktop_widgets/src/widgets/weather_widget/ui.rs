@@ -57,7 +57,9 @@ pub fn build(window: &gtk4::ApplicationWindow, config: &Config) -> Widgets {
     content.set_margin_start(padding);
     content.set_margin_end(padding);
     content.set_margin_top(padding);
-    content.set_margin_bottom(padding);
+    // TWEAK: Reduce bottom margin to compensate for visual "phantom" space 
+    // from icons/labels in sys_row, restoring visual symmetry.
+    content.set_margin_bottom(padding - s(6.0));
 
     // --- Row 1: Date & Emoji ---
     let date_row = Box::builder()
@@ -319,7 +321,7 @@ pub fn update_from_message(widgets: &Widgets, msg: &UpdateMessage, config: &Conf
             widgets.w_temp.set_label(&w.temp);
             widgets.w_desc.set_label(&w.desc);
             widgets.w_city.set_label(&w.city);
-            widgets.wind.set_label(&w.wind);
+            widgets.wind.set_label(&format!("{} {}", w.wind, w.wind_direction));
             widgets.humidity.set_label(&w.humidity);
         },
         UpdateMessage::Stats(s) => {

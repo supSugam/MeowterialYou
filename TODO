@@ -112,3 +112,10 @@ for eg, i run widget, then initially it is darkist high contrast then when i cli
 i dont think it can be doable with css, i feel like we need gtk tweak
 
 probably bad transparency persistence
+
+
+when a multiple widget are rendered on the same side, ideally to not have a crap look, it is good to enforce same width and gapx for them for perfect alignment and tune up with each other, what do you think?
+
+does this mean we should have a global config.yaml on configs dir to define vertical order of widgets, spacing between widgets, remove leftside width and right side width which will override when multiple widgets render on same side etc?
+
+how can we besttt handle this

@@ -6,6 +6,7 @@ pub struct WeatherData {
     pub city: String,
     pub humidity: String,
     pub wind: String,
+    pub wind_direction: String,
 }
 
 impl Default for WeatherData {
@@ -17,6 +18,7 @@ impl Default for WeatherData {
             city: "...".to_string(),
             humidity: "".to_string(),
             wind: "".to_string(),
+            wind_direction: "".to_string(),
         }
     }
 }

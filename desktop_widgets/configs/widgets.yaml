@@ -1,0 +1,18 @@
+global:
+  # List of enabled widgets, widgets not in this list will not be loaded
+  enabled:
+    - weatherclock
+    - mediawidget
+  # Overrides the width of the widget when below conditions are met
+  width:
+    # Is only activated when more than one widget has its layout.position set to top_left or bottom_left
+    left_side: 360
+    # Is only activated when more than one widget has its layout.position set to top_right or bottom_right
+    right_side: 360
+  # Overrides the scale factor of the widget when below conditions are met
+  scale_factor:
+    # Is only activated when more than one widget has its layout.position set to top_left or bottom_left
+    left_side: 1.0
+    # Is only activated when more than one widget has its layout.position set to top_right or bottom_right
+    right_side: 1.0
+  

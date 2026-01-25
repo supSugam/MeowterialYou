@@ -1,5 +1,5 @@
 use gtk4::prelude::*;
-use gtk4::{Align, Box, Button, Image, Label, Orientation, Scale, Adjustment, Picture, Stack, StackTransitionType, Overlay};
+use gtk4::{Align, Box, Button, Image, Label, Orientation, Scale, Adjustment, Picture, Stack, StackTransitionType, Overlay, AspectFrame};
 use gtk4::glib;
 use crate::widgets::media_widget::config::Config;
 use crate::common::marquee::{MarqueeLabel, Direction};
@@ -45,21 +45,54 @@ pub fn build(window: &gtk4::ApplicationWindow, cmd_sender: async_channel::Sender
     // Base dimensions (Pro Standard)
     // Detect Mode
     let is_portrait = config.layout.mode == "portrait";
-    let base_width = if is_portrait { 220.0 } else { 320.0 };
+    let base_width = if let Some(w) = config.layout.width {
+        w as f64
+    } else {
+        if is_portrait { 320.0 } else { 320.0 } // Default fallback
+    };
     
     // Scale helper
     let s = move |v: f64| -> i32 { (v * scale).round() as i32 };
     
     // Calculated dimensions
     let widget_width = s(base_width);
+    let padding_val = config.layout.padding as f64;
+    
+    // Calculate border width early for root wrapper sizing
+    let border_x = s(config.appearance.border_width as f64) * 2;
+    
     
     // --- ROOT WRAPPER ---
     let root_wrapper = Box::builder()
         .orientation(Orientation::Vertical)
-        .width_request(widget_width)
+        // Request width MINUS border width, because GTK/CSS adds border to the requested size
+        .width_request(widget_width - border_x)
         .spacing(0)
         .build();
     root_wrapper.add_css_class("view");
+
+    // --- CONTENT WRAPPER (Handles Padding) ---
+    // Similar to weather_widget, we wrap inner content to apply margins uniformly
+    let content_wrapper = Box::builder()
+        .orientation(Orientation::Vertical)
+        .halign(Align::Fill)
+        .valign(Align::Fill)
+        .hexpand(true)
+        .vexpand(true)
+        .build();
+    
+    // Apply padding via Gtk Margins to the wrapper
+    // TWEAK: Reduce bottom margin to account for Dots presence, restoring visual symmetry
+    // We want Total Bottom Space (Dots + Margin) = Padding
+    let dots_height = s(12.0); 
+    let padding_bottom = (s(padding_val) - dots_height).max(0);
+
+    content_wrapper.set_margin_start(s(padding_val));
+    content_wrapper.set_margin_end(s(padding_val));
+    content_wrapper.set_margin_top(s(padding_val));
+    content_wrapper.set_margin_bottom(padding_bottom);
+
+    root_wrapper.append(&content_wrapper);
 
     // --- STACK (The Carousel) ---
     let stack = Stack::builder()
@@ -75,7 +108,7 @@ pub fn build(window: &gtk4::ApplicationWindow, cmd_sender: async_channel::Sender
     stack.add_named(&view_1.container, Some("view_1"));
     stack.add_named(&view_2.container, Some("view_2"));
 
-    root_wrapper.append(&stack);
+    content_wrapper.append(&stack);
 
     // Dots - Fixed height
     let dots_box = Box::builder()
@@ -83,11 +116,11 @@ pub fn build(window: &gtk4::ApplicationWindow, cmd_sender: async_channel::Sender
         .halign(Align::Center)
         .hexpand(true)
         .vexpand(false)
-        .height_request(s(20.0))
+        .height_request(dots_height)
         .build();
     dots_box.add_css_class("dots-box");
     
-    root_wrapper.append(&dots_box);
+    content_wrapper.append(&dots_box);
 
     // Add Drag Controller to Root Wrapper to capture clicks
     let drag_controller = gtk4::GestureClick::new();
@@ -127,11 +160,17 @@ where F: Fn(f64) -> i32 + Copy {
     // Reduced from 16.0 to 10.0 to match the visual gap between artist and controls
     let art_spacing = if is_portrait { s(10.0) } else { s(0.0) };
     
-    let base_width = if is_portrait { 320.0 } else { 320.0 };
+    let base_width = if let Some(w) = config.layout.width {
+        w as f64
+    } else {
+        if is_portrait { 320.0 } else { 320.0 }
+    };
     let widget_width = s(base_width);
+    let border_x = s(config.appearance.border_width as f64) * 2;
     
     // Intermediate content width for portrait
-    let port_content_width = widget_width - s(padding_val * 2.0);
+    // MUST subtract border so that Art Size (which fills this) + Margins + Border <= Widget Width
+    let port_content_width = widget_width - s(padding_val * 2.0) - border_x;
     
     // Art size logic
     let art_size = if is_portrait {
@@ -140,11 +179,31 @@ where F: Fn(f64) -> i32 + Copy {
          let art_size_base = stack_height_base * 1.1;
          s(art_size_base)
     };
-    
+    // Since we now use Gtk Margins for padding (applied to container), we don't need to subtract padding manually here
+    // But we DO need to account for space taken by art.
+    // Available space inside main_box depends on orientation.
+    // Horizontal: Available = widget_width - margins - art_size - spacing
+    // Vertical: Available = widget_width - margins
+
+    // We pass padding via margins to containers later, effectively reducing available space.
+    // BUT since we set width_request on inner boxes, we must be careful.
+    // If we request too much, we blow up.
+    // Let's assume widget_width accounts for margins?
+    // In weather_widget: root(320) -> child(margin=20). Child gets 280. Matches.
+    // So 'content_width' here refers to the width of the DETAILS box.
+    // subtract border width (2 sides) so we don't push the parent out.
+
+    // The padding is now applied to the content_wrapper in the build function,
+    // so the PlayerView's internal calculations should consider the full available width
+    // within that padded area.
+    // The widget_width here is the original base_width scaled.
+    // The actual available width for the PlayerView container is `widget_width - border_x - s(padding_val * 2.0)`.
+    // However, since main_box itself doesn't have margins anymore, its children should sum up to this available width.
+    // The `content_width` here refers to the width of the DETAILS box.
     let content_width = if is_portrait {
-         port_content_width
+         widget_width - s(padding_val * 2.0) - border_x
     } else {
-         widget_width - s(padding_val * 2.0) - art_size - art_spacing
+         widget_width - s(padding_val * 2.0) - art_size - art_spacing - border_x
     };
 
     // --- MAIN BOX ---
@@ -155,8 +214,10 @@ where F: Fn(f64) -> i32 + Copy {
         .vexpand(false)
         .halign(Align::Fill)
         .build();
+    
+    // Apply padding via Gtk Margins (matching weather_widget logic)
+    // REMOVED - Applied to wrapper now
 
-    // --- ART SECTION ---
     // --- ART SECTION ---
     let art_box = Box::builder()
         .orientation(Orientation::Vertical)
@@ -176,7 +237,16 @@ where F: Fn(f64) -> i32 + Copy {
         .height_request(art_size)
         .build();
     art_overlay.add_css_class("art-overlay");
-
+    
+    // Use AspectFrame to enforce 1:1 ratio
+    let aspect_frame = AspectFrame::builder()
+        .xalign(0.5)
+        .yalign(0.5)
+        .ratio(1.0)
+        .obey_child(false)
+        .child(&art_overlay)
+        .build();
+    
     let art_image = Picture::builder()
         .width_request(art_size)
         .height_request(art_size)
@@ -216,10 +286,11 @@ where F: Fn(f64) -> i32 + Copy {
     art_overlay.add_overlay(&app_icon_btn);
     
     art_box.set_overflow(gtk4::Overflow::Hidden);
-    art_box.append(&art_overlay);
+    art_box.append(&aspect_frame);
 
     // Details spacing
-    let details_spacing = if is_portrait { s(8.0) } else { s(details_spacing_base) };
+    // Match art_spacing (10.0) for consistency
+    let details_spacing = if is_portrait { s(10.0) } else { s(details_spacing_base) };
 
     // --- DETAILS SECTION ---
     let details_box = Box::builder()
@@ -233,11 +304,9 @@ where F: Fn(f64) -> i32 + Copy {
         .build();
 
     // A. Labels
-    let labels_height = s(labels_height_base);
     let labels_box = Box::builder()
         .orientation(Orientation::Vertical)
         .spacing(s(2.0))
-        .height_request(labels_height) 
         .vexpand(false)
         .halign(Align::Fill) // Fill needed for Marquee to measure width properly
         .build();

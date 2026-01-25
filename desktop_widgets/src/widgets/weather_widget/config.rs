@@ -149,20 +149,41 @@ pub fn load() -> Result<(), Box<dyn std::error::Error>> {
             match fs::read_to_string(path) {
                 Ok(contents) => {
                     match serde_yaml::from_str::<Config>(&contents) {
-                        Ok(config) => {
+                        Ok(mut config) => {
                             eprintln!("Loaded Config: {:?}", config);
+                             // Apply Env Overrides (Global Alignment)
+                            if let Ok(w) = std::env::var("MEOW_WIDGET_WIDTH") {
+                                if let Ok(val) = w.parse::<i32>() { config.layout.width = val; }
+                            }
+                            if let Ok(s) = std::env::var("MEOW_WIDGET_SCALE") {
+                                if let Ok(val) = s.parse::<f64>() { config.layout.scale = val; }
+                            }
+                            if let Ok(p) = std::env::var("MEOW_WIDGET_PADDING") {
+                                if let Ok(val) = p.parse::<i32>() { config.layout.padding = val; }
+                            }
+                            if let Ok(gx) = std::env::var("MEOW_WIDGET_GAP_X") {
+                                if let Ok(val) = gx.parse::<i32>() { 
+                                    if config.layout.gap.len() >= 1 { config.layout.gap[0] = val; }
+                                }
+                            }
+                            if let Ok(gy) = std::env::var("MEOW_WIDGET_GAP_Y") {
+                                if let Ok(val) = gy.parse::<i32>() { 
+                                    if config.layout.gap.len() >= 2 { config.layout.gap[1] = val; }
+                                }
+                            }
+
                             let mut global_conf = CONFIG.write().unwrap();
                             *global_conf = config;
                             return Ok(());
                         }
                         Err(e) => {
-                            eprintln!("Failed to parse config {:?}: {}, trying next...", path, e);
+                            eprintln!("Failed to parse config {:?}: {}", path, e);
                             continue;
                         }
                     }
                 }
                 Err(e) => {
-                    eprintln!("Failed to read config {:?}: {}, trying next...", path, e);
+                    eprintln!("Failed to read config {:?}: {}", path, e);
                     continue;
                 }
             }
