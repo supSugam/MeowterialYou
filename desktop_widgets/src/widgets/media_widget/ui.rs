@@ -37,6 +37,7 @@ pub struct Widgets {
     pub view_2: PlayerView,
     pub dots_box: Box,
     pub cmd_sender: async_channel::Sender<crate::widgets::media_widget::mpris::MprisCommand>,
+    pub root: Box,
 }
 
 pub fn build(window: &gtk4::ApplicationWindow, cmd_sender: async_channel::Sender<crate::widgets::media_widget::mpris::MprisCommand>, config: &Config) -> Widgets {
@@ -138,6 +139,7 @@ pub fn build(window: &gtk4::ApplicationWindow, cmd_sender: async_channel::Sender
         view_2,
         dots_box,
         cmd_sender,
+        root: root_wrapper,
     }
 }
 

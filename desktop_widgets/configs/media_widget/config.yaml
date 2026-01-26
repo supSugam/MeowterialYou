@@ -2,9 +2,9 @@ layout:
   position: bottom_left
   scale: 1.0
   padding: 20
-  mode: portrait
-  gap: [24, 450]
-  width: 360
+  mode: landscape
+  gap: [24, 360]
+  width: 300
 
 appearance:
   corner_radius: 8

@@ -35,10 +35,14 @@ pub fn build(window: &gtk4::ApplicationWindow, config: &Config) -> Widgets {
     let align_right = config.layout.alignment == "right" || (config.layout.alignment == "auto" && config.layout.position.contains("right"));
     let h_align = if align_right { Align::End } else { Align::Start };
 
+    // Calculate border width early for root wrapper sizing
+    let border_x = s(config.layout.border_width as f64) * 2;
+
     // --- ROOT ---
     let root = Box::builder()
         .orientation(Orientation::Vertical)
-        .width_request(s(config.layout.width as f64))
+        // Request width MINUS border width, because GTK/CSS adds border to the requested size
+        .width_request(s(config.layout.width as f64) - border_x)
         .build();
     root.add_css_class("view");
 
@@ -243,7 +247,7 @@ pub fn build(window: &gtk4::ApplicationWindow, config: &Config) -> Widgets {
     let cpu = create_stat("", "0%", s);
     let ram = create_stat("", "0%", s);
     let net = create_stat("", "0 K", s);
-    let temp_label = create_stat("", "0°C", s);
+    let temp_label_stat = create_stat("", "0°C", s);
 
     sys_row.append(&cpu.0);
     sys_row.append(&Box::builder().hexpand(true).build());
@@ -251,7 +255,7 @@ pub fn build(window: &gtk4::ApplicationWindow, config: &Config) -> Widgets {
     sys_row.append(&Box::builder().hexpand(true).build());
     sys_row.append(&net.0);
     sys_row.append(&Box::builder().hexpand(true).build());
-    sys_row.append(&temp_label.0);
+    sys_row.append(&temp_label_stat.0);
     content.append(&sys_row);
 
     window.set_child(Some(&root));
@@ -270,12 +274,12 @@ pub fn build(window: &gtk4::ApplicationWindow, config: &Config) -> Widgets {
         cpu: cpu.1,
         ram: ram.1,
         net: net.1,
-        temp: temp_label.1,
+        temp: temp_label_stat.1,
         w_row: weather_row,
         d_row: detail_row,
         divider,
         sys_row,
-        root,
+        root: root,
     };
 
     update_from_message(&widgets, &UpdateMessage::Time { 
@@ -283,7 +287,7 @@ pub fn build(window: &gtk4::ApplicationWindow, config: &Config) -> Widgets {
         ampm: "AM".to_string(), 
         date: "Mon, Jan 01".to_string() 
     }, config);
-    
+
     widgets
 }
 

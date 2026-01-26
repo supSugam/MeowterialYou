@@ -16,32 +16,35 @@ struct GlobalConfig {
 #[derive(Debug, Deserialize, Clone)]
 struct GlobalSection {
     enabled: Option<Vec<String>>,
-    width: Option<WidthConfig>,
-    scale_factor: Option<ScaleConfig>,
-}
-
-#[derive(Debug, Deserialize, Clone)]
-struct WidthConfig {
-    left_side: Option<i32>,
-    right_side: Option<i32>,
-}
-
-#[derive(Debug, Deserialize, Clone)]
-struct ScaleConfig {
-    left_side: Option<f64>,
-    right_side: Option<f64>,
+    // Legacy width/scale config removed
 }
 
 // Minimal config structs for parsing individual widget configs
 #[derive(Debug, Deserialize)]
 struct MinimalWidgetConfig {
     layout: MinimalLayoutConfig,
+    appearance: Option<MinimalAppearanceConfig>,
 }
 
 #[derive(Debug, Deserialize)]
 struct MinimalLayoutConfig {
     position: String,
+    width: Option<i32>,
+    #[serde(default = "default_scale")]
+    scale: f64,
+    mode: Option<String>,
+    #[serde(default = "default_border")]
+    border_width: i32,
 }
+
+#[derive(Debug, Deserialize)]
+struct MinimalAppearanceConfig {
+    #[serde(default = "default_border")]
+    border_width: i32,
+}
+
+fn default_scale() -> f64 { 1.0 }
+fn default_border() -> i32 { 0 }
 
 struct ManagedWidget {
     name: String,
@@ -122,6 +125,8 @@ fn discover_bin(name: &str) -> Option<PathBuf> {
     let paths = [
         format!("./target/release/{}", name),
         format!("../target/release/{}", name),
+        format!("./target/debug/{}", name),
+        format!("../target/debug/{}", name),
         format!("{}/.local/bin/{}", home, name),
         format!("./{}", name),
     ];
@@ -129,7 +134,7 @@ fn discover_bin(name: &str) -> Option<PathBuf> {
     for p in paths {
         let path = PathBuf::from(p);
         if path.exists() {
-            return Some(path);
+            return std::fs::canonicalize(path).ok();
         }
     }
     None
@@ -143,13 +148,66 @@ fn resolve_widget_alias(alias: &str) -> String {
     }
 }
 
-fn get_widget_position(config_path: &Path) -> Option<String> {
+fn log(msg: &str) {
+    let log_file = "/tmp/meowterialyou-manager.log";
+    if let Ok(mut file) = std::fs::OpenOptions::new()
+        .create(true)
+        .append(true)
+        .open(log_file)
+    {
+        use std::io::Write;
+        let ts = chrono::Local::now().format("%Y-%m-%d %H:%M:%S");
+        let _ = writeln!(file, "[{}] {}", ts, msg);
+    }
+    println!("{}", msg);
+}
+
+fn get_widget_info(config_path: &Path, name: &str) -> Option<(String, i32, f64)> {
     if let Ok(content) = std::fs::read_to_string(config_path) {
         if let Ok(cfg) = serde_yaml::from_str::<MinimalWidgetConfig>(&content) {
-            return Some(cfg.layout.position);
+            let scale = cfg.layout.scale;
+            let natural_w = estimate_natural_width(name, &cfg);
+            
+            // Handle inconsistent border_width location (layout vs appearance)
+            let border_width = if cfg.layout.border_width > 0 {
+                cfg.layout.border_width
+            } else {
+                cfg.appearance.map(|a| a.border_width).unwrap_or(0)
+            };
+            let border_x = border_width * 2;
+            
+            // Final pixel width includes border and is scaled
+            let final_w = ((natural_w as f64) * scale).round() as i32 + (border_x as f64 * scale).round() as i32;
+            
+            log(&format!("🔍 [{}] Position: {}, Natural Width: {}, Scale: {}, Border: {}, Final Pixel Width: {}", 
+                name, cfg.layout.position, natural_w, scale, border_x, final_w));
+            
+            return Some((cfg.layout.position, final_w, scale));
         }
     }
     None
+}
+
+fn estimate_natural_width(name: &str, cfg: &MinimalWidgetConfig) -> i32 {
+    let min_natural = match name {
+        "media_widget" => {
+            let is_portrait = cfg.layout.mode.as_deref() == Some("portrait");
+            if is_portrait {
+                360 // Needs enough for progress + controls
+            } else {
+                // Landscape: Art (~160) + Controls/Details (~220) + Padding (~60) + Spacing + Border
+                // Total ~460 is a safe minimum to prevent GTK auto-expansion
+                460 
+            }
+        },
+        "weather_widget" => 380, // Updated to match weather_widget's own default
+        _ => 360,
+    };
+
+    match cfg.layout.width {
+        Some(w) => w.max(min_natural),
+        None => min_natural,
+    }
 }
 
 fn find_widget_config(name: &str, home: &str) -> PathBuf {
@@ -221,21 +279,29 @@ async fn main() -> Result<()> {
 
     let mut managed_widgets = HashMap::new();
     let mut widget_positions = HashMap::new();
+    let mut widget_pixel_widths = HashMap::new();
+    let mut widget_scales = HashMap::new();
 
     // 1. Discovery and Position Analysis
+    log("🚀 Starting Discovery...");
     for name in &enabled_widgets_names {
         if !all_widgets.contains(&name.as_str()) {
-             eprintln!("⚠️  Unknown widget '{}' in enabled list, skipping.", name);
+             log(&format!("⚠️  Unknown widget '{}' in enabled list, skipping.", name));
              continue;
         }
 
         if let Some(bin_path) = discover_bin(name) {
              let config_path = find_widget_config(name, &home);
              
-             if let Some(pos) = get_widget_position(&config_path) {
+             if let Some((pos, pixel_w, scale)) = get_widget_info(&config_path, name) {
                  widget_positions.insert(name.clone(), pos);
+                 widget_pixel_widths.insert(name.clone(), pixel_w);
+                 widget_scales.insert(name.clone(), scale);
              } else {
+                 log(&format!("⚠️  Failed to parse config for {}, using defaults.", name));
                  widget_positions.insert(name.clone(), "bottom_right".to_string());
+                 widget_pixel_widths.insert(name.clone(), 360);
+                 widget_scales.insert(name.clone(), 1.0);
              }
 
              managed_widgets.insert(name.clone(), ManagedWidget {
@@ -246,53 +312,32 @@ async fn main() -> Result<()> {
                  env_vars: HashMap::new(),
              });
         } else {
-            eprintln!("⚠️  Worker binary for '{}' not found, skipping.", name);
+            log(&format!("⚠️  Worker binary for '{}' not found, skipping.", name));
         }
     }
 
-    // 2. Count Side Overlaps
-    let left_count = widget_positions.values().filter(|p| is_left_side(p)).count();
-    let right_count = widget_positions.values().filter(|p| is_right_side(p)).count();
+    // 2. Count Side Overlaps and Limit Widths
+    let left_widgets: Vec<&String> = widget_positions.iter()
+        .filter(|(_, pos)| is_left_side(pos))
+        .map(|(name, _)| name)
+        .collect();
+        
+    let right_widgets: Vec<&String> = widget_positions.iter()
+        .filter(|(_, pos)| is_right_side(pos))
+        .map(|(name, _)| name)
+        .collect();
 
-    println!("📊 Layout Analysis: Left Side Widgets: {}, Right Side Widgets: {}", left_count, right_count);
+    let _ = meowterialyou_widgets::common::layout_sync::clear_state();
+
+    log(&format!("📊 Layout Analysis:"));
+    log(&format!("   Left Side Widgets: {}", left_widgets.len()));
+    log(&format!("   Right Side Widgets: {}", right_widgets.len()));
 
     // 3. Apply Overrides and Start
     for (name, mw) in managed_widgets.iter_mut() {
-        if let Some(pos) = widget_positions.get(name) {
-            let mut width_override = None;
-            let mut scale_override = None;
-
-            if let Some(ref gc) = global_config {
-                // Apply Width Override
-                if let Some(ref w_conf) = gc.global.width {
-                    if is_left_side(pos) && left_count > 1 {
-                        width_override = w_conf.left_side;
-                    } else if is_right_side(pos) && right_count > 1 {
-                        width_override = w_conf.right_side;
-                    }
-                }
-                // Apply Scale Override
-                if let Some(ref s_conf) = gc.global.scale_factor {
-                    if is_left_side(pos) && left_count > 1 {
-                        scale_override = s_conf.left_side;
-                    } else if is_right_side(pos) && right_count > 1 {
-                        scale_override = s_conf.right_side;
-                    }
-                }
-            }
-
-            if let Some(w) = width_override {
-                println!("📏 Applying width override {} to {}", w, name);
-                mw.env_vars.insert("MEOW_WIDGET_WIDTH".to_string(), w.to_string());
-            }
-            if let Some(s) = scale_override {
-                println!("⚖️  Applying scale override {} to {}", s, name);
-                mw.env_vars.insert("MEOW_WIDGET_SCALE".to_string(), s.to_string());
-            }
-        }
-
+        log(&format!("🚀 Starting: {}", name));
         if let Err(e) = mw.start().await {
-            eprintln!("❌ Error starting {}: {}", name, e);
+            log(&format!("❌ Failed to start {}: {}", name, e));
         }
     }
 
