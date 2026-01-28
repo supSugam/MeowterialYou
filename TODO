@@ -119,3 +119,22 @@ when a multiple widget are rendered on the same side, ideally to not have a crap
 does this mean we should have a global config.yaml on configs dir to define vertical order of widgets, spacing between widgets, remove leftside width and right side width which will override when multiple widgets render on same side etc?
 
 how can we besttt handle this
+
+
+
+
+good, that worked.
+
+now weather_widget has missing width, please make it like media_widgets and also divide the yaml blocks/sections/descriptions with options and suggestions etc consistent form, and update code accordingly too
+
+1. You probably fucked up with border width calculation for width, it ended up making the weatherwidget slightly wider (very very subtly wider) than media widget.
+2. I have told this thousand times, height for widgets is auto mode ie. based on content but since every content has predicated dimensions, that should be followed. I am talking about the image problem, album art image size/aspect ratio is still affecting the dimensions of image container part, when i repeatedly keep telling you that it should be strictly 1:1. Currently in portrait mode, when a album art is high quality and larger, the image container expands and when its not it shrink, while it should be simply expanding to take all the width it can possible take while maintaining 1:1 ratio.
+
+
+
+
+
+
+still not strict 1:1 album art bruhhhhhhhhhhhhhhhhh, how is it so hard dude? album image art size whatever is totally irrelevant. I have told this thousand times, height for widgets is auto mode ie. based on content but since every content has predicated dimensions, that should be followed. I am talking about the image problem, album art image size/aspect ratio is still affecting the dimensions of image container part, when i repeatedly keep telling you that it should be strictly 1:1. Currently in portrait mode, when a album art is high quality and larger, the image container expands and when its not it shrink, while it should be simply expanding to take all the width it can possible take while maintaining 1:1 ratio.
+
+this happens in portrait mode, see the difference how it is handled this is a simple tweak, not rocket science, you dont need to touch so many files or code

@@ -17,12 +17,6 @@ pub fn load_css(config: &Config) {
     let border_width = s(config.appearance.border_width as f64).max(0);
     let opacity = config.background.opacity as f64 / 100.0;
     
-    // Calculate art size from base height 152.0 (Pro Standard)
-    let base_height = 152.0;
-    // We use the configured padding (or default 16) for calculation
-    let art_padding = config.layout.padding as f64; 
-    let art_size = s(base_height - (art_padding * 2.0));
-    
     // Font sizes (scaled)
     let font_title = s(18.0);
     let font_artist = s(12.0);
@@ -39,6 +33,22 @@ pub fn load_css(config: &Config) {
     // Spacing (scaled)
     let is_portrait = config.layout.mode == "portrait";
     let art_margin = if is_portrait { 0 } else { s(16.0) };
+
+    // Calculate art size
+    let art_size = if is_portrait {
+        // Portrait: Full width minus padding and borders
+        let base_width = if let Some(w) = config.layout.width { w as f64 } else { 320.0 };
+        let widget_width = s(base_width);
+        let padding_val = config.layout.padding as f64;
+        // Strict Match: Use s(padding) * 2 to match margin-start + margin-end exactly
+        // REMOVED border_x subtraction to ensure we fill the optical width
+        widget_width - (s(padding_val) * 2) 
+    } else {
+        // Landscape: Base height minus padding
+        let base_height = 152.0;
+        let art_padding = config.layout.padding as f64; 
+        s(base_height - (art_padding * 2.0))
+    };
 
     let css_data = format!(r#"
         {theme}

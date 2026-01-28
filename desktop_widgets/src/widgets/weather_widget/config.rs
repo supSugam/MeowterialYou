@@ -11,6 +11,7 @@ lazy_static! {
 #[derive(Clone, Debug, Deserialize)]
 pub struct Config {
     pub layout: LayoutConfig,
+    pub appearance: AppearanceConfig,
     pub emoji: EmojiConfig,
     pub typography: TypographyConfig,
     pub background: BackgroundConfig,
@@ -25,12 +26,14 @@ impl Default for Config {
         Self {
             layout: LayoutConfig {
                 position: "bottom_left".to_string(),
-                width: 380,
+                width: Some(380),
                 gap: vec![24, 80],
                 alignment: "auto".to_string(),
                 scale: 1.0,
                 padding: 20,
-                corner_radius: 0,
+            },
+            appearance: AppearanceConfig {
+                corner_radius: 12,
                 border_width: 0,
             },
             emoji: EmojiConfig {
@@ -74,12 +77,18 @@ impl Default for Config {
 #[derive(Clone, Debug, Deserialize)]
 pub struct LayoutConfig {
     pub position: String,
-    pub width: i32,
+    #[serde(default)]
+    pub width: Option<i32>,
     pub gap: Vec<i32>,
     pub alignment: String,
     pub scale: f64,
     pub padding: i32,
+}
+
+#[derive(Clone, Debug, Deserialize)]
+pub struct AppearanceConfig {
     pub corner_radius: i32,
+    #[serde(default)]
     pub border_width: i32,
 }
 
@@ -153,7 +162,7 @@ pub fn load() -> Result<(), Box<dyn std::error::Error>> {
                             eprintln!("Loaded Config: {:?}", config);
                              // Apply Env Overrides (Global Alignment)
                             if let Ok(w) = std::env::var("MEOW_WIDGET_WIDTH") {
-                                if let Ok(val) = w.parse::<i32>() { config.layout.width = val; }
+                                if let Ok(val) = w.parse::<i32>() { config.layout.width = Some(val); }
                             }
                             if let Ok(s) = std::env::var("MEOW_WIDGET_SCALE") {
                                 if let Ok(val) = s.parse::<f64>() { config.layout.scale = val; }

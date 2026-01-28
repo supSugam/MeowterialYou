@@ -2,7 +2,7 @@ layout:
   position: bottom_left
   scale: 1.0
   padding: 20
-  mode: landscape
+  mode: portrait
   gap: [24, 360]
   width: 300
 

@@ -1,6 +1,6 @@
 use gtk4::prelude::*;
-use gtk4::{Align, Box, Button, Image, Label, Orientation, Scale, Adjustment, Picture, Stack, StackTransitionType, Overlay, AspectFrame};
-use gtk4::glib;
+use gtk4::{Align, Box, Button, Image, Label, Orientation, Scale, Adjustment, Picture, Stack, StackTransitionType, Overlay, ScrolledWindow, PolicyType, ContentFit};
+use gtk4::gdk;
 use crate::widgets::media_widget::config::Config;
 use crate::common::marquee::{MarqueeLabel, Direction};
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -59,15 +59,11 @@ pub fn build(window: &gtk4::ApplicationWindow, cmd_sender: async_channel::Sender
     let widget_width = s(base_width);
     let padding_val = config.layout.padding as f64;
     
-    // Calculate border width early for root wrapper sizing
-    let border_x = s(config.appearance.border_width as f64) * 2;
-    
-    
     // --- ROOT WRAPPER ---
     let root_wrapper = Box::builder()
         .orientation(Orientation::Vertical)
-        // Request width MINUS border width, because GTK/CSS adds border to the requested size
-        .width_request(widget_width - border_x)
+        // Request width directly, GTK content-box model plus border ensures correct total size
+        .width_request(widget_width)
         .spacing(0)
         .build();
     root_wrapper.add_css_class("view");
@@ -171,8 +167,9 @@ where F: Fn(f64) -> i32 + Copy {
     let border_x = s(config.appearance.border_width as f64) * 2;
     
     // Intermediate content width for portrait
-    // MUST subtract border so that Art Size (which fills this) + Margins + Border <= Widget Width
-    let port_content_width = widget_width - s(padding_val * 2.0) - border_x;
+    // Matches styles.rs logic: widget_width - (margins) 
+    // Removed border_x to prevent gaps
+    let port_content_width = widget_width - (s(padding_val) * 2);
     
     // Art size logic
     let art_size = if is_portrait {
@@ -212,47 +209,47 @@ where F: Fn(f64) -> i32 + Copy {
     let main_box = Box::builder()
         .orientation(if is_portrait { Orientation::Vertical } else { Orientation::Horizontal })
         .spacing(art_spacing)
-        .hexpand(false)
+        .hexpand(true) // Allow content to follow root expansion
         .vexpand(false)
         .halign(Align::Fill)
         .build();
     
-    // Apply padding via Gtk Margins (matching weather_widget logic)
-    // REMOVED - Applied to wrapper now
-
     // --- ART SECTION ---
-    let art_box = Box::builder()
-        .orientation(Orientation::Vertical)
+    // SPACER STRATEGY:
+    // We create a 1x1 transparent image that fills width and enforces aspect ratio.
+    // This forces the container height to match the width naturally.
+    let spacer_texture = gdk::MemoryTexture::new(
+        1, 1, 
+        gdk::MemoryFormat::R8g8b8a8, 
+        &gtk4::glib::Bytes::from(&[0, 0, 0, 0]), 
+        4
+    );
+    let spacer = Picture::builder()
+        .paintable(&spacer_texture)
+        .content_fit(ContentFit::Contain) // Ensure it respects ratio
+        .can_shrink(false)
+        .halign(Align::Fill)
+        .valign(Align::Fill)
+        .hexpand(if is_portrait { true } else { false })
+        .width_request(if is_portrait { -1 } else { art_size })
+        .height_request(if is_portrait { -1 } else { art_size })
+        .build();
+
+    // Use Overlay as the main container
+    let art_overlay_container = Overlay::builder()
+        .halign(if is_portrait { Align::Fill } else { Align::Center })
         .valign(Align::Center)
-        // Ensure Fill in portrait to stretch image
-        .halign(if is_portrait { Align::Fill } else { Align::Start })
-        .width_request(art_size)
-        .height_request(art_size)
-        .hexpand(false)
-        .vexpand(false)
         .build();
-    art_box.add_css_class("art-container");
+    art_overlay_container.add_css_class("art-container");
     
-    // --- ART OVERLAY ---
-    let art_overlay = Overlay::builder()
-        .width_request(art_size)
-        .height_request(art_size)
-        .build();
-    art_overlay.add_css_class("art-overlay");
-    
-    // Use AspectFrame to enforce 1:1 ratio
-    let aspect_frame = AspectFrame::builder()
-        .xalign(0.5)
-        .yalign(0.5)
-        .ratio(1.0)
-        .obey_child(false)
-        .child(&art_overlay)
-        .build();
-    
+    // The Spacer drives the size of the overlay
+    art_overlay_container.set_child(Some(&spacer));
+
+    // --- REAL ART CONTENT ---
+    // Wrapped in Overlay -> ScrolledWindow(Never) -> Picture
+    // This allows it to fill the spacer's allocated size without pushing it.
     let art_image = Picture::builder()
-        .width_request(art_size)
-        .height_request(art_size)
-        .content_fit(gtk4::ContentFit::Cover)
+        .content_fit(ContentFit::Cover)
         .can_shrink(true)
         .halign(Align::Fill)
         .valign(Align::Fill)
@@ -283,12 +280,30 @@ where F: Fn(f64) -> i32 + Copy {
          let _ = raise_sender.send_blocking(crate::widgets::media_widget::mpris::MprisCommand::Raise);
     });
     
-    // Setup Overlay
-    art_overlay.set_child(Some(&art_image));
-    art_overlay.add_overlay(&app_icon_btn);
+    // Internal Overlay for Art + Icon
+    let content_overlay = Overlay::builder()
+        .halign(Align::Fill)
+        .valign(Align::Fill)
+        .build();
+    content_overlay.set_child(Some(&art_image));
+    content_overlay.add_overlay(&app_icon_btn);
     
-    art_box.set_overflow(gtk4::Overflow::Hidden);
-    art_box.append(&aspect_frame);
+    // WRAP IN SCROLLED WINDOW to enforce strict size clipping
+    let scroller = ScrolledWindow::builder()
+        .hscrollbar_policy(PolicyType::Never)
+        .vscrollbar_policy(PolicyType::Never)
+        .propagate_natural_width(false)
+        .propagate_natural_height(false)
+        .has_frame(false) 
+        .hexpand(true)
+        .vexpand(true)
+        .build();
+    
+    scroller.set_child(Some(&content_overlay));
+    
+    // Add scroller ON TOP of the spacer in the main overlay
+    art_overlay_container.add_overlay(&scroller);
+    art_overlay_container.set_overflow(gtk4::Overflow::Hidden);
 
     // Details spacing
     // Match art_spacing (10.0) for consistency
@@ -414,7 +429,7 @@ where F: Fn(f64) -> i32 + Copy {
     details_box.append(&controls_box);
     details_box.append(&progress_box);
 
-    main_box.append(&art_box);
+    main_box.append(&art_overlay_container);
     main_box.append(&details_box);
     
     // Scale Logic
@@ -439,7 +454,7 @@ where F: Fn(f64) -> i32 + Copy {
             }
             _ => {}
         }
-        glib::Propagation::Proceed
+        gtk4::glib::Propagation::Proceed
     });
     scale_widget.add_controller(legacy);
     

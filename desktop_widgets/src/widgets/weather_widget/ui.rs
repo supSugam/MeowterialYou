@@ -35,14 +35,11 @@ pub fn build(window: &gtk4::ApplicationWindow, config: &Config) -> Widgets {
     let align_right = config.layout.alignment == "right" || (config.layout.alignment == "auto" && config.layout.position.contains("right"));
     let h_align = if align_right { Align::End } else { Align::Start };
 
-    // Calculate border width early for root wrapper sizing
-    let border_x = s(config.layout.border_width as f64) * 2;
-
     // --- ROOT ---
+    let root_width = config.layout.width.unwrap_or(380);
     let root = Box::builder()
         .orientation(Orientation::Vertical)
-        // Request width MINUS border width, because GTK/CSS adds border to the requested size
-        .width_request(s(config.layout.width as f64) - border_x)
+        .width_request(s(root_width as f64))
         .build();
     root.add_css_class("view");
 
@@ -435,8 +432,8 @@ pub fn load_css(config: &Config) {
     "#,
         theme = theme_content,
         bg_opacity = bg_opacity,
-        radius = s(config.layout.corner_radius as f64).max(0),
-        border_width = s(config.layout.border_width as f64).max(0),
+        radius = s(config.appearance.corner_radius as f64).max(0),
+        border_width = s(config.appearance.border_width as f64).max(0),
         font = font,
         icon_font = icon_font,
         date_size = s(14.0),

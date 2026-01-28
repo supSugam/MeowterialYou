@@ -56,6 +56,7 @@ DO_UNINSTALL=false
 DO_DEFAULTS=false
 DO_REAPPLY=false
 REBUILD_WIDGETS=false
+CLI_REBUILD_WIDGETS=false
 SILENT=false
 HAS_GUM=false
 
@@ -733,11 +734,21 @@ EOF
             # Build only if needed or forced
             if [ "$REBUILD_WIDGETS" = true ] || [ ! -f "$BIN_DIR/meowterialyou-widget-manager" ]; then
                 echo -e "\n  ${DIM}Building widgets (this may take a while)...${NC}"
-                if cd "$SCRIPT_DIR/desktop_widgets" && cargo build --release --quiet; then
-                    print_success "Widgets built successfully"
+                if cd "$SCRIPT_DIR/desktop_widgets"; then
+                    if [ "$REBUILD_WIDGETS" = true ]; then
+                         echo -e "  ${DIM}Cleaning build artifacts...${NC}"
+                         cargo clean --quiet
+                    fi
+                    
+                    if cargo build --release --quiet; then
+                        print_success "Widgets built successfully"
+                    else
+                        print_error "Failed to build widgets"
+                        cd "$SCRIPT_DIR" || exit
+                        return 1
+                    fi
                 else
-                    print_error "Failed to build widgets"
-                    cd "$SCRIPT_DIR" || exit
+                    print_error "Could not enter widget directory"
                     return 1
                 fi
             else
@@ -922,6 +933,7 @@ THEME_VSCODE=$THEME_VSCODE
 THEME_OBSIDIAN=$THEME_OBSIDIAN
 THEME_VIVALDI=$THEME_VIVALDI
 THEMED_FOLDER_ICONS=$THEMED_FOLDER_ICONS
+REBUILD_WIDGETS=false
 
 EOF
 }
@@ -959,7 +971,7 @@ main() {
             --uninstall)   DO_UNINSTALL=true; shift ;;
             --defaults)    DO_DEFAULTS=true; SKIP_INTERACTIVE=true; shift ;;
             --reapply)     DO_REAPPLY=true; SKIP_INTERACTIVE=true; shift ;;
-            --rebuild-widgets) REBUILD_WIDGETS=true; shift ;;
+            --rebuild-widgets) CLI_REBUILD_WIDGETS=true; shift ;;
             --silent)      SILENT=true; shift ;;
             --help|-h)
                 echo "Usage: meowterialyou [OPTIONS]"
@@ -998,6 +1010,11 @@ main() {
             echo -e "  ${YELLOW}⚠️  No saved config found. Running with defaults.${NC}"
             DO_DEFAULTS=true
         fi
+    fi
+    
+    # CLI flag overrides config
+    if [ "$CLI_REBUILD_WIDGETS" = true ]; then
+        REBUILD_WIDGETS=true
     fi
     
     print_banner

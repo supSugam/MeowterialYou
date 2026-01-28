@@ -79,11 +79,10 @@ fn build_ui(app: &Application) {
     // --- RUNTIME WIDTH SYNC ---
     let widget_name = "media_widget".to_string();
     let pos_str = conf.layout.position.clone();
-    let border_x = (conf.appearance.border_width as f64 * conf.layout.scale).round() as i32 * 2;
     
     // Measure natural width (including scale)
     let (_, nat_width, _, _) = widgets.root.measure(gtk4::Orientation::Horizontal, -1);
-    let total_pixel_width = nat_width + border_x;
+    let total_pixel_width = nat_width;
     
     let side = if pos_str.contains("left") { "left" } else { "right" };
     let _ = meowterialyou_widgets::common::layout_sync::register_width(&widget_name, side, total_pixel_width);
@@ -95,12 +94,11 @@ fn build_ui(app: &Application) {
     
     let root_sync = widgets.root.clone();
     let side_sync = side.to_string();
-    let border_x_sync = border_x;
     glib::MainContext::default().spawn_local(async move {
         while let Ok(_) = layout_rx.recv().await {
             let max_w = meowterialyou_widgets::common::layout_sync::get_max_width(&side_sync);
             if max_w > 0 {
-                root_sync.set_width_request(max_w - border_x_sync);
+                root_sync.set_width_request(max_w);
             }
         }
     });
@@ -109,7 +107,7 @@ fn build_ui(app: &Application) {
     // Trigger initial sync
     let max_w = meowterialyou_widgets::common::layout_sync::get_max_width(side);
     if max_w > total_pixel_width {
-        widgets.root.set_width_request(max_w - border_x);
+        widgets.root.set_width_request(max_w);
     }
 
     let on_wayland = std::env::var("GDK_BACKEND").unwrap_or_default() != "x11";
