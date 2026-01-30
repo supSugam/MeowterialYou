@@ -59,8 +59,8 @@ fn build_ui(app: &Application) {
         .title("MeowterialYou WeatherWidget")
         .default_width(width)
         .decorated(false)
-        .focusable(true)
-        .can_focus(true)
+        .focusable(false)
+        .can_focus(false)
         .opacity(0.0)
         .build();
     

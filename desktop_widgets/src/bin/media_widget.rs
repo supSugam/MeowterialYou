@@ -1,5 +1,5 @@
 use gtk4::prelude::*;
-use gtk4::{Application, ApplicationWindow};
+use gtk4::{Application, ApplicationWindow, gio};
 use meowterialyou_widgets::common::{styles, x11_hints};
 use meowterialyou_widgets::widgets::media_widget::{config, mpris, ui};
 use glib;
@@ -22,6 +22,7 @@ fn main() {
     }
     let app = Application::builder()
         .application_id("com.meowterialyou.mediawidget")
+        .flags(gio::ApplicationFlags::NON_UNIQUE)
         .build();
 
     app.connect_startup(|_| {
@@ -63,8 +64,8 @@ fn build_ui(app: &Application) {
         .title("MeowterialYou MediaWidget")
         .default_width(width)
         .decorated(false)
-        .focusable(true)
-        .can_focus(true)
+        .focusable(false)
+        .can_focus(false)
         .opacity(0.0) // Start invisible
         .build();
     
@@ -166,21 +167,8 @@ fn build_ui(app: &Application) {
             if let Some(x11_surface) = surface.downcast_ref::<gdk4_x11::X11Surface>() {
                 let xid = x11_surface.xid() as u32;
                 
-                if let Err(e) = x11_hints::set_override_redirect(xid, false) {
-                    eprintln!("Failed to set override_redirect: {}", e);
-                }
-
-                if let Err(e) = x11_hints::set_widget_hints(xid) {
-                    eprintln!("Failed to set X11 hints: {}", e);
-                }
-                
-                if let Err(e) = x11_hints::set_wm_hints_input(xid, true) {
-                    eprintln!("Failed to set WM_HINTS input: {}", e);
-                }
-                
-                if let Err(e) = x11_hints::set_event_mask(xid) {
-                    eprintln!("Failed to set event_mask: {}", e);
-                }
+                let _ = x11_hints::set_override_redirect(xid, false);
+                let _ = x11_hints::set_widget_hints(xid);
 
                 // 4. Calculate Position
                 let display = surface.display();
@@ -235,12 +223,32 @@ fn build_ui(app: &Application) {
                         eprintln!("Positioned at {}, {} (Physical)", x, y);
                     }
 
-                    // 7. Post-Map Enforcement - Ensure position and state stick
-                    glib::timeout_add_local_once(std::time::Duration::from_millis(3000), move || {
-                        let _ = x11_hints::move_window(xid, x, y); // Re-enforce position
-                        let _ = x11_hints::set_widget_state_via_message(xid);
-                        let _ = x11_hints::lower_window(xid); // Push behind other windows
+                    // RE-MEASURE and RE-POSITION loop to handle dynamic content (music info wrapping)
+                    // This ensures layout is correct even if initial measure was too small
+                    // and handles the "Lower below windows" requirement reliably.
+                    let window_loop = window.clone();
+                    glib::timeout_add_local(std::time::Duration::from_millis(1000), move || {
+                        // 1. Re-measure natural height
+                        let (_, nat_height, _, _) = window_loop.measure(gtk4::Orientation::Vertical, width);
+                        let actual_h = nat_height;
                         
+                        // 2. Recalculate Y (Keep it pinned correctly regardless of height change)
+                        let (_, new_ly) = match pos_str.as_str() {
+                            "top_left" | "top_right" => (0, gap_y), // Y is fixed from top
+                            "bottom_left" | "bottom_right" | _ => (0, monitor_h - actual_h - gap_y),
+                        };
+                        let new_y = new_ly * scale_factor;
+                        let new_h_phys = actual_h * scale_factor;
+
+                        // 3. Re-enforce position and size
+                        let _ = x11_hints::set_wm_normal_hints(xid, x, new_y, w_phys, new_h_phys);
+                        let _ = x11_hints::move_window(xid, x, new_y);
+                        
+                        // 4. Enforce widget state (sticky, skip_taskbar, below)
+                        let _ = x11_hints::set_widget_state_via_message(xid);
+                        let _ = x11_hints::lower_window(xid);
+                        
+                        glib::ControlFlow::Continue
                     });
                 }
             }
