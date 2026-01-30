@@ -8,11 +8,7 @@ use zbus::zvariant::Value;
 
 macro_rules! debug_log {
     ($($arg:tt)*) => ({
-        use std::fs::OpenOptions;
-        use std::io::Write;
-        if let Ok(mut file) = OpenOptions::new().create(true).append(true).open("/tmp/media_widget_debug.log") {
-            let _ = writeln!(file, $($arg)*);
-        }
+        eprintln!($($arg)*);
     })
 }
 

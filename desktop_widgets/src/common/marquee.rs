@@ -67,6 +67,9 @@ impl MarqueeLabel {
             .propagate_natural_width(false) // CRITICAL: Prevent expansion
             .propagate_natural_height(false)
             .hexpand(true)
+            .focusable(false)
+            .can_focus(false)
+            .can_target(false) // Let clicks pass through if possible
             .build();
         
         container.set_child(Some(&scroll_box));

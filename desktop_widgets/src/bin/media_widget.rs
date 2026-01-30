@@ -69,8 +69,6 @@ fn build_ui(app: &Application) {
         .opacity(0.0) // Start invisible
         .build();
     
-    // window.set_accept_focus(true); // Removed as it is not valid in GTK4
-
     let conf = config::CONFIG.read().unwrap();
     let widgets = ui::build(&window, cmd_sender, &conf);
 

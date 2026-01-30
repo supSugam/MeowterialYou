@@ -6,6 +6,8 @@ use crate::common::marquee::{MarqueeLabel, Direction};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Mutex;
 use once_cell::sync::Lazy;
+use std::rc::Rc;
+use std::cell::RefCell;
 
 // Shared flag to prevent slider updates during drag
 static IS_DRAGGING: Lazy<AtomicBool> = Lazy::new(|| AtomicBool::new(false));
@@ -15,7 +17,10 @@ static CURRENT_DISPLAYED_BUS: Lazy<Mutex<Option<String>>> = Lazy::new(|| Mutex::
 #[derive(Clone)]
 pub struct PlayerView {
     pub container: Box,
-    pub art_image: Picture,
+    pub art_stack: Stack,
+    pub art_a: Picture,
+    pub art_b: Picture,
+    pub current_art_url: Rc<RefCell<String>>,
     pub app_icon_image: Image, 
     pub title: MarqueeLabel,
     pub artist: MarqueeLabel,
@@ -113,16 +118,7 @@ pub fn build(window: &gtk4::ApplicationWindow, cmd_sender: async_channel::Sender
         .height_request(dots_height)
         .build();
     dots_box.add_css_class("dots-box");
-    
     content_wrapper.append(&dots_box);
-
-    // Add Drag Controller to Root Wrapper to capture clicks
-    let drag_controller = gtk4::GestureClick::new();
-    drag_controller.set_button(0); // All buttons
-    drag_controller.connect_pressed(move |_, n_press, _, _| {
-        println!("Background clicked! Press: {}", n_press);
-    });
-    root_wrapper.add_controller(drag_controller);
 
     window.set_child(Some(&root_wrapper));
 
@@ -209,13 +205,27 @@ where F: Fn(f64) -> i32 + Copy {
     // The Spacer drives the size of the overlay
     art_overlay_container.set_child(Some(&spacer));
 
-    let art_image = Picture::builder()
-        .content_fit(ContentFit::Cover)
-        .can_shrink(true)
+    let art_stack = Stack::builder()
+        .transition_type(StackTransitionType::Crossfade)
+        .transition_duration(500)
         .halign(Align::Fill)
         .valign(Align::Fill)
         .build();
-    art_image.add_css_class("art-image");
+    art_stack.add_css_class("art-image"); 
+
+    let art_a = Picture::builder()
+        .content_fit(ContentFit::Cover)
+        .can_shrink(true)
+        .build();
+    
+    let art_b = Picture::builder()
+        .content_fit(ContentFit::Cover)
+        .can_shrink(true)
+        .build();
+
+    art_stack.add_named(&art_a, Some("art_a"));
+    art_stack.add_named(&art_b, Some("art_b"));
+    art_stack.set_visible_child_name("art_a");
     
     let app_icon_size = s(24.0);
     let app_icon_btn = Button::builder()
@@ -244,7 +254,7 @@ where F: Fn(f64) -> i32 + Copy {
         .halign(Align::Fill)
         .valign(Align::Fill)
         .build();
-    content_overlay.set_child(Some(&art_image));
+    content_overlay.set_child(Some(&art_stack));
     content_overlay.add_overlay(&app_icon_btn);
     
     // WRAP IN SCROLLED WINDOW to enforce strict size clipping
@@ -434,13 +444,21 @@ where F: Fn(f64) -> i32 + Copy {
 
     PlayerView {
         container: main_box,
-        art_image,
+        art_stack,
+        art_a,
+        art_b,
+        current_art_url: Rc::new(RefCell::new(String::new())),
         app_icon_image,
         title: title_marquee,
         artist: artist_marquee,
         loop_btn,
         prev_btn,
-        play_btn: play_btn.downcast().unwrap(), 
+        play_btn: {
+            let b: Button = play_btn.downcast().unwrap();
+            b.set_focus_on_click(false);
+            b.set_focusable(false);
+            b
+        }, 
         next_btn,
         shuffle_btn,
         scale: scale_widget,
@@ -609,20 +627,43 @@ fn update_view_content(view: &PlayerView, state: &crate::widgets::media_widget::
     }
     view.lbl_total.set_label(&format_time(state.length));
 
-    // Art Loading (Simplified for brevity, assuming cache handles redundant calls)
-    if !state.art_url.is_empty() {
-        let (sender, receiver) = async_channel::bounded(1);
-        crate::common::image_loader::load_art(&state.art_url, view.art_size, sender);
-        let img_weak = view.art_image.downgrade();
-        gtk4::glib::MainContext::default().spawn_local(async move {
-            if let Ok(Some(texture)) = receiver.recv().await {
-                if let Some(img) = img_weak.upgrade() {
-                    img.set_paintable(Some(&texture));
+    // Art Loading with Crossfade
+    let mut current_url = view.current_art_url.borrow_mut();
+    if *current_url != state.art_url {
+        *current_url = state.art_url.clone();
+        
+        if !state.art_url.is_empty() {
+            let (sender, receiver) = async_channel::bounded::<Option<gtk4::gdk::Texture>>(1);
+            crate::common::image_loader::load_art(&state.art_url, view.art_size, sender);
+            
+            // Determine target (hidden) picture
+            let visible = view.art_stack.visible_child_name().map(|s| s.as_str().to_string()).unwrap_or("art_a".to_string());
+            let (target_name, target_pic): (&str, &gtk4::Picture) = if visible == "art_a" { 
+                ("art_b", &view.art_b) 
+            } else { 
+                ("art_a", &view.art_a) 
+            };
+            
+            let img_weak = target_pic.downgrade();
+            let stack_weak = view.art_stack.downgrade();
+            let target_name_owned = target_name.to_string();
+            
+            gtk4::glib::MainContext::default().spawn_local(async move {
+                if let Ok(Some(texture)) = receiver.recv().await {
+                    if let Some(img) = img_weak.upgrade() {
+                        img.set_paintable(Some(&texture));
+                        if let Some(stack) = stack_weak.upgrade() {
+                            stack.set_visible_child_name(&target_name_owned);
+                        }
+                    }
                 }
-            }
-        });
-    } else {
-         view.art_image.set_paintable(None::<&gtk4::gdk::Texture>);
+            });
+        } else {
+             // Clear Art (Fade to empty? Or just clear)
+             // Ideally fade to placeholder, but for now just clear current
+             view.art_a.set_paintable(None::<&gtk4::gdk::Texture>);
+             view.art_b.set_paintable(None::<&gtk4::gdk::Texture>);
+        }
     }
 }
 
@@ -641,8 +682,19 @@ fn format_time(micros: u64) -> String {
 
 fn create_control_btn<F>(icon: &str, size: i32, on_click: F) -> Button 
 where F: Fn() + 'static {
-    let btn = Button::builder().build();
-    let image = Image::builder().icon_name(icon).pixel_size(size).build();
+    let btn = Button::builder()
+        .focus_on_click(false)
+        .focusable(false)
+        .build();
+    btn.set_cursor_from_name(Some("pointer"));
+
+    let image = Image::builder()
+        .icon_name(icon)
+        .pixel_size(size)
+        .halign(Align::Fill)
+        .valign(Align::Fill)
+        .build();
+    image.set_cursor_from_name(Some("pointer"));
     btn.set_child(Some(&image));
     btn.add_css_class("control-btn");
     btn.connect_clicked(move |_| on_click());

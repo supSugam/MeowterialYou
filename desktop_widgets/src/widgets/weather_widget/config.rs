@@ -16,6 +16,7 @@ pub struct Config {
     pub typography: TypographyConfig,
     pub background: BackgroundConfig,
     pub weather: WeatherConfig,
+    pub location: LocationConfig,
     pub clock: ClockConfig,
     pub visibility: VisibilityConfig,
     pub performance: PerformanceConfig,
@@ -55,6 +56,11 @@ impl Default for Config {
                 unit: 'C',
                 wind_unit: "km".to_string(),
                 refresh_interval_min: 10,
+            },
+            location: LocationConfig {
+                lat: 28.2096,
+                lon: 83.9856,
+                name: "Pokhara".to_string(),
             },
             clock: ClockConfig {
                 format: "12h".to_string(),
@@ -118,6 +124,13 @@ pub struct WeatherConfig {
     pub unit: char,
     pub wind_unit: String,
     pub refresh_interval_min: u32,
+}
+
+#[derive(Clone, Debug, Deserialize)]
+pub struct LocationConfig {
+    pub lat: f64,
+    pub lon: f64,
+    pub name: String,
 }
 
 #[derive(Clone, Debug, Deserialize)]

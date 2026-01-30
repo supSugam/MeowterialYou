@@ -4,8 +4,8 @@ use crate::widgets::weather_widget::config::Config;
 use crate::widgets::weather_widget::state::WeatherData;
 
 pub async fn fetch_weather(config: &Config) -> Result<WeatherData, Box<dyn std::error::Error + Send + Sync>> {
-    let lat = 28.2096;
-    let lon = 83.9856;
+    let lat = config.location.lat;
+    let lon = config.location.lon;
     
     let url = format!(
         "https://api.open-meteo.com/v1/forecast?latitude={}&longitude={}&current_weather=true&relative_humidity_2m=true&wind_speed_10m=true",
@@ -37,7 +37,7 @@ pub async fn fetch_weather(config: &Config) -> Result<WeatherData, Box<dyn std::
         temp: format!("{}{}", temp_val.round(), unit_symbol),
         icon_char: icon_char.to_string(),
         desc: desc.to_string(),
-        city: "Pokhara".to_string(),
+        city: config.location.name.clone(),
         humidity: format!("{}%", humidity_val.round()),
         wind: wind_str,
         wind_direction: wind_direction_str,

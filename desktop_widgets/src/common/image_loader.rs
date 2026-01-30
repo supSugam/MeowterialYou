@@ -26,6 +26,10 @@ pub fn load_art(url: &str, _art_size: i32, sender: async_channel::Sender<Option<
         
         if let Some(tex) = &texture {
             if let Ok(mut lock) = cache.lock() {
+                // simple eviction: if cache gets too big, clear it to prevent leaks
+                if lock.len() > 50 {
+                    lock.clear();
+                }
                 lock.insert(url, tex.clone());
             }
         }

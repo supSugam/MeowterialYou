@@ -16,7 +16,6 @@ struct GlobalConfig {
 #[derive(Debug, Deserialize, Clone)]
 struct GlobalSection {
     enabled: Option<Vec<String>>,
-    // Legacy width/scale config removed
 }
 
 // Minimal config structs for parsing individual widget configs
