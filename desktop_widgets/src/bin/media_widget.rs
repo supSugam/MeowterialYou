@@ -20,7 +20,6 @@ fn main() {
         std::env::set_var("GDK_BACKEND", "x11");
         eprintln!("Forcing X11 backend for widget behavior (XWayland mode)");
     }
-    
     let app = Application::builder()
         .application_id("com.meowterialyou.mediawidget")
         .build();
@@ -32,13 +31,11 @@ fn main() {
         let conf = config::CONFIG.read().unwrap();
         styles::load_css(&conf);
         
-        // Dynamic theme reload
         let _monitor = styles::watch_theme(move || {
             if let Ok(conf) = config::CONFIG.read() {
                 styles::load_css(&conf);
             }
         });
-        // We leak the monitor intentionally because it needs to live for the app lifetime
         std::mem::forget(_monitor);
     });
     app.connect_activate(build_ui);
@@ -169,22 +166,18 @@ fn build_ui(app: &Application) {
             if let Some(x11_surface) = surface.downcast_ref::<gdk4_x11::X11Surface>() {
                 let xid = x11_surface.xid() as u32;
                 
-                // 1. Disable Override Redirect (Managed Window for correct stacking)
                 if let Err(e) = x11_hints::set_override_redirect(xid, false) {
                     eprintln!("Failed to set override_redirect: {}", e);
                 }
 
-                // 2. Set Widget Hints (Normal Type + Sticky/Below)
                 if let Err(e) = x11_hints::set_widget_hints(xid) {
                     eprintln!("Failed to set X11 hints: {}", e);
                 }
                 
-                // 3. Force Input Hint (Ensures clicks work)
                 if let Err(e) = x11_hints::set_wm_hints_input(xid, true) {
                     eprintln!("Failed to set WM_HINTS input: {}", e);
                 }
                 
-                // 4. Set Event Mask for mouse interactivity
                 if let Err(e) = x11_hints::set_event_mask(xid) {
                     eprintln!("Failed to set event_mask: {}", e);
                 }

@@ -29,25 +29,20 @@ pub fn load_css(config: &Config) {
     let play_radius = s(24.0);
     let icon_margin = s(2.0);
     let play_margin = s(6.0);
-    
-    // Spacing (scaled)
     let is_portrait = config.layout.mode == "portrait";
-    let art_margin = if is_portrait { 0 } else { s(16.0) };
-
-    // Calculate art size
+    let art_margin = if is_portrait { 0 } else { s(12.0) };
+    let labels_height = 48.0;
+    let controls_height = 40.0;
+    let progress_height = 32.0;
+    let spacing = 12.0;
+    let stack_height_base = labels_height + controls_height + progress_height + (2.0 * spacing);
     let art_size = if is_portrait {
-        // Portrait: Full width minus padding and borders
         let base_width = if let Some(w) = config.layout.width { w as f64 } else { 320.0 };
         let widget_width = s(base_width);
         let padding_val = config.layout.padding as f64;
-        // Strict Match: Use s(padding) * 2 to match margin-start + margin-end exactly
-        // REMOVED border_x subtraction to ensure we fill the optical width
         widget_width - (s(padding_val) * 2) 
     } else {
-        // Landscape: Base height minus padding
-        let base_height = 152.0;
-        let art_padding = config.layout.padding as f64; 
-        s(base_height - (art_padding * 2.0))
+        s(stack_height_base * 1.0)
     };
 
     let css_data = format!(r#"
@@ -208,7 +203,7 @@ pub fn load_css(config: &Config) {
         .dots-box {{
             margin-top: 0px;
             margin-bottom: 0px;
-            min-height: 12px;
+            min-height: 16px;
         }}
     "#, 
         theme = theme_content,

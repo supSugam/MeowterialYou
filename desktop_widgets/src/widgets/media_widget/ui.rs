@@ -59,10 +59,8 @@ pub fn build(window: &gtk4::ApplicationWindow, cmd_sender: async_channel::Sender
     let widget_width = s(base_width);
     let padding_val = config.layout.padding as f64;
     
-    // --- ROOT WRAPPER ---
     let root_wrapper = Box::builder()
         .orientation(Orientation::Vertical)
-        // Request width directly, GTK content-box model plus border ensures correct total size
         .width_request(widget_width)
         .spacing(0)
         .build();
@@ -81,7 +79,8 @@ pub fn build(window: &gtk4::ApplicationWindow, cmd_sender: async_channel::Sender
     // Apply padding via Gtk Margins to the wrapper
     // TWEAK: Reduce bottom margin to account for Dots presence, restoring visual symmetry
     // We want Total Bottom Space (Dots + Margin) = Padding
-    let dots_height = s(12.0); 
+    let dots_height_base = 16.0;
+    let dots_height = s(dots_height_base); 
     let padding_bottom = (s(padding_val) - dots_height).max(0);
 
     content_wrapper.set_margin_start(s(padding_val));
@@ -91,14 +90,12 @@ pub fn build(window: &gtk4::ApplicationWindow, cmd_sender: async_channel::Sender
 
     root_wrapper.append(&content_wrapper);
 
-    // --- STACK (The Carousel) ---
     let stack = Stack::builder()
         .transition_type(StackTransitionType::SlideLeftRight)
-        .transition_duration(400) // 400ms smooth slide
-        .interpolate_size(false) // Fixed size
+        .transition_duration(400) 
+        .interpolate_size(false) 
         .build();
 
-    // Create two identical views for ping-pong buffering
     let view_1 = build_player_view(cmd_sender.clone(), config, s);
     let view_2 = build_player_view(cmd_sender.clone(), config, s);
 
@@ -107,7 +104,7 @@ pub fn build(window: &gtk4::ApplicationWindow, cmd_sender: async_channel::Sender
 
     content_wrapper.append(&stack);
 
-    // Dots - Fixed height
+
     let dots_box = Box::builder()
         .orientation(Orientation::Horizontal)
         .halign(Align::Center)
@@ -144,19 +141,14 @@ where F: Fn(f64) -> i32 + Copy {
     let is_portrait = config.layout.mode == "portrait";
     let padding_val = config.layout.padding as f64;
     
-    // Internal heights (Base)
-    // Reduce label container height in portrait to reduce gap to controls
-    let labels_height_base = if is_portrait { 52.0 } else { 54.0 };
-    let controls_height_base = 38.0;
-    let progress_height_base = 28.0;
+    let labels_height_base_val = 48.0;
+    let controls_height_base = 40.0;
+    let progress_height_base = 32.0;
     let details_spacing_base = 12.0;
 
-    // Stack height = components + spacing
-    let stack_height_base = labels_height_base + controls_height_base + progress_height_base + (2.0 * details_spacing_base);
+    let stack_height_base = labels_height_base_val + controls_height_base + progress_height_base + (2.0 * details_spacing_base);
     
-    // In Portrait, spacing between art and content is larger
-    // Reduced from 16.0 to 10.0 to match the visual gap between artist and controls
-    let art_spacing = if is_portrait { s(10.0) } else { s(0.0) };
+    let art_spacing = if is_portrait { s(details_spacing_base) } else { s(0.0) };
     
     let base_width = if let Some(w) = config.layout.width {
         w as f64
@@ -166,46 +158,20 @@ where F: Fn(f64) -> i32 + Copy {
     let widget_width = s(base_width);
     let border_x = s(config.appearance.border_width as f64) * 2;
     
-    // Intermediate content width for portrait
-    // Matches styles.rs logic: widget_width - (margins) 
-    // Removed border_x to prevent gaps
     let port_content_width = widget_width - (s(padding_val) * 2);
     
-    // Art size logic
     let art_size = if is_portrait {
-         port_content_width // 1:1 aspect ratio matching content width
+         port_content_width 
     } else {
-         let art_size_base = stack_height_base * 1.1;
-         s(art_size_base)
+         s(stack_height_base * 1.1)
     };
-    // Since we now use Gtk Margins for padding (applied to container), we don't need to subtract padding manually here
-    // But we DO need to account for space taken by art.
-    // Available space inside main_box depends on orientation.
-    // Horizontal: Available = widget_width - margins - art_size - spacing
-    // Vertical: Available = widget_width - margins
 
-    // We pass padding via margins to containers later, effectively reducing available space.
-    // BUT since we set width_request on inner boxes, we must be careful.
-    // If we request too much, we blow up.
-    // Let's assume widget_width accounts for margins?
-    // In weather_widget: root(320) -> child(margin=20). Child gets 280. Matches.
-    // So 'content_width' here refers to the width of the DETAILS box.
-    // subtract border width (2 sides) so we don't push the parent out.
-
-    // The padding is now applied to the content_wrapper in the build function,
-    // so the PlayerView's internal calculations should consider the full available width
-    // within that padded area.
-    // The widget_width here is the original base_width scaled.
-    // The actual available width for the PlayerView container is `widget_width - border_x - s(padding_val * 2.0)`.
-    // However, since main_box itself doesn't have margins anymore, its children should sum up to this available width.
-    // The `content_width` here refers to the width of the DETAILS box.
     let content_width = if is_portrait {
          widget_width - s(padding_val * 2.0) - border_x
     } else {
          widget_width - s(padding_val * 2.0) - art_size - art_spacing - border_x
     };
 
-    // --- MAIN BOX ---
     let main_box = Box::builder()
         .orientation(if is_portrait { Orientation::Vertical } else { Orientation::Horizontal })
         .spacing(art_spacing)
@@ -214,10 +180,6 @@ where F: Fn(f64) -> i32 + Copy {
         .halign(Align::Fill)
         .build();
     
-    // --- ART SECTION ---
-    // SPACER STRATEGY:
-    // We create a 1x1 transparent image that fills width and enforces aspect ratio.
-    // This forces the container height to match the width naturally.
     let spacer_texture = gdk::MemoryTexture::new(
         1, 1, 
         gdk::MemoryFormat::R8g8b8a8, 
@@ -239,15 +201,14 @@ where F: Fn(f64) -> i32 + Copy {
     let art_overlay_container = Overlay::builder()
         .halign(if is_portrait { Align::Fill } else { Align::Center })
         .valign(Align::Center)
+        .width_request(if is_portrait { -1 } else { art_size })
+        .height_request(if is_portrait { -1 } else { art_size })
         .build();
     art_overlay_container.add_css_class("art-container");
     
     // The Spacer drives the size of the overlay
     art_overlay_container.set_child(Some(&spacer));
 
-    // --- REAL ART CONTENT ---
-    // Wrapped in Overlay -> ScrolledWindow(Never) -> Picture
-    // This allows it to fill the spacer's allocated size without pushing it.
     let art_image = Picture::builder()
         .content_fit(ContentFit::Cover)
         .can_shrink(true)
@@ -256,9 +217,7 @@ where F: Fn(f64) -> i32 + Copy {
         .build();
     art_image.add_css_class("art-image");
     
-    // --- APP ICON OVERLAY ---
     let app_icon_size = s(24.0);
-    // Button for interaction + icon
     let app_icon_btn = Button::builder()
         .halign(Align::Start)
         .valign(Align::End)
@@ -305,11 +264,8 @@ where F: Fn(f64) -> i32 + Copy {
     art_overlay_container.add_overlay(&scroller);
     art_overlay_container.set_overflow(gtk4::Overflow::Hidden);
 
-    // Details spacing
-    // Match art_spacing (10.0) for consistency
-    let details_spacing = if is_portrait { s(10.0) } else { s(details_spacing_base) };
+    let details_spacing = s(details_spacing_base);
 
-    // --- DETAILS SECTION ---
     let details_box = Box::builder()
         .orientation(Orientation::Vertical)
         .valign(Align::Center)
@@ -319,31 +275,39 @@ where F: Fn(f64) -> i32 + Copy {
         .vexpand(false)
         .spacing(details_spacing)
         .build();
+    details_box.add_css_class("details-box");
 
-    // A. Labels
     let labels_box = Box::builder()
         .orientation(Orientation::Vertical)
         .spacing(s(2.0))
+        .height_request(s(labels_height_base_val))
         .vexpand(false)
-        .halign(Align::Fill) // Fill needed for Marquee to measure width properly
+        .halign(Align::Fill) 
         .build();
     labels_box.add_css_class("labels-container");
+
+    let labels_inner = Box::builder()
+        .orientation(Orientation::Vertical)
+        .spacing(s(2.0))
+        .valign(Align::Center)
+        .vexpand(true)
+        .build();
 
     let label_align = if is_portrait { Align::Center } else { Align::Start };
     let title_marquee = MarqueeLabel::new("title", Direction::Left, label_align);
     let artist_marquee = MarqueeLabel::new("artist", Direction::Right, label_align);
 
-    labels_box.append(&title_marquee.container);
-    labels_box.append(&artist_marquee.container);
+    labels_inner.append(&title_marquee.container);
+    labels_inner.append(&artist_marquee.container);
+    labels_box.append(&labels_inner);
 
-    // B. Controls
-    let controls_height = s(controls_height_base);
     let controls_box = Box::builder()
         .orientation(Orientation::Horizontal)
         .halign(Align::Fill)
-        .height_request(controls_height)
+        .valign(Align::Center)
+        .height_request(s(controls_height_base))
         .spacing(0)
-        .vexpand(false)
+        .vexpand(true)
         .build();
     controls_box.add_css_class("controls-box");
 
@@ -380,12 +344,10 @@ where F: Fn(f64) -> i32 + Copy {
     controls_box.append(&next_btn);
     controls_box.append(&shuffle_btn);
 
-    // C. Progress
-    let progress_height = s(progress_height_base);
     let progress_box = Box::builder()
         .orientation(Orientation::Vertical)
         .spacing(0)
-        .height_request(progress_height)
+        .height_request(s(progress_height_base))
         .vexpand(false)
         .build();
 

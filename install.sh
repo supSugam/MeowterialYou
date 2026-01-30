@@ -731,28 +731,20 @@ EOF
     if [ "$DESKTOP_WIDGETS" = true ]; then
         print_progress 3 3 "Installing Desktop Widgets..."
         
-            # Build only if needed or forced
-            if [ "$REBUILD_WIDGETS" = true ] || [ ! -f "$BIN_DIR/meowterialyou-widget-manager" ]; then
-                echo -e "\n  ${DIM}Building widgets (this may take a while)...${NC}"
-                if cd "$SCRIPT_DIR/desktop_widgets"; then
-                    if [ "$REBUILD_WIDGETS" = true ]; then
-                         echo -e "  ${DIM}Cleaning build artifacts...${NC}"
-                         cargo clean --quiet
-                    fi
-                    
-                    if cargo build --release --quiet; then
-                        print_success "Widgets built successfully"
-                    else
-                        print_error "Failed to build widgets"
-                        cd "$SCRIPT_DIR" || exit
-                        return 1
-                    fi
+            # Always run an incremental build to reflect any code changes
+            # Cargo is smart enough to skip if nothing changed (~0.5s)
+            echo -e "\n  ${DIM}Checking for widget updates (incremental build)...${NC}"
+            if cd "$SCRIPT_DIR/desktop_widgets"; then
+                if cargo build --release --quiet; then
+                    print_success "Widgets up to date"
                 else
-                    print_error "Could not enter widget directory"
+                    print_error "Failed to build widgets"
+                    cd "$SCRIPT_DIR" || exit
                     return 1
                 fi
             else
-                print_info "Using existing widget binaries (use --rebuild-widgets to force rebuild)"
+                print_error "Could not enter widget directory"
+                return 1
             fi
             
             # Stop existing instances before copying (Fixes "Text file busy")
@@ -925,6 +917,7 @@ TITLE_BUTTONS_POSITION=$TITLE_BUTTONS_POSITION
 CHROME_GTK4=$CHROME_GTK4
 UI_IMPROVEMENTS=$UI_IMPROVEMENTS
 DESKTOP_WIDGETS=$DESKTOP_WIDGETS
+REBUILD_WIDGETS=$REBUILD_WIDGETS
 TRANSPARENT_PANEL=$TRANSPARENT_PANEL
 THEME_GNOME_TERMINAL=$THEME_GNOME_TERMINAL
 THEME_SPOTIFY=$THEME_SPOTIFY
@@ -933,8 +926,6 @@ THEME_VSCODE=$THEME_VSCODE
 THEME_OBSIDIAN=$THEME_OBSIDIAN
 THEME_VIVALDI=$THEME_VIVALDI
 THEMED_FOLDER_ICONS=$THEMED_FOLDER_ICONS
-REBUILD_WIDGETS=false
-
 EOF
 }
 

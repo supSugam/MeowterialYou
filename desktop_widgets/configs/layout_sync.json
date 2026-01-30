@@ -1,10 +1,10 @@
 {
   "widths": {
-    "media_widget": 478,
-    "weather_widget": 380
+    "weather_widget": 380,
+    "media_widget": 304
   },
   "sides": {
-    "media_widget": "left",
-    "weather_widget": "left"
+    "weather_widget": "left",
+    "media_widget": "left"
   }
 }
