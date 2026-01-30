@@ -141,10 +141,10 @@ where F: Fn(f64) -> i32 + Copy {
     let is_portrait = config.layout.mode == "portrait";
     let padding_val = config.layout.padding as f64;
     
-    let labels_height_base_val = 48.0;
+    let labels_height_base_val = if is_portrait { 44.0 } else { 48.0 };
     let controls_height_base = 40.0;
     let progress_height_base = 32.0;
-    let details_spacing_base = 12.0;
+    let details_spacing_base = if is_portrait { 8.0 } else { 12.0 };
 
     let stack_height_base = labels_height_base_val + controls_height_base + progress_height_base + (2.0 * details_spacing_base);
     
@@ -163,7 +163,7 @@ where F: Fn(f64) -> i32 + Copy {
     let art_size = if is_portrait {
          port_content_width 
     } else {
-         s(stack_height_base * 1.1)
+         s(stack_height_base * 1.0)
     };
 
     let content_width = if is_portrait {
