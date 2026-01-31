@@ -1,5 +1,6 @@
 use once_cell::sync::Lazy;
 use std::sync::{Arc, RwLock};
+use crate::widgets::media_widget::audio::AudioStream;
 
 #[derive(Debug, Clone)]
 pub struct MediaState {
@@ -22,9 +23,13 @@ pub struct MediaState {
     pub loop_status: Option<String>, // "None", "Track", "Playlist"
     pub shuffle: Option<bool>,
     
-    // Multi-player support
     pub players: Vec<String>, // List of bus names
     pub current_bus_name: Option<String>,
+    
+    // Audio Mixing
+    pub audio_streams: Vec<AudioStream>,
+    pub master_volume: u32,
+    pub master_muted: bool,
 }
 
 impl Default for MediaState {
@@ -48,6 +53,9 @@ impl Default for MediaState {
             
             players: Vec::new(),
             current_bus_name: None,
+            audio_streams: Vec::new(),
+            master_volume: 50,
+            master_muted: false,
         }
     }
 }

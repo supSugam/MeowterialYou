@@ -1,7 +1,7 @@
 {
   "widths": {
-    "weather_widget": 380,
-    "media_widget": 304
+    "media_widget": 304,
+    "weather_widget": 380
   },
   "sides": {
     "weather_widget": "left",

@@ -67,6 +67,9 @@ pub enum MprisCommand {
     SwitchPlayer(String), // bus_name
     ToggleLoop,
     ToggleShuffle,
+    UpdateAudioStreams,
+    SetStreamVolume(u32, u32), // index, volume percentage
+    SetMasterVolume(u32),
 }
 
 pub async fn init(
@@ -175,6 +178,17 @@ pub async fn init(
             }
 
             let _ = ui_sender_poll.send(()).await;
+
+            // C. Audio Streams Update
+            {
+                 let streams = crate::widgets::media_widget::audio::get_streams();
+                 let (m_vol, m_mute) = crate::widgets::media_widget::audio::get_master_volume();
+                 let mut state = STATE.write().unwrap();
+                 state.audio_streams = streams;
+                 state.master_volume = m_vol;
+                 state.master_muted = m_mute;
+            }
+
             tokio::time::sleep(tokio::time::Duration::from_millis(1000)).await;
         }
     });
@@ -306,6 +320,16 @@ async fn handle_command(conn: &Connection, cmd: MprisCommand, ui_sender: &async_
                                      let _ = player.set_shuffle(!current).await;
                                  }
                              },
+                             MprisCommand::UpdateAudioStreams => {
+                                 let streams = crate::widgets::media_widget::audio::get_streams();
+                                 STATE.write().unwrap().audio_streams = streams;
+                             },
+                             MprisCommand::SetStreamVolume(idx, vol) => {
+                                 crate::widgets::media_widget::audio::set_volume(idx, vol);
+                             },
+                             MprisCommand::SetMasterVolume(vol) => {
+                                 crate::widgets::media_widget::audio::set_master_volume(vol);
+                             }
                              _ => {}
                         }
                         

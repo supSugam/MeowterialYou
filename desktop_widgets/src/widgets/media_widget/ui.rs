@@ -1,6 +1,6 @@
 use gtk4::prelude::*;
 use gtk4::{Align, Box, Button, Image, Label, Orientation, Scale, Adjustment, Picture, Stack, StackTransitionType, Overlay, ScrolledWindow, PolicyType, ContentFit};
-use gtk4::gdk;
+use gtk4::{gdk, gio};
 use crate::widgets::media_widget::config::Config;
 use crate::common::marquee::{MarqueeLabel, Direction};
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -13,6 +13,8 @@ use std::cell::RefCell;
 static IS_DRAGGING: Lazy<AtomicBool> = Lazy::new(|| AtomicBool::new(false));
 // Track which bus name is currently displayed to detect changes
 static CURRENT_DISPLAYED_BUS: Lazy<Mutex<Option<String>>> = Lazy::new(|| Mutex::new(None));
+// Track current active dot index for direction-aware transitions (0=Dashboard, 1+=Players)
+static CURRENT_DOT_INDEX: Lazy<Mutex<i32>> = Lazy::new(|| Mutex::new(0));
 
 #[derive(Clone)]
 pub struct PlayerView {
@@ -36,16 +38,31 @@ pub struct PlayerView {
 }
 
 #[derive(Clone)]
+pub struct DashboardView {
+    pub container: Box,
+    pub mixer_list: Box,
+    pub apps_grid: gtk4::FlowBox,
+}
+
+// ... imports
+use crate::widgets::media_widget::pulse::PulseController;
+
+// ...
+
+#[derive(Clone)]
 pub struct Widgets {
     pub stack: Stack,
     pub view_1: PlayerView,
     pub view_2: PlayerView,
+    pub dashboard_view: DashboardView,
     pub dots_box: Box,
     pub cmd_sender: async_channel::Sender<crate::widgets::media_widget::mpris::MprisCommand>,
     pub root: Box,
+    pub scale: f64,
+    pub pulse: Option<Rc<PulseController>>, 
 }
 
-pub fn build(window: &gtk4::ApplicationWindow, cmd_sender: async_channel::Sender<crate::widgets::media_widget::mpris::MprisCommand>, config: &Config) -> Widgets {
+pub fn build(window: &gtk4::ApplicationWindow, cmd_sender: async_channel::Sender<crate::widgets::media_widget::mpris::MprisCommand>, config: &Config, pulse: Option<Rc<PulseController>>) -> Widgets {
     let scale = config.layout.scale;
     
     // Base dimensions (Pro Standard)
@@ -101,11 +118,23 @@ pub fn build(window: &gtk4::ApplicationWindow, cmd_sender: async_channel::Sender
         .interpolate_size(false) 
         .build();
 
+    // --- PORT HEIGHT CALCULATION (Sync with PlayerView) ---
+    let labels_height_base_val = if is_portrait { 44.0 } else { 48.0 };
+    let controls_height_base = 40.0;
+    let progress_height_base = 32.0;
+    let details_spacing_base = if is_portrait { 8.0 } else { 12.0 };
+    let stack_height_base = labels_height_base_val + controls_height_base + progress_height_base + (2.0 * details_spacing_base);
+    let art_spacing = if is_portrait { s(details_spacing_base) } else { 0 };
+    let art_size = if is_portrait { (widget_width - s(padding_val * 2.0)).max(0) } else { s(stack_height_base) };
+    let port_height = if is_portrait { art_size + art_spacing + s(stack_height_base) } else { art_size };
+
     let view_1 = build_player_view(cmd_sender.clone(), config, s);
     let view_2 = build_player_view(cmd_sender.clone(), config, s);
+    let dashboard_view = build_dashboard_view(cmd_sender.clone(), config, s, port_height);
 
     stack.add_named(&view_1.container, Some("view_1"));
     stack.add_named(&view_2.container, Some("view_2"));
+    stack.add_named(&dashboard_view.container, Some("dashboard_view"));
 
     content_wrapper.append(&stack);
 
@@ -126,9 +155,12 @@ pub fn build(window: &gtk4::ApplicationWindow, cmd_sender: async_channel::Sender
         stack,
         view_1,
         view_2,
+        dashboard_view,
         dots_box,
         cmd_sender,
         root: root_wrapper,
+        scale,
+        pulse: pulse.clone(),
     }
 }
 
@@ -235,6 +267,7 @@ where F: Fn(f64) -> i32 + Copy {
         .margin_bottom(s(8.0))
         .width_request(app_icon_size)
         .height_request(app_icon_size)
+        .focus_on_click(false)
         .build();
     app_icon_btn.add_css_class("app-icon-btn");
     
@@ -366,6 +399,8 @@ where F: Fn(f64) -> i32 + Copy {
         .draw_value(false)
         .adjustment(&Adjustment::new(0.0, 0.0, 100.0, 1.0, 10.0, 0.0))
         .hexpand(true)
+        .focus_on_click(false)
+        .focusable(false)
         .build();
     scale_widget.add_css_class("progress-bar");
 
@@ -470,9 +505,11 @@ where F: Fn(f64) -> i32 + Copy {
 
 pub fn update(widgets: &Widgets) {
     use crate::widgets::media_widget::state::STATE;
-    let state = STATE.read().unwrap();
-
-    // 1. Determine if player switched
+    let state_lock = STATE.read().unwrap();
+    let state = &*state_lock;
+    let s = |v: f64| -> i32 { (v * widgets.scale).round() as i32 };
+    
+    // 1. Detect Bus Change (Switching Players)
     let mut current_bus_lock = CURRENT_DISPLAYED_BUS.lock().unwrap();
     let active_bus_name = state.current_bus_name.clone().unwrap_or_default();
     
@@ -508,58 +545,121 @@ pub fn update(widgets: &Widgets) {
         widgets.stack.set_visible_child_name(target_name);
         
         *current_bus_lock = Some(active_bus_name.clone());
+        if let Some(mut dot_idx_lock) = CURRENT_DOT_INDEX.try_lock().ok() {
+            *dot_idx_lock = (new_idx + 1) as i32;
+        }
         
         // Ensure marquee resets on the new view
         target_view.title.set_text(&state.title); 
         target_view.artist.set_text(&state.artist);
     }
 
-    // 4. Update Dots (Intelligent)
+    // 4. Navigation Dots (Home + Players)
     let current_children = widgets.dots_box.observe_children();
     let n_children = current_children.n_items();
     let n_players = state.players.len() as u32;
-    let mut needs_rebuild = n_children != n_players;
+    let expected_dots = n_players + 1; // Always Home
     
-    if !needs_rebuild {
-        for i in 0..n_children {
-            if let Some(child_obj) = current_children.item(i) {
-                if let Ok(btn) = child_obj.downcast::<Button>() {
-                     if let Some(name) = btn.widget_name().as_str().strip_prefix("player-") {
-                         if state.players.get(i as usize) != Some(&name.to_string()) {
-                             needs_rebuild = true;
-                             break;
-                         }
-                     } else { needs_rebuild = true; break; }
+    if n_children != expected_dots {
+        while let Some(child) = widgets.dots_box.first_child() { widgets.dots_box.remove(&child); }
+        
+        // 4a. Home Dot (Always first)
+        let home_dot = Button::builder()
+            .name("home-dot")
+            .focus_on_click(false)
+            .build();
+        home_dot.add_css_class("dot");
+        home_dot.add_css_class("home-dot");
+        
+        let icon = Image::builder()
+            .icon_name("user-home-symbolic") 
+            .pixel_size(s(8.0))
+            .build();
+        home_dot.set_child(Some(&icon));
+        
+        let stack_clone = widgets.stack.clone();
+        home_dot.connect_clicked(move |_| {
+            let mut idx_lock = CURRENT_DOT_INDEX.lock().unwrap();
+            let old_idx = *idx_lock;
+            let new_idx = 0;
+            
+            if new_idx != old_idx {
+                let direction = if new_idx > old_idx {
+                    StackTransitionType::SlideLeft
+                } else {
+                    StackTransitionType::SlideRight
+                };
+                stack_clone.set_transition_type(direction);
+                stack_clone.set_visible_child_name("dashboard_view");
+                *idx_lock = new_idx;
+            }
+        });
+        widgets.dots_box.append(&home_dot);
+
+        // 4b. Player Dots
+        for player_bus in &state.players {
+            let dot = Button::builder()
+                .name(&format!("player-{}", player_bus))
+                .focus_on_click(false)
+                .build();
+            dot.add_css_class("dot");
+            
+            let sender = widgets.cmd_sender.clone();
+            let bus_name = player_bus.clone();
+            let stack_clone = widgets.stack.clone();
+            let player_idx = (state.players.iter().position(|p| p == player_bus).unwrap_or(0) + 1) as i32;
+            dot.connect_clicked(move |_| {
+                let mut idx_lock = CURRENT_DOT_INDEX.lock().unwrap();
+                let old_idx = *idx_lock;
+                let new_idx = player_idx;
+
+                if new_idx != old_idx {
+                    let direction = if new_idx > old_idx {
+                        StackTransitionType::SlideLeft
+                    } else {
+                        StackTransitionType::SlideRight
+                    };
+                    stack_clone.set_transition_type(direction);
+                    stack_clone.set_visible_child_name("view_1");
+                    *idx_lock = new_idx;
+                }
+                let _ = sender.send_blocking(crate::widgets::media_widget::mpris::MprisCommand::SwitchPlayer(bus_name.clone()));
+            });
+            widgets.dots_box.append(&dot);
+        }
+    }
+
+    // 4c. Active State Sync
+    let is_dashboard = widgets.stack.visible_child_name() == Some("dashboard_view".into());
+    let current_children = widgets.dots_box.observe_children();
+    for i in 0..current_children.n_items() {
+        if let Some(child) = current_children.item(i) {
+            if let Ok(btn) = child.downcast::<Button>() {
+                if i == 0 { // Home
+                    if is_dashboard { btn.add_css_class("active"); } else { btn.remove_css_class("active"); }
+                } else {
+                    // Player dots
+                    if !is_dashboard {
+                        let player_bus = &state.players[i as usize - 1];
+                        let is_active = state.current_bus_name.as_ref() == Some(player_bus);
+                        if is_active { btn.add_css_class("active"); } else { btn.remove_css_class("active"); }
+                    } else {
+                        btn.remove_css_class("active");
+                    }
                 }
             }
         }
     }
 
-    if needs_rebuild {
-        while let Some(child) = widgets.dots_box.first_child() { widgets.dots_box.remove(&child); }
-        for player_bus in &state.players {
-            let dot = Button::builder().name(&format!("player-{}", player_bus)).build();
-            dot.add_css_class("dot");
-            if let Some(current) = &state.current_bus_name {
-                if current == player_bus { dot.add_css_class("active"); }
-            }
-            let sender = widgets.cmd_sender.clone();
-            let bus_name = player_bus.clone();
-            dot.connect_clicked(move |_| {
-                let _ = sender.send_blocking(crate::widgets::media_widget::mpris::MprisCommand::SwitchPlayer(bus_name.clone()));
-            });
-            widgets.dots_box.append(&dot);
-        }
-    } else {
-        for i in 0..n_children {
-            if let Some(child_obj) = current_children.item(i) {
-                if let Ok(btn) = child_obj.downcast::<Button>() {
-                    let player_bus = &state.players[i as usize];
-                    let is_active = state.current_bus_name.as_ref() == Some(player_bus);
-                    if is_active { btn.add_css_class("active"); } else { btn.remove_css_class("active"); }
-                }
-            }
-        }
+    // 5. Auto-switch to Dashboard if No Players
+    if n_players == 0 && !is_dashboard {
+        widgets.stack.set_visible_child_name("dashboard_view");
+    }
+
+    // --- DASHBOARD UPDATE ---
+    // Update content if we are currently looking at the dashboard
+    if is_dashboard {
+        update_dashboard_content(&widgets.dashboard_view, &state, widgets.cmd_sender.clone(), s, widgets.pulse.clone());
     }
 }
 
@@ -699,4 +799,437 @@ where F: Fn() + 'static {
     btn.add_css_class("control-btn");
     btn.connect_clicked(move |_| on_click());
     btn
+}
+
+fn build_dashboard_view<F>(_cmd_sender: async_channel::Sender<crate::widgets::media_widget::mpris::MprisCommand>, config: &Config, s: F, port_height: i32) -> DashboardView 
+where F: Fn(f64) -> i32 + Copy {
+    let is_landscape = config.layout.mode == "landscape";
+    
+    // 1. Mixer Section
+    let mixer_list = Box::builder()
+        .orientation(Orientation::Vertical)
+        .spacing(s(8.0))
+        .build();
+    
+    let mixer_scroll = ScrolledWindow::builder()
+        .hscrollbar_policy(PolicyType::Never)
+        .vscrollbar_policy(PolicyType::Automatic)
+        .child(&mixer_list)
+        .vexpand(false) // Don't greedily take space
+        .build();
+
+    if !is_landscape {
+        // Capping Mixer at 50% height in portrait
+        mixer_scroll.set_max_content_height(port_height / 2);
+        mixer_scroll.set_propagate_natural_height(true);
+    } else {
+        mixer_scroll.set_vexpand(true);
+    }
+
+    // 2. Apps Section
+    let apps_grid = gtk4::FlowBox::builder()
+        .orientation(Orientation::Horizontal)
+        .valign(Align::Start)
+        .halign(Align::Fill)
+        .hexpand(true)
+        .homogeneous(true)
+        .selection_mode(gtk4::SelectionMode::None)
+        .min_children_per_line(2)
+        .max_children_per_line(6)
+        .column_spacing(s(12.0) as u32)
+        .row_spacing(s(12.0) as u32)
+        .build();
+
+    let apps_scroll = ScrolledWindow::builder()
+        .hscrollbar_policy(PolicyType::Never)
+        .vscrollbar_policy(PolicyType::Automatic)
+        .child(&apps_grid)
+        .vexpand(true) // Fills remaining area
+        .build();
+
+    // 3. Main Layout
+    let main_layout = Box::builder()
+        .orientation(if is_landscape { Orientation::Horizontal } else { Orientation::Vertical })
+        .spacing(s(8.0)) // Tightened spacing
+        .height_request(port_height) // Ensure height matches PlayerView
+        .build();
+
+    // Wrapper for Mixer
+    let mixer_wrapper = Box::new(Orientation::Vertical, s(8.0));
+    let mixer_title = Label::builder().label("Volume Mixer").halign(Align::Start).build();
+    mixer_title.add_css_class("title");
+    mixer_wrapper.append(&mixer_title);
+    mixer_wrapper.append(&mixer_scroll);
+    if is_landscape {
+        mixer_wrapper.set_hexpand(true);
+        mixer_wrapper.set_vexpand(true);
+    }
+
+    // Wrapper for Apps
+    let apps_wrapper = Box::new(Orientation::Vertical, s(8.0));
+    let apps_title = Label::builder().label("Quick Launch").halign(Align::Start).build();
+    apps_title.add_css_class("title");
+    apps_wrapper.append(&apps_title);
+    apps_wrapper.append(&apps_scroll);
+    apps_wrapper.set_hexpand(true);
+    apps_wrapper.set_vexpand(true);
+
+    main_layout.append(&mixer_wrapper);
+    if is_landscape {
+         let sep = Box::builder().width_request(1).hexpand(false).build();
+         sep.add_css_class("vertical-divider");
+         main_layout.append(&sep);
+    } else {
+         let sep = Box::builder().height_request(1).build();
+         sep.add_css_class("divider");
+         main_layout.append(&sep);
+    }
+    main_layout.append(&apps_wrapper);
+
+    DashboardView {
+        container: main_layout,
+        mixer_list,
+        apps_grid,
+    }
+}
+
+fn update_dashboard_content<F>(view: &DashboardView, state: &crate::widgets::media_widget::state::MediaState, cmd_sender: async_channel::Sender<crate::widgets::media_widget::mpris::MprisCommand>, s: F, pulse: Option<Rc<PulseController>>) 
+where F: Fn(f64) -> i32 + Copy {
+    // 1. Update Mixer
+    let n_streams = state.audio_streams.len();
+    let expected_mixer_count = 1 + n_streams; // Master + Streams
+
+    let mut current_mixer_count = 0;
+    let mut child = view.mixer_list.first_child();
+    while let Some(c) = child {
+        current_mixer_count += 1;
+        child = c.next_sibling();
+    }
+
+    if current_mixer_count == expected_mixer_count {
+        let mut iter = view.mixer_list.first_child();
+        // Master
+        if let Some(ref row) = iter {
+            update_row_val(row, state.master_volume);
+        }
+        iter = iter.and_then(|c| c.next_sibling());
+
+        // Streams
+        for stream in &state.audio_streams {
+            if let Some(ref row) = iter {
+                 update_row_val(row, stream.volume);
+            }
+            iter = iter.and_then(|c| c.next_sibling());
+        }
+    } else {
+        // Rebuild Mixer
+        while let Some(child) = view.mixer_list.first_child() { view.mixer_list.remove(&child); }
+        
+        let master_row = build_volume_row("audio-volume-high-symbolic", "System", state.master_volume, None, cmd_sender.clone(), s, pulse.clone());
+        view.mixer_list.append(&master_row);
+
+        for stream in &state.audio_streams {
+            let name = title_case(&stream.name);
+            let app_row = build_volume_row(&stream.icon, &name, stream.volume, Some(stream.index), cmd_sender.clone(), s, pulse.clone());
+            view.mixer_list.append(&app_row);
+        }
+    }
+
+    // 2. Update Apps (only if empty)
+    if view.apps_grid.first_child().is_none() {
+        let is_landscape = view.container.orientation() == Orientation::Horizontal;
+        let icon_size = if is_landscape { 36.0 } else { 44.0 };
+        
+        let apps: Vec<ShortcutApp> = discover_media_apps();
+        for app in apps {
+            let btn = Button::builder()
+                .tooltip_text(&app.name())
+                .hexpand(true)
+                .focus_on_click(false)
+                .build();
+            btn.add_css_class("shortcut-btn");
+            
+            let img = Image::builder().icon_name(&app.icon()).pixel_size(s(icon_size)).build();
+            btn.set_child(Some(&img));
+            
+            btn.connect_clicked(move |_| {
+                app.launch();
+            });
+            view.apps_grid.append(&btn);
+        }
+    }
+}
+
+fn update_row_val(row: &gtk4::Widget, val: u32) {
+    if !crate::widgets::media_widget::ui::IS_DRAGGING.load(std::sync::atomic::Ordering::SeqCst) {
+        if let Some(bx) = row.downcast_ref::<Box>() {
+            // 1. Update Icon
+            if let Some(icon_img) = bx.first_child().and_then(|c| c.downcast::<Image>().ok()) {
+                if let Some(icon_name) = icon_img.icon_name() {
+                    let name_str = icon_name.as_str();
+                    let is_muted_icon = name_str.ends_with("-muted-symbolic") || name_str.contains("muted");
+                    
+                    if val == 0 && !is_muted_icon {
+                        if name_str.contains("audio-volume") {
+                            icon_img.set_icon_name(Some("audio-volume-muted-symbolic"));
+                        } else if name_str == "audio-speakers-symbolic" {
+                            icon_img.set_icon_name(Some("audio-volume-muted-symbolic"));
+                        }
+                    } else if val > 0 && is_muted_icon {
+                         icon_img.set_icon_name(Some("audio-volume-high-symbolic"));
+                    }
+                }
+            }
+
+            // 2. Update Slider
+            if let Some(vbox) = bx.last_child().and_then(|c| c.downcast::<Box>().ok()) {
+                 if let Some(scale) = vbox.last_child().and_then(|c| c.downcast::<Scale>().ok()) {
+                      scale.set_value(val as f64);
+                 }
+            }
+        }
+    }
+}
+
+fn build_volume_row<F>(icon: &str, label: &str, volume: u32, stream_index: Option<u32>, cmd_sender: async_channel::Sender<crate::widgets::media_widget::mpris::MprisCommand>, s: F, pulse: Option<Rc<PulseController>>) -> Box 
+where F: Fn(f64) -> i32 + Copy {
+    let row = Box::new(Orientation::Horizontal, s(12.0));
+    
+    // Determine initial icon state
+    let mut initial_icon = icon.to_string();
+    if volume == 0 && (initial_icon.contains("audio-volume") || initial_icon == "audio-speakers-symbolic") {
+        initial_icon = "audio-volume-muted-symbolic".to_string();
+    }
+
+    let icon_img = Image::builder().icon_name(&initial_icon).pixel_size(s(24.0)).build();
+    row.append(&icon_img);
+
+    let content_vbox = Box::new(Orientation::Vertical, s(0.0));
+    content_vbox.set_hexpand(true);
+    content_vbox.set_valign(Align::Center);
+
+    let vol_label = Label::builder()
+        .label(label)
+        .halign(Align::Start)
+        .valign(Align::Center)
+        .build();
+    vol_label.add_css_class("mixer-app-label");
+    
+    let adj = Adjustment::new(volume as f64, 0.0, 100.0, 1.0, 1.0, 1.0);
+    let slider = Scale::builder()
+        .adjustment(&adj)
+        .draw_value(false)
+        .hexpand(true)
+        .focus_on_click(false)
+        .focusable(false)
+        .build();
+    slider.add_css_class("mixer-slider");
+    slider.add_css_class("sleek-slider");
+
+    content_vbox.append(&vol_label);
+    content_vbox.append(&slider);
+    
+    row.append(&content_vbox);
+    
+    // --- Throttled Continuous Updates ---
+    // Uses Rc/RefCell to share state between the callback closures without atomics overhead
+    // pending_val: The latest value from the slider
+    // update_active: Prevents spawning multiple timeouts
+    let s_clone = cmd_sender.clone();
+    let idx_opt = stream_index;
+
+    let last_vol = Rc::new(std::cell::Cell::new(if volume > 0 { volume } else { 50 }));
+    let last_vol_slider = last_vol.clone();
+    slider.connect_value_changed(move |scale| {
+        let val = scale.value() as u32;
+        if val > 0 {
+            last_vol_slider.set(val);
+        }
+        
+        // --- Immediate Native Update (No Throttling) ---
+        if let Some(ctrl) = &pulse {
+             if let Some(i) = idx_opt {
+                 ctrl.set_stream_volume(i, val);
+             } else {
+                 ctrl.set_master_volume(val);
+             }
+        } else {
+             // Fallback: Fire and forget via channel (try_send is non-blocking)
+             let cmd = if let Some(i) = idx_opt {
+                 crate::widgets::media_widget::mpris::MprisCommand::SetStreamVolume(i, val)
+             } else {
+                 crate::widgets::media_widget::mpris::MprisCommand::SetMasterVolume(val)
+             };
+             let _ = s_clone.try_send(cmd);
+        }
+    });
+
+    // --- Mute Toggle Gesture ---
+    let icon_gesture = gtk4::GestureClick::new();
+    let last_vol_icon = last_vol.clone();
+    let adj_icon = adj.clone();
+    icon_gesture.connect_released(move |_, _, _, _| {
+        let current = adj_icon.value() as u32;
+        if current > 0 {
+            last_vol_icon.set(current);
+            adj_icon.set_value(0.0);
+        } else {
+            adj_icon.set_value(last_vol_icon.get() as f64);
+        }
+    });
+    icon_img.add_controller(icon_gesture);
+
+    // --- Disable Scroll on Slider ---
+    // This allows parent ScrolledWindow to handle scrolling and prevents the "revert" bug
+    let scroll_ctrl = gtk4::EventControllerScroll::new(gtk4::EventControllerScrollFlags::VERTICAL);
+    scroll_ctrl.connect_scroll(|_, _, _| {
+        // Return true to inhibit default GTK scroll handling on the slider
+        gtk4::glib::Propagation::Stop
+    });
+    slider.add_controller(scroll_ctrl);
+
+    // --- Drag Interaction State ---
+    // Manages the global IS_DRAGGING flag to prevent backend updates from moving the slider while user interacts
+    let gesture = gtk4::GestureClick::new();
+    gesture.connect_pressed(|_, _, _, _| {
+        crate::widgets::media_widget::ui::IS_DRAGGING.store(true, Ordering::SeqCst);
+    });
+    gesture.connect_released(|_, _, _, _| {
+        // Keep flag true briefly to mask backend latency/round-trip
+        gtk4::glib::timeout_add_local_once(std::time::Duration::from_millis(200), || {
+            crate::widgets::media_widget::ui::IS_DRAGGING.store(false, Ordering::SeqCst);
+        });
+    });
+    slider.add_controller(gesture);
+    
+    row
+}
+
+fn title_case(s: &str) -> String {
+    s.split_whitespace()
+        .map(|word| {
+            let mut chars = word.chars();
+            match chars.next() {
+                None => String::new(),
+                Some(f) => f.to_uppercase().collect::<String>() + &chars.as_str().to_lowercase(),
+            }
+        })
+        .collect::<Vec<_>>()
+        .join(" ")
+}
+
+// Cleanup: is_bin_installed and launch_app_or_url are now handled by ShortcutApp enum
+
+#[derive(Clone)]
+enum ShortcutApp {
+    System(gio::AppInfo),
+    Web { name: String, icon: String, url: String },
+}
+
+impl ShortcutApp {
+    fn name(&self) -> String {
+        use gio::prelude::AppInfoExt;
+        match self {
+            Self::System(info) => info.display_name().to_string(),
+            Self::Web { name, .. } => name.clone(),
+        }
+    }
+    
+    fn icon(&self) -> String {
+        use gio::prelude::AppInfoExt;
+        match self {
+            Self::System(info) => {
+                if let Some(icon) = info.icon() {
+                    if let Some(themed) = icon.downcast_ref::<gio::ThemedIcon>() {
+                        if let Some(name) = themed.names().first() {
+                            return name.to_string();
+                        }
+                    }
+                }
+                "media-playback-start-symbolic".to_string()
+            }
+            Self::Web { icon, .. } => icon.clone(),
+        }
+    }
+
+    fn launch(&self) {
+        use gio::prelude::AppInfoExt;
+        match self {
+            Self::System(info) => {
+                let _ = info.launch(&[], gio::AppLaunchContext::NONE);
+            }
+            Self::Web { url, .. } => {
+                let _ = std::process::Command::new("xdg-open").arg(url).spawn();
+            }
+        }
+    }
+}
+
+fn discover_media_apps() -> Vec<ShortcutApp> {
+    use gio::prelude::*;
+    use std::collections::HashSet;
+    let mut apps: Vec<ShortcutApp> = Vec::new();
+    let mut seen_names = HashSet::new();
+    
+    // 1. Mandatory Web Apps
+    apps.push(ShortcutApp::Web { 
+        name: "YouTube".into(), 
+        icon: "youtube".into(), 
+        url: "https://youtube.com".into() 
+    });
+    apps.push(ShortcutApp::Web { 
+        name: "Netflix".into(), 
+        icon: "netflix".into(), 
+        url: "https://netflix.com".into() 
+    });
+    apps.push(ShortcutApp::Web { 
+        name: "YT Music".into(), 
+        icon: "youtube-music".into(), 
+        url: "https://music.youtube.com".into() 
+    });
+
+    // 2. Discover System Apps
+    let all_apps = gio::AppInfo::all();
+    let mut system_apps: Vec<ShortcutApp> = Vec::new();
+
+    for app in all_apps {
+        if !app.should_show() { continue; }
+        
+        let id = app.id().unwrap_or_default().to_string().to_lowercase();
+        let display_name = app.display_name().to_string();
+        let name_lowered = display_name.to_lowercase();
+
+        // Deduplication: Skip if we've already seen an app with this name
+        if seen_names.contains(&name_lowered) { continue; }
+        
+        // Use trait methods from AppInfoExt/DesktopAppInfoExt
+        let is_media = if let Some(desktop_info) = app.downcast_ref::<gio::DesktopAppInfo>() {
+            let categories = desktop_info.categories().map(|c| c.to_string()).unwrap_or_default();
+            categories.contains("Audio") || categories.contains("Video") || categories.contains("Music") || categories.contains("Player")
+        } else {
+            name_lowered.contains("player") || name_lowered.contains("music") || name_lowered.contains("video")
+        };
+
+        if is_media {
+            if id.contains("meow") { continue; }
+            seen_names.insert(name_lowered);
+            system_apps.push(ShortcutApp::System(app));
+        }
+    }
+    
+    system_apps.sort_by(|a, b| a.name().to_lowercase().cmp(&b.name().to_lowercase()));
+    
+    if let Some(pos) = system_apps.iter().position(|a| a.name().to_lowercase().contains("spotify")) {
+        let spotify = system_apps.remove(pos);
+        apps.insert(0, spotify);
+    } else {
+        apps.insert(0, ShortcutApp::Web { 
+            name: "Spotify".into(), 
+            icon: "spotify".into(), 
+            url: "https://open.spotify.com".into() 
+        });
+    }
+
+    apps.extend(system_apps);
+    apps
 }

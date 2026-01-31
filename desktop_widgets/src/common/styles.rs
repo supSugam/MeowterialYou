@@ -205,6 +205,89 @@ pub fn load_css(config: &Config) {
             margin-bottom: 0px;
             min-height: 16px;
         }}
+        /* Dashboard Section */ 
+        .divider {{ 
+            background-color: alpha(@outline, 0.1); 
+            margin: 8px 0; 
+            min-height: 1px; 
+        }} 
+        
+        .shortcut-btn {{ 
+            min-width: 48px; 
+            min-height: 48px;
+            background: alpha(@surfaceVariant, 0.5); 
+            border-radius: 12px; 
+            padding: 8px; 
+            border: 1px solid alpha(@outline, 0.05); 
+            transition: all 150ms ease-out; 
+        }} 
+        .shortcut-btn:hover {{ 
+            background: alpha(@widget_text, 0.1); 
+            transform: translateY(-2px); 
+        }} 
+        
+        .mixer-text-overlay {{ 
+            color: @onPrimary; 
+            font-weight: 600; 
+            font-size: 11px; 
+            padding: 0 4px; 
+        }} 
+        
+        .low-vol-text {{
+            color: @widget_text;
+        }}
+
+        .mixer-slider trough {{ 
+            min-height: 14px; 
+            border-radius: 7px; 
+            background-color: alpha(@widget_text, 0.08); 
+            border: 1px solid alpha(@outline, 0.1);
+        }}
+        .mixer-slider highlight {{
+            min-height: 14px; 
+            border-radius: 7px; 
+            background-color: @widget_primary;
+            border: 1px solid alpha(@outline, 0.2);
+        }}
+        .sleek-slider trough {{
+            min-height: 10px;
+            border-radius: 5px;
+            border: 1px solid alpha(@outline, 0.1);
+        }}
+        .sleek-slider highlight {{
+            min-height: 10px;
+            border-radius: 5px;
+            background-color: @widget_primary;
+            border: 1px solid alpha(@outline, 0.2);
+        }}
+        .sleek-slider slider {{
+            min-height: 10px;
+        }}
+        .vertical-divider {{
+            background-color: alpha(@outline, 0.15);
+            min-width: 1px;
+            margin: 0 8px;
+        }}
+        .divider {{
+            background-color: alpha(@outline, 0.15);
+            min-height: 1px;
+            margin: 4px 0;
+        }}
+        .mixer-app-label {{
+            font-size: 11px;
+            font-weight: 400;
+            color: @widget_text;
+            margin-bottom: 0px;
+            text-shadow: none;
+        }}
+        /* Hide scrollbars */
+        scrollbar, scrollbar trough, scrollbar slider {{
+            background: none;
+            border: none;
+            min-width: 0;
+            min-height: 0;
+            opacity: 0;
+        }}
     "#, 
         theme = theme_content,
         opacity = opacity,

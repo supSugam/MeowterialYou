@@ -64,13 +64,25 @@ fn build_ui(app: &Application) {
         .title("MeowterialYou MediaWidget")
         .default_width(width)
         .decorated(false)
-        .focusable(false)
-        .can_focus(false)
+        .focusable(true)
+        .can_focus(true)
         .opacity(0.0) // Start invisible
         .build();
     
+use meowterialyou_widgets::widgets::media_widget::pulse::PulseController; // Add import
+use std::rc::Rc; // Ensure Rc is available
+
+// ... inside build_ui ...
+
     let conf = config::CONFIG.read().unwrap();
-    let widgets = ui::build(&window, cmd_sender, &conf);
+    
+    // Initialize PulseAudio Controller
+    let pulse = PulseController::new().map(Rc::new);
+    if pulse.is_none() {
+        eprintln!("Warning: Failed to connect to PulseAudio directly. Falling back to slow pactl.");
+    }
+
+    let widgets = ui::build(&window, cmd_sender, &conf, pulse);
 
     // --- RUNTIME WIDTH SYNC ---
     let widget_name = "media_widget".to_string();
