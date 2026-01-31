@@ -14,6 +14,7 @@ pub struct MediaState {
     pub is_playing: bool,
     pub player_name: String, 
     pub track_id: String,
+    pub media_url: String, // Source URL for browsers
     
     // Identity fields for icon and display
     pub desktop_entry: Option<String>,
@@ -44,6 +45,7 @@ impl Default for MediaState {
             is_playing: false,
             player_name: "".to_string(),
             track_id: "".to_string(),
+            media_url: "".to_string(),
             
             desktop_entry: None,
             identity: None,

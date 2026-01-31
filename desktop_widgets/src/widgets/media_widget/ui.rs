@@ -279,6 +279,7 @@ where F: Fn(f64) -> i32 + Copy {
     
     let raise_sender = cmd_sender.clone();
     app_icon_btn.connect_clicked(move |_| {
+         eprintln!("[media_widget] App icon clicked - sending Raise command");
          let _ = raise_sender.send_blocking(crate::widgets::media_widget::mpris::MprisCommand::Raise);
     });
     

@@ -4,21 +4,21 @@
     "media_widget": 360
   },
   "heights": {
-    "media_widget": 512,
-    "weather_widget": 248
+    "weather_widget": 248,
+    "media_widget": 512
   },
   "sides": {
-    "media_widget": "left",
-    "weather_widget": "left"
+    "weather_widget": "left",
+    "media_widget": "left"
   },
   "gaps": {
-    "media_widget": [
-      24,
-      360
-    ],
     "weather_widget": [
       24,
       48
+    ],
+    "media_widget": [
+      24,
+      360
     ]
   },
   "order": [

@@ -272,19 +272,63 @@ async fn handle_command(conn: &Connection, cmd: MprisCommand, ui_sender: &async_
     if let Some(bus_name) = current_bus {
         match cmd {
             MprisCommand::Raise => {
-                debug_log!("Sending Raise command to {}", bus_name);
+                debug_log!("Handling Raise command for {}", bus_name);
+                
+                // 1. Try traditional MPRIS Raise
+                let mut mpris_raised = false;
                 if let Ok(builder) = MediaPlayer2Proxy::builder(conn)
                     .destination(zbus::names::BusName::try_from(bus_name.clone()).expect("valid bus name")) 
                 {
-                    match builder.build().await {
-                        Ok(root_proxy) => {
-                            if let Err(e) = root_proxy.raise().await {
-                                debug_log!("Raise command failed for {}: {}", bus_name, e);
-                            } else {
-                                debug_log!("Raise command sent successfully to {}", bus_name);
-                            }
-                        },
-                        Err(e) => debug_log!("Failed to build MediaPlayer2Proxy for {}: {}", bus_name, e),
+                    if let Ok(root_proxy) = builder.build().await {
+                        if root_proxy.raise().await.is_ok() {
+                            debug_log!("Traditional Raise sent to {}", bus_name);
+                            mpris_raised = true;
+                        }
+                    }
+                }
+
+                // 2. Browser/Workaround: If traditional Raise is known buggy (Chrome/Firefox)
+                // or if it failed, try opening the URL in a new tab.
+                let (identity, media_url) = {
+                    let state = STATE.read().unwrap();
+                    (state.identity.clone().unwrap_or_default().to_lowercase(), state.media_url.clone())
+                };
+
+                let is_browser = identity.contains("chrome") || identity.contains("chromium") || 
+                                 identity.contains("firefox") || identity.contains("browser") ||
+                                 bus_name.to_lowercase().contains("chrome") || 
+                                 bus_name.to_lowercase().contains("firefox");
+                
+                debug_log!("Raise stats: identity='{}', is_browser={}, mpris_raised={}, url='{}'", identity, is_browser, mpris_raised, media_url);
+
+                if is_browser || !mpris_raised {
+                    if media_url.starts_with("http") {
+                        debug_log!("Launch workaround: Opening media URL: {}", media_url);
+                        let _ = std::process::Command::new("xdg-open").arg(media_url).spawn();
+                    } else if is_browser {
+                        // Guess the service based on title/artist if URL is missing
+                        let state = STATE.read().unwrap();
+                        let haystack = format!("{} {}", state.title, state.artist).to_lowercase();
+                        
+                        let fallback = if haystack.contains("youtube") {
+                            Some("https://youtube.com")
+                        } else if haystack.contains("spotify") {
+                            Some("https://open.spotify.com")
+                        } else if haystack.contains("netflix") {
+                            Some("https://netflix.com")
+                        } else if identity.contains("chrome") || identity.contains("chromium") {
+                            // Chrome MPRIS usually means YouTube if it's broad media
+                            Some("https://youtube.com")
+                        } else if identity.contains("firefox") {
+                            Some("https://youtube.com")
+                        } else {
+                            Some("https://google.com") // Absolute fallback for browsers
+                        };
+
+                        if let Some(url) = fallback {
+                            debug_log!("Launch workaround: Opening service fallback URL: {}", url);
+                            let _ = std::process::Command::new("xdg-open").arg(url).spawn();
+                        }
                     }
                 }
             },
@@ -355,6 +399,7 @@ fn reset_state() {
     state.identity = None;
     state.loop_status = None;
     state.shuffle = None;
+    state.media_url = "".to_string();
 }
 
 async fn fetch_state(player: &PlayerProxy<'_>, conn: &Connection, p_name: &String) -> Result<()> {
@@ -413,6 +458,7 @@ async fn fetch_state(player: &PlayerProxy<'_>, conn: &Connection, p_name: &Strin
         state.art_url = "".to_string();
         state.length = 0;
         state.track_id = "".to_string();
+        state.media_url = "".to_string();
         
         match meta_res {
             Ok(meta) => {
@@ -513,6 +559,12 @@ async fn fetch_state(player: &PlayerProxy<'_>, conn: &Connection, p_name: &Strin
                          Value::Str(s) => state.track_id = s.to_string(),
                          _ => {}
                      }
+                }
+
+                if let Some(val) = meta.get("xesam:url") {
+                    if let Some(s) = as_str(val) {
+                        state.media_url = s.to_string();
+                    }
                 }
             },
             Err(e) => debug_log!("Failed to fetch metadata for {}: {}", p_name, e),
