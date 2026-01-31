@@ -16,7 +16,11 @@ struct GlobalConfig {
 #[derive(Debug, Deserialize, Clone)]
 struct GlobalSection {
     enabled: Option<Vec<String>>,
+    #[serde(default = "default_spacing")]
+    spacing: i32,
 }
+
+fn default_spacing() -> i32 { 24 }
 
 // Minimal config structs for parsing individual widget configs
 #[derive(Debug, Deserialize)]
@@ -308,7 +312,13 @@ async fn main() -> Result<()> {
                  bin_path,
                  config_path,
                  child: None,
-                 env_vars: HashMap::new(),
+                 env_vars: {
+                     let mut vars = HashMap::new();
+                     if let Some(ref gc) = global_config {
+                         vars.insert("MEOW_WIDGET_SPACING".to_string(), gc.global.spacing.to_string());
+                     }
+                     vars
+                 },
              });
         } else {
             log(&format!("⚠️  Worker binary for '{}' not found, skipping.", name));
@@ -327,6 +337,9 @@ async fn main() -> Result<()> {
         .collect();
 
     let _ = meowterialyou_widgets::common::layout_sync::clear_state();
+    
+    // Set global order for stacking
+    let _ = meowterialyou_widgets::common::layout_sync::set_order(enabled_widgets_names.clone());
 
     log(&format!("📊 Layout Analysis:"));
     log(&format!("   Left Side Widgets: {}", left_widgets.len()));

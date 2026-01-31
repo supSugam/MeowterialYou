@@ -91,9 +91,17 @@ use std::rc::Rc; // Ensure Rc is available
     // Measure natural width (including scale)
     let (_, nat_width, _, _) = widgets.root.measure(gtk4::Orientation::Horizontal, -1);
     let total_pixel_width = nat_width;
-    
+    let (gap_x, gap_y) = {
+        let conf = config::CONFIG.read().unwrap();
+        let scale = conf.layout.scale;
+        let gx = (conf.layout.gap.get(0).copied().unwrap_or(24) as f64 * scale).round() as i32;
+        let gy = (conf.layout.gap.get(1).copied().unwrap_or(24) as f64 * scale).round() as i32;
+        (gx, gy)
+    };
+
     let side = if pos_str.contains("left") { "left" } else { "right" };
-    let _ = meowterialyou_widgets::common::layout_sync::register_width(&widget_name, side, total_pixel_width);
+    // Initial registration with height 0 (will be updated in loop)
+    let _ = meowterialyou_widgets::common::layout_sync::update_layout(&widget_name, side, total_pixel_width, 0, gap_x, gap_y);
     
     let (layout_tx, layout_rx) = async_channel::bounded::<()>(1);
     let _layout_monitor = meowterialyou_widgets::common::layout_sync::watch_layout(move || {
@@ -102,9 +110,10 @@ use std::rc::Rc; // Ensure Rc is available
     
     let root_sync = widgets.root.clone();
     let side_sync = side.to_string();
+    let side_sync_watcher = side_sync.clone();
     glib::MainContext::default().spawn_local(async move {
         while let Ok(_) = layout_rx.recv().await {
-            let max_w = meowterialyou_widgets::common::layout_sync::get_max_width(&side_sync);
+            let max_w = meowterialyou_widgets::common::layout_sync::get_max_width(&side_sync_watcher);
             if max_w > 0 {
                 root_sync.set_width_request(max_w);
             }
@@ -237,24 +246,35 @@ use std::rc::Rc; // Ensure Rc is available
                     // This ensures layout is correct even if initial measure was too small
                     // and handles the "Lower below windows" requirement reliably.
                     let window_loop = window.clone();
+                    let widget_name_loop = widget_name.clone();
+                    let spacing = std::env::var("MEOW_WIDGET_SPACING").ok().and_then(|s| s.parse::<i32>().ok()).unwrap_or(24);
+                    
                     glib::timeout_add_local(std::time::Duration::from_millis(1000), move || {
-                        // 1. Re-measure natural height
-                        let (_, nat_height, _, _) = window_loop.measure(gtk4::Orientation::Vertical, width);
+                        // 1. Re-measure natural dimensions
+                        let (_, nat_width, _, _) = window_loop.measure(gtk4::Orientation::Horizontal, -1);
+                        let (_, nat_height, _, _) = window_loop.measure(gtk4::Orientation::Vertical, nat_width);
                         let actual_h = nat_height;
+                        let actual_w = nat_width;
                         
-                        // 2. Recalculate Y (Keep it pinned correctly regardless of height change)
+                        // 2. Register both width and height atomically
+                        let _ = meowterialyou_widgets::common::layout_sync::update_layout(&widget_name_loop, &side_sync, actual_w, actual_h, gap_x, gap_y);
+                        
+                        // 3. Get Y offset and anchor gap from stack
+                        let (anchor_gy, y_offset) = meowterialyou_widgets::common::layout_sync::get_y_offset(&widget_name_loop, spacing);
+
+                        // 4. Recalculate Y (Always use anchor_gy instead of local gap_y for stacking consistency)
                         let (_, new_ly) = match pos_str.as_str() {
-                            "top_left" | "top_right" => (0, gap_y), // Y is fixed from top
-                            "bottom_left" | "bottom_right" | _ => (0, monitor_h - actual_h - gap_y),
+                            "top_left" | "top_right" => (0, anchor_gy + y_offset), 
+                            "bottom_left" | "bottom_right" | _ => (0, monitor_h - actual_h - anchor_gy - y_offset),
                         };
                         let new_y = new_ly * scale_factor;
                         let new_h_phys = actual_h * scale_factor;
 
-                        // 3. Re-enforce position and size
+                        // 5. Re-enforce position and size
                         let _ = x11_hints::set_wm_normal_hints(xid, x, new_y, w_phys, new_h_phys);
                         let _ = x11_hints::move_window(xid, x, new_y);
                         
-                        // 4. Enforce widget state (sticky, skip_taskbar, below)
+                        // 6. Enforce widget state (sticky, skip_taskbar, below)
                         let _ = x11_hints::set_widget_state_via_message(xid);
                         let _ = x11_hints::lower_window(xid);
                         

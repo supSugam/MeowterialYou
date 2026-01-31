@@ -1,6 +1,9 @@
 global:
-  # List of enabled widgets, widgets not in this list will not be loaded
+  # The vertical gap between widgets when multiple are enabled on one side
+  spacing: 12
+
+  # List of enabled widgets. Widgets not in this list will not be loaded.
+  # Stacking order follows this list; the first widget sets the anchor gap.
   enabled:
     - weatherclock
     - mediawidget
-  
