@@ -1,43 +1,97 @@
+# Weather & Clock Widget Configuration for MeowterialYou
+# This file controls the layout, clock display, weather info, and system metrics.
+
 layout:
+  # Screen placement: top_left, top_right, bottom_left, bottom_right
   position: bottom_left
+  
+  # Standardized width (pixels). Recommended: 360
   width: 360
+  
+  # Offset from screen corner [X, Y]
   gap: [24, 48]
+  
+  # Orientation alignment: auto, center, left, right
   alignment: auto
+  
+  # Global scale factor
   scale: 1.0
+  
+  # Internal padding (pixels)
   padding: 20
+
+# Aesthetic settings
+appearance:
+  # Border smoothness (pixels)
   corner_radius: 8
+  
+  # Outline weight (pixels)
   border_width: 2
 
+# Decorative emoji settings
 emoji:
+  # The character shown in the header
   value: "😼"
+  
+  # Scale and rotation
   scale: 0.5
   rotate: 20
+  
+  # Vertical position (row index)
   row: 2
 
+# Font and sizing preferences
 typography:
   font_family: "Inter"
   icon_font: "MesloLGS Nerd Font Mono"
   time_size: 60
 
+# Background behavior
 background:
+  # style: "smart_transparency" (matches wallpaper brightness) or "solid"
   style: "smart_transparency"
+  
+  # Fill opacity (0 to 100)
   opacity: 80
 
+# Manual location override (optional for some services, but required by others)
+location:
+  lat: 28.2096
+  lon: 83.9856
+  name: "Pokhara"
+
+# Weather service settings
 weather:
+  # Temperature unit: 'C' or 'F'
   unit: 'C'
+  
+  # Speed unit: "km" or "mi"
   wind_unit: "km"
+  
+  # How often to check for weather updates
   refresh_interval_min: 10
 
+# Clock preferences
 clock:
+  # Time format: "12h" or "24h"
   format: "12h"
+  
+  # Show AM/PM suffix for 12h format
   show_ampm: true
 
+# Toggleable modules
 visibility:
   show_weather: true
   show_computer_metrics: true
   show_divider: true
 
+# Battery/Efficiency settings
 performance:
+  # Slow down refresh rate when on battery or idle
   dynamic_refresh: true
+  
+  # Active refresh rate (ms)
   refresh_normal_ms: 2000
+  
+  # Idle/Low-power refresh rate (ms)
   refresh_eco_ms: 10000

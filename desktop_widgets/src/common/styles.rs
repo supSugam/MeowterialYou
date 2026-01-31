@@ -95,7 +95,7 @@ pub fn load_css(config: &Config) {
         }}
         
         .title {{ 
-            font-weight: 700; 
+            font-weight: 600; 
             font-size: {font_title}px; 
             color: @widget_text; 
             margin-bottom: 0px; 

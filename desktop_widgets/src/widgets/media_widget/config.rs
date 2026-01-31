@@ -13,8 +13,6 @@ pub struct Config {
     pub layout: LayoutConfig,
     pub appearance: AppearanceConfig,
     pub background: BackgroundConfig,
-    #[allow(dead_code)] // Reserved for future use
-    pub controls: ControlsConfig,
 }
 
 impl Default for Config {
@@ -25,6 +23,7 @@ impl Default for Config {
                 scale: 1.0,
                 padding: 20,
                 mode: "landscape".to_string(), // Default
+                alignment: "auto".to_string(),
                 gap: vec![24, 80],
                 width: None,
             },
@@ -35,9 +34,6 @@ impl Default for Config {
             background: BackgroundConfig {
                 style: "smart_transparency".to_string(),
                 opacity: 80,
-            },
-            controls: ControlsConfig {
-                show_next_prev: true,
             },
         }
     }
@@ -50,10 +46,15 @@ pub struct LayoutConfig {
     pub padding: i32,
     #[serde(default = "default_mode")]
     pub mode: String, // "landscape" or "portrait"
-    #[allow(dead_code)] // Reserved for multi-widget layout
+    #[serde(default = "default_alignment")]
+    pub alignment: String,
     pub gap: Vec<i32>,
     #[serde(default)]
     pub width: Option<i32>,
+}
+
+fn default_alignment() -> String {
+    "auto".to_string()
 }
 
 fn default_mode() -> String {
@@ -71,13 +72,9 @@ pub struct AppearanceConfig {
 pub struct BackgroundConfig {
     #[allow(dead_code)] // Reserved for smart transparency mode
     pub style: String,
-    pub opacity: i32,
+    pub opacity: u8,
 }
 
-#[derive(Clone, Debug, Deserialize)]
-pub struct ControlsConfig {
-    pub show_next_prev: bool,
-}
 
 pub fn load() -> Result<(), Box<dyn std::error::Error>> {
     let home = std::env::var("HOME").unwrap_or_else(|_| "/tmp".to_string());

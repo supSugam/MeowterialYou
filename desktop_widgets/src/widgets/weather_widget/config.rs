@@ -32,6 +32,7 @@ impl Default for Config {
                 alignment: "auto".to_string(),
                 scale: 1.0,
                 padding: 20,
+                mode: "landscape".to_string(),
             },
             appearance: AppearanceConfig {
                 corner_radius: 12,
@@ -89,6 +90,12 @@ pub struct LayoutConfig {
     pub alignment: String,
     pub scale: f64,
     pub padding: i32,
+    #[serde(default = "default_mode")]
+    pub mode: String,
+}
+
+fn default_mode() -> String {
+    "landscape".to_string()
 }
 
 #[derive(Clone, Debug, Deserialize)]

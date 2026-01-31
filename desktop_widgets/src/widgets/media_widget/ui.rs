@@ -101,9 +101,9 @@ pub fn build(window: &gtk4::ApplicationWindow, cmd_sender: async_channel::Sender
     // Apply padding via Gtk Margins to the wrapper
     // TWEAK: Reduce bottom margin to account for Dots presence, restoring visual symmetry
     // We want Total Bottom Space (Dots + Margin) = Padding
-    let dots_height_base = 16.0;
-    let dots_height = s(dots_height_base); 
-    let padding_bottom = (s(padding_val) - dots_height).max(0);
+    let dots_height = s(16.0); 
+    // Higher bottom padding for dots to feel more balanced
+    let padding_bottom = s(padding_val * 0.6);
 
     content_wrapper.set_margin_start(s(padding_val));
     content_wrapper.set_margin_end(s(padding_val));

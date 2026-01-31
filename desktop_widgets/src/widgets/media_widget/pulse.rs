@@ -5,17 +5,15 @@ use std::rc::Rc;
 use std::cell::RefCell;
 use pulse::context::{Context, FlagSet as ContextFlagSet, State as ContextState};
 use pulse_glib::Mainloop; // Try root export
-use pulse::volume::{Volume, ChannelVolumes};
+use pulse::volume::Volume;
 use pulse::callbacks::ListResult;
-use pulse::context::introspect::{SinkInfo, SinkInputInfo};
-use pulse::def::SinkState; 
 // Checking online docs for libpulse-binding 2.28:
 // It has `pulse::introspect`.
 // Maybe I need to enable a feature? "introspect"?
 // Default features usually include it.
 
 pub struct PulseController {
-    mainloop: Rc<RefCell<Mainloop>>,
+    _mainloop: Rc<RefCell<Mainloop>>,
     context: Rc<RefCell<Context>>,
 }
 
@@ -34,7 +32,7 @@ impl PulseController {
         }
         
         Some(Self {
-            mainloop,
+            _mainloop: mainloop,
             context,
         })
     }

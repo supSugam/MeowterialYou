@@ -1,18 +1,40 @@
+# Media Widget Configuration for MeowterialYou
+# This file controls the dimensions, aesthetics, and basic behavior of the Media Hub.
+
 layout:
+  # Screen placement: top_left, top_right, bottom_left, bottom_right
   position: bottom_left
+  
+  # Global scale factor (e.g. 1.2 for 20% larger UI)
   scale: 1.0
+  
+  # Internal padding between widget edges and content (pixels)
   padding: 20
+  
+  # Layout mode: 
+  #   - landscape: Album art beside controls
+  #   - portrait:  Album art above controls (Dynamic heights)
   mode: portrait
+  
+  # Offset from screen corner [X, Y]
   gap: [24, 360]
+  
+  # Fixed width (pixels). If null, defaults to 300.
+  # Recommendation: Set to 360 to match Weather Widget.
   width: 300
 
+# Aesthetic settings for the widget surface
 appearance:
+  # Border smoothness (pixels)
   corner_radius: 8
+  
+  # Outline weight around the widget (pixels)
   border_width: 2
 
+# Background behavior and styling
 background:
+  # style: "smart_transparency" (matches wallpaper brightness) or "solid"
   style: "smart_transparency"
+  
+  # Fill opacity (0 to 100)
   opacity: 80
-
-controls:
-  show_next_prev: true
