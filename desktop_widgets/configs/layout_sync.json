@@ -1,24 +1,24 @@
 {
   "widths": {
-    "weather_widget": 360,
-    "media_widget": 360
+    "media_widget": 360,
+    "weather_widget": 360
   },
   "heights": {
-    "weather_widget": 248,
-    "media_widget": 512
+    "media_widget": 512,
+    "weather_widget": 248
   },
   "sides": {
     "weather_widget": "left",
     "media_widget": "left"
   },
   "gaps": {
-    "weather_widget": [
-      24,
-      48
-    ],
     "media_widget": [
       24,
       360
+    ],
+    "weather_widget": [
+      24,
+      48
     ]
   },
   "order": [

@@ -527,9 +527,10 @@ def reload_apps(lightmode_enabled: bool, scheme: MaterialColors, wallpaper_path:
             except Exception as e:
                 log.error(f"Failed to symlink assets: {e}")
 
-    os.system(f"gsettings set org.gnome.desktop.interface gtk-theme Adwaita")
-    os.system("sleep 0.5")
+    # Combined command to toggle to Adwaita and back instantly to trigger CSS reload
+    # without visible jitter.
     os.system(
+        f"gsettings set org.gnome.desktop.interface gtk-theme Adwaita && "
         f"gsettings set org.gnome.desktop.interface gtk-theme MeowterialYou-{postfix}"
     )
 
@@ -551,9 +552,8 @@ def reload_apps(lightmode_enabled: bool, scheme: MaterialColors, wallpaper_path:
                 log.error(f"Failed to symlink GTK4 assets: {e}")
 
     log.info("Restarting Gnome Shell theme")
-    os.system(f"gsettings set org.gnome.shell.extensions.user-theme name 'Default'")
-    os.system("sleep 0.5")
     os.system(
+        f"gsettings set org.gnome.shell.extensions.user-theme name 'Default' && "
         f"gsettings set org.gnome.shell.extensions.user-theme name 'MeowterialYou-{postfix}'"
     )
 

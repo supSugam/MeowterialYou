@@ -56,6 +56,7 @@ pub struct Widgets {
     pub view_2: PlayerView,
     pub dashboard_view: DashboardView,
     pub dots_box: Box,
+    pub last_players: Rc<RefCell<Vec<String>>>,
     pub cmd_sender: async_channel::Sender<crate::widgets::media_widget::mpris::MprisCommand>,
     pub root: Box,
     pub scale: f64,
@@ -87,6 +88,11 @@ pub fn build(window: &gtk4::ApplicationWindow, cmd_sender: async_channel::Sender
         .spacing(0)
         .build();
     root_wrapper.add_css_class("view");
+    if config.layout.position.contains("left") {
+        root_wrapper.add_css_class("side-left");
+    } else {
+        root_wrapper.add_css_class("side-right");
+    }
 
     // --- CONTENT WRAPPER (Handles Padding) ---
     // Similar to weather_widget, we wrap inner content to apply margins uniformly
@@ -157,6 +163,7 @@ pub fn build(window: &gtk4::ApplicationWindow, cmd_sender: async_channel::Sender
         view_2,
         dashboard_view,
         dots_box,
+        last_players: Rc::new(RefCell::new(Vec::new())),
         cmd_sender,
         root: root_wrapper,
         scale,
@@ -561,7 +568,11 @@ pub fn update(widgets: &Widgets) {
     let n_players = state.players.len() as u32;
     let expected_dots = n_players + 1; // Always Home
     
-    if n_children != expected_dots {
+    let mut last_players_lock = widgets.last_players.borrow_mut();
+    let players_changed = *last_players_lock != state.players;
+
+    if n_children != expected_dots || players_changed {
+        *last_players_lock = state.players.clone();
         while let Some(child) = widgets.dots_box.first_child() { widgets.dots_box.remove(&child); }
         
         // 4a. Home Dot (Always first)

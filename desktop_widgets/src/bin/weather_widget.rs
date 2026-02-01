@@ -290,25 +290,30 @@ fn build_ui(app: &Application) {
                         // 2. Register both width and height atomically
                         let _ = meowterialyou_widgets::common::layout_sync::update_layout(&widget_name_loop, &side_sync, actual_w, actual_h, gx, gy);
                         
-                        // 3. Get Y offset and anchor gap from stack
-                        let (anchor_gy, y_offset) = meowterialyou_widgets::common::layout_sync::get_y_offset(&widget_name_loop, spacing);
+                        // 3. Get positioning info from sync
+                        let (anchor_gx, anchor_gy, y_offset) = meowterialyou_widgets::common::layout_sync::get_layout_offsets(&widget_name_loop, spacing);
 
-                        // 4. Recalculate Y
-                        let (_, new_ly) = match pos_str.as_str() {
-                            "top_left" | "top_right" => (0, anchor_gy + y_offset), // Y is fixed
-                            "bottom_left" | "bottom_right" | _ => (0, monitor_h - actual_h - anchor_gy - y_offset),
+                        // 4. Recalculate dimensions and position
+                        let (new_lx, new_ly) = match pos_str.as_str() {
+                            "top_left" => (anchor_gx, anchor_gy + y_offset),
+                            "top_right" => (monitor_w - actual_w - anchor_gx, anchor_gy + y_offset),
+                            "bottom_left" => (anchor_gx, monitor_h - actual_h - anchor_gy - y_offset),
+                            "bottom_right" | _ => (monitor_w - actual_w - anchor_gx, monitor_h - actual_h - anchor_gy - y_offset),
                         };
+                        
+                        let new_x = new_lx * scale_factor;
                         let new_y = new_ly * scale_factor;
+                        let new_w_phys = actual_w * scale_factor;
                         let new_h_phys = actual_h * scale_factor;
 
-                        let _ = x11_hints::set_wm_normal_hints(xid, x, new_y, w_phys, new_h_phys);
-                        let _ = x11_hints::move_window(xid, x, new_y);
+                        // 5. Re-enforce position and size
+                        let _ = x11_hints::set_wm_normal_hints(xid, new_x, new_y, new_w_phys, new_h_phys);
+                        let _ = x11_hints::move_window(xid, new_x, new_y);
                         
-                        // 5. Enforce widget state (sticky, skip_taskbar, below)
+                        // 6. Enforce widget state (sticky, skip_taskbar, below)
                         let _ = x11_hints::set_widget_state_via_message(xid);
                         let _ = x11_hints::lower_window(xid);
                         
-                        // Check if we need to keep correcting (hacky but reliable for X11 docks)
                         glib::ControlFlow::Continue
                     });
                     

@@ -32,7 +32,7 @@ pub fn build(window: &gtk4::ApplicationWindow, config: &Config) -> Widgets {
     let s = move |v: f64| -> i32 { (v * scale).round() as i32 };
     let sp = |v: f64| -> i32 { (v * scale).round() as i32 }; // Spacing helper
 
-    let align_right = config.layout.alignment == "right" || (config.layout.alignment == "auto" && config.layout.position.contains("right"));
+    let align_right = config.layout.alignment == "right";
     let h_align = if align_right { Align::End } else { Align::Start };
 
     // --- ROOT ---
@@ -42,6 +42,11 @@ pub fn build(window: &gtk4::ApplicationWindow, config: &Config) -> Widgets {
         .width_request(s(root_width as f64))
         .build();
     root.add_css_class("view");
+    if config.layout.position.contains("left") {
+        root.add_css_class("side-left");
+    } else {
+        root.add_css_class("side-right");
+    }
 
     let content = Box::builder()
         .orientation(Orientation::Vertical)

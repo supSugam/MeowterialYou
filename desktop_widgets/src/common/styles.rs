@@ -58,6 +58,14 @@ pub fn load_css(config: &Config) {
             border: {border_width}px solid alpha(@outline, 0.15);
         }}
         
+        /* Smart Transparency: Overrides for specific sides */
+        .side-left {{
+            background-color: alpha(@widget_bg, @region_opacity_left);
+        }}
+        .side-right {{
+            background-color: alpha(@widget_bg, @region_opacity_right);
+        }}
+        
         .art-container {{
             border-radius: {radius}px;
             background-color: @surfaceVariant;

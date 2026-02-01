@@ -1,6 +1,7 @@
 import os
 import subprocess
 from configparser import ConfigParser
+import concurrent.futures
 from pathlib import Path
 
 from pydantic import BaseModel
@@ -304,54 +305,62 @@ class ApplierDomain:
             for svg_file in glob.glob(os.path.join(shell_assets_src, "*.svg")):
                 shutil.copy2(svg_file, shell_assets_dest)
 
-        # 2a. Apply macbuttons addon if enabled
-        if self._generation_options.macbuttons_enabled:
-            self._apply_macbuttons_addon(dest_theme, postfix)
+        # Parallelize independent tasks for "Blink-speed" application
+        tasks = []
+        with concurrent.futures.ThreadPoolExecutor(max_workers=8) as executor:
+            # Addon components
+            if self._generation_options.macbuttons_enabled:
+                tasks.append(
+                    executor.submit(self._apply_macbuttons_addon, dest_theme, postfix)
+                )
 
-        # 2b. Apply UI improvements addon if enabled (transparent tray icons, etc.)
-        if self._generation_options.ui_improvements_enabled:
-            self._apply_ui_improvements_addon(postfix)
+            if self._generation_options.ui_improvements_enabled:
+                tasks.append(
+                    executor.submit(self._apply_ui_improvements_addon, postfix)
+                )
 
-        # 2c. Apply desktop widget addon if enabled (Conky clock + weather)
-        if self._generation_options.desktop_widget_enabled:
-            self._apply_desktop_widget_addon(postfix)
-        else:
-            # Ensure widgets are stopped if disabled
-            subprocess.run(
-                ["pkill", "-f", "meowterialyou-widget-manager"], capture_output=True
+            if self._generation_options.desktop_widget_enabled:
+                tasks.append(executor.submit(self._apply_desktop_widget_addon, postfix))
+            else:
+
+                def stop_widgets():
+                    subprocess.run(
+                        ["pkill", "-f", "meowterialyou-widget-manager"],
+                        capture_output=True,
+                    )
+                    subprocess.run(["pkill", "-f", "media_widget"], capture_output=True)
+
+                tasks.append(executor.submit(stop_widgets))
+
+            if self._generation_options.transparent_panel_enabled:
+                tasks.append(
+                    executor.submit(
+                        self._apply_transparent_panel_addon, dest_theme, postfix
+                    )
+                )
+
+            # System components (Chrome/GTK4)
+            if self._generation_options.chrome_gtk4_enabled:
+                for variant in ["dark", "light"]:
+                    tasks.append(
+                        executor.submit(
+                            self._install_system_gtk4_theme, variant, scheme
+                        )
+                    )
+
+            # Icon generation and Papirus settings
+            if self._generation_options.themed_folder_icons_enabled:
+                tasks.append(executor.submit(self._generate_material_you_icons, scheme))
+
+            # This task is quick but safe to run in parallel
+            primary_color = scheme["primary"]
+            folder_color = self._closest_folder_color_domain.get_closest_color(
+                primary_color
             )
-            subprocess.run(["pkill", "-f", "media_widget"], capture_output=True)
+            tasks.append(executor.submit(self._set_papirus_folder_color, folder_color))
 
-        # 2d. Apply transparent topbar addon if enabled
-        if self._generation_options.transparent_panel_enabled:
-            self._apply_transparent_panel_addon(dest_theme, postfix)
-
-        # 3. Generate and copy GTK4 system CSS to BOTH light and dark themes if --chrome-gtk4 flag is set
-        # This uses separate Chrome-focused templates from the addons/chrome_gtk4/ folder
-        if self._generation_options.chrome_gtk4_enabled:
-            # Install both themes for proper mode switching support
-            for variant in ["dark", "light"]:
-                self._install_system_gtk4_theme(variant, scheme)
-
-        primary_color = scheme["primary"]
-
-        # Generate Material You themed folder icons if enabled
-        if self._generation_options.themed_folder_icons_enabled:
-            self._generate_material_you_icons(scheme)
-        else:
-            # Fallback for non-folder icons or if theming disabled
-            # We still set Papirus color for compatibility
-            print("Skipping themed folder icons (disabled or fallback)")
-            # If disabled, we should probably reset to Papirus default or user choice
-            # But for now, let's just update the folder color to match theme
-            pass
-
-        # set Papirus folder color (always set this as it affects existing Papirus install)
-        # It's a good fallback and also handles the non-folder icons in Papirus theme
-        folder_color = self._closest_folder_color_domain.get_closest_color(
-            primary_color
-        )
-        self._set_papirus_folder_color(folder_color)
+            # Wait for all parallel tasks to finish before reloading
+            concurrent.futures.wait(tasks)
 
         self._reload_apps()
         on_theme_applied()
@@ -387,7 +396,7 @@ class ApplierDomain:
         """Set Papirus folder color as fallback."""
         print(f"Setting Papirus folder accent: {folder_color}")
         os.system("export PWD=$HOME")
-        os.system(f"papirus-folders -C {folder_color} 2>/dev/null || true")
+        os.system(f"papirus-folders -C {folder_color} >/dev/null 2>&1 || true")
 
         # get a key from the config that contains SPOTIFY in it
 
@@ -796,6 +805,27 @@ class ApplierDomain:
         lightmode = self._generation_options.lightmode_enabled
         scheme_hex = Scheme(theme=theme_data, lightmode=lightmode).to_hex()
 
+        # --- SMART TRANSPARENCY: Analyze Regions ---
+        wallpaper_path = self._generation_options.wallpaper_path
+        opacity_left = 0.6
+        opacity_right = 0.6
+
+        if wallpaper_path:
+            from src.util import is_region_dark
+
+            # Threshold 130 is a good "mid" point for needing more/less background
+            # If dark -> use lower opacity (blend in)
+            # If light -> use higher opacity (for readability)
+            is_left_dark = is_region_dark(
+                wallpaper_path, region=(0, 0, 0.3, 1.0), threshold=130
+            )
+            is_right_dark = is_region_dark(
+                wallpaper_path, region=(0.7, 0, 1.0, 1.0), threshold=130
+            )
+
+            opacity_left = 0.55 if is_left_dark else 0.92
+            opacity_right = 0.55 if is_right_dark else 0.92
+
         # Map scheme keys to Rust widget CSS variables
         css_content = f"""/* Auto-generated by MeowterialYou */
 @define-color widget_bg {scheme_hex.get('surface', '#191c1a')};
@@ -807,6 +837,10 @@ class ApplierDomain:
 @define-color surfaceVariant {scheme_hex.get('surfaceVariant', '#404943')};
 @define-color onPrimary {scheme_hex.get('onPrimary', '#003824')};
 @define-color outline {scheme_hex.get('outline', '#8a928c')};
+
+/* Smart Transparency */
+@define-color region_opacity_left {opacity_left};
+@define-color region_opacity_right {opacity_right};
 """
 
         # 3. Write Files
