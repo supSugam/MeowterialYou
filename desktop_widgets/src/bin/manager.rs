@@ -2,9 +2,7 @@ use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use tokio::process::{Child, Command};
-use tokio::sync::mpsc;
 use tokio::time::{sleep, Duration};
-use notify::{Watcher, RecursiveMode, Config, EventKind};
 use anyhow::Result;
 use serde::Deserialize;
 
@@ -52,7 +50,6 @@ fn default_border() -> i32 { 0 }
 struct ManagedWidget {
     name: String,
     bin_path: PathBuf,
-    config_path: PathBuf,
     child: Option<Child>,
     env_vars: HashMap<String, String>,
 }
@@ -310,7 +307,6 @@ async fn main() -> Result<()> {
              managed_widgets.insert(name.clone(), ManagedWidget {
                  name: name.clone(),
                  bin_path,
-                 config_path,
                  child: None,
                  env_vars: {
                      let mut vars = HashMap::new();
@@ -353,28 +349,7 @@ async fn main() -> Result<()> {
         }
     }
 
-    // 4. Watch loop
-    let (tx, mut rx) = mpsc::channel(100);
-    let mut watcher = notify::RecommendedWatcher::new(
-        move |res| { if let Ok(event) = res { let _ = tx.blocking_send(event); } },
-        Config::default(),
-    )?;
-
-    // Watch repo configs if they exist
-    let mut watch_paths = vec![format!("{}/.config/meowterialyou-widgets", home)];
-    if Path::new("./desktop_widgets/configs").exists() {
-        watch_paths.push("./desktop_widgets/configs".to_string());
-    } else if Path::new("./configs").exists() {
-        watch_paths.push("./configs".to_string());
-    }
-
-    for path in watch_paths {
-        if Path::new(&path).exists() {
-            watcher.watch(Path::new(&path), RecursiveMode::Recursive)?;
-            println!("🔍 Watching for configuration changes in {}", path);
-        }
-    }
-
+    // 4. Shared state and Ctrl-C handling
     let widgets = Arc::new(tokio::sync::Mutex::new(managed_widgets));
     let widgets_ctrlc = Arc::clone(&widgets);
     let lock_file_ctrlc = lock_file.clone();
@@ -388,52 +363,15 @@ async fn main() -> Result<()> {
         std::process::exit(0);
     });
 
+    // 5. Health Check Loop
     loop {
-        tokio::select! {
-            Some(event) = rx.recv() => {
-                match event.kind {
-                    EventKind::Modify(_) | EventKind::Create(_) => {
-                        for path in event.paths {
-                            // Helper to check extensions
-                            let is_yaml = path.extension().map_or(false, |ext| ext == "yaml");
-                            let is_css = path.extension().map_or(false, |ext| ext == "css");
-
-                            // IGNORE CSS changes - Widgets handle this internally via hot-reload!
-                            if is_css {
-                                continue;
-                            }
-
-                            if path.file_name().map_or(false, |n| n == "widgets.yaml") {
-                                 println!("🌍 Global config changed, restarting manager...");
-                                 let mut w = widgets.lock().await;
-                                 for mw in w.values_mut() { mw.stop().await; }
-                                 let _ = std::fs::remove_file(&lock_file);
-                                 std::process::exit(0); 
-                            }
-                            
-                            if is_yaml {
-                                let mut w = widgets.lock().await;
-                                for mw in w.values_mut() {
-                                    if path.starts_with(mw.config_path.parent().unwrap()) {
-                                         println!("♻️  Config changed for {}, restarting...", mw.name);
-                                         let _ = mw.start().await;
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    _ => {}
-                }
-            }
-            _ = sleep(Duration::from_secs(5)) => {
-                let mut w = widgets.lock().await;
-                for mw in w.values_mut() {
-                    if let Some(ref mut child) = mw.child {
-                        if let Ok(Some(status)) = child.try_wait() {
-                            println!("⚠️  Widget {} died (status {}), restarting...", mw.name, status);
-                            let _ = mw.start().await;
-                        }
-                    }
+        sleep(Duration::from_secs(5)).await;
+        let mut w = widgets.lock().await;
+        for mw in w.values_mut() {
+            if let Some(ref mut child) = mw.child {
+                if let Ok(Some(status)) = child.try_wait() {
+                    println!("⚠️  Widget {} died (status {}), restarting...", mw.name, status);
+                    let _ = mw.start().await;
                 }
             }
         }

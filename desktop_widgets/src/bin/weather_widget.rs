@@ -202,28 +202,60 @@ fn build_ui(app: &Application) {
         window.init_layer_shell();
         window.set_layer(gtk4_layer_shell::Layer::Bottom);
         let pos = conf.layout.position.clone();
-        let gx = (conf.layout.gap.get(0).copied().unwrap_or(24) as f64 * scale).round() as i32;
-        let gy = (conf.layout.gap.get(1).copied().unwrap_or(24) as f64 * scale).round() as i32;
         match pos.as_str() {
             "top_left" => {
                 window.set_anchor(gtk4_layer_shell::Edge::Top, true);
                 window.set_anchor(gtk4_layer_shell::Edge::Left, true);
-                window.set_margin(gtk4_layer_shell::Edge::Top, gy);
-                window.set_margin(gtk4_layer_shell::Edge::Left, gx);
             },
             "bottom_left" => {
                 window.set_anchor(gtk4_layer_shell::Edge::Bottom, true);
                 window.set_anchor(gtk4_layer_shell::Edge::Left, true);
-                window.set_margin(gtk4_layer_shell::Edge::Bottom, gy);
-                window.set_margin(gtk4_layer_shell::Edge::Left, gx);
             },
             _ => {
                 window.set_anchor(gtk4_layer_shell::Edge::Bottom, true);
                 window.set_anchor(gtk4_layer_shell::Edge::Right, true);
-                window.set_margin(gtk4_layer_shell::Edge::Bottom, gy);
-                window.set_margin(gtk4_layer_shell::Edge::Right, gx);
             }
         }
+
+        // Stacking Loop for Wayland
+        let window_loop = window.clone();
+        let widget_name_loop = widget_name.clone();
+        let side_sync_loop = side.to_string();
+        let pos_str_loop = pos.clone();
+        let spacing = std::env::var("MEOW_WIDGET_SPACING").ok().and_then(|s| s.parse::<i32>().ok()).unwrap_or(24);
+
+        glib::timeout_add_local(std::time::Duration::from_millis(1000), move || {
+            let (_, actual_w, _, _) = window_loop.measure(gtk4::Orientation::Horizontal, -1);
+            let (_, actual_h, _, _) = window_loop.measure(gtk4::Orientation::Vertical, actual_w);
+            
+            let (gap_x, gap_y) = {
+                let conf = config::CONFIG.read().unwrap();
+                let scale = conf.layout.scale;
+                let gx = (conf.layout.gap.get(0).copied().unwrap_or(24) as f64 * scale).round() as i32;
+                let gy = (conf.layout.gap.get(1).copied().unwrap_or(24) as f64 * scale).round() as i32;
+                (gx, gy)
+            };
+
+            let _ = meowterialyou_widgets::common::layout_sync::update_layout(&widget_name_loop, &side_sync_loop, actual_w, actual_h, gap_x, gap_y);
+            let (anchor_gx, anchor_gy, y_offset) = meowterialyou_widgets::common::layout_sync::get_layout_offsets(&widget_name_loop, spacing);
+            
+            match pos_str_loop.as_str() {
+                "top_left" => {
+                    window_loop.set_margin(gtk4_layer_shell::Edge::Top, anchor_gy + y_offset);
+                    window_loop.set_margin(gtk4_layer_shell::Edge::Left, anchor_gx);
+                },
+                "bottom_left" => {
+                    window_loop.set_margin(gtk4_layer_shell::Edge::Bottom, anchor_gy + y_offset);
+                    window_loop.set_margin(gtk4_layer_shell::Edge::Left, anchor_gx);
+                },
+                _ => {
+                    window_loop.set_margin(gtk4_layer_shell::Edge::Bottom, anchor_gy + y_offset);
+                    window_loop.set_margin(gtk4_layer_shell::Edge::Right, anchor_gx);
+                }
+            }
+            glib::ControlFlow::Continue
+        });
+
         window.present();
     } else {
         window.set_deletable(false);

@@ -16,3 +16,11 @@ overview app launcher texts, themed icons, themed dtp
 
 [Quick Settings Tweaks]
 - WIFI/BLUETOOTH LIST POPUP ON QUICK SETTINGS PANEL EXCEEDS THE SCREEN FROM TOP
+
+
+
+is it impossible to not let widget float over any apps?
+
+like when it starts now it floats over than goes beneath, which can ruin user experience, imagine user working on a typing something or gaming and our widget draws over to take focus for few seconds to ruin every keystrokes in that moment? catastrophical
+
+this is what happens rn: widgets still initially render over other windows, mediawidget does beneath after few second, weatherwidget still floats above until user clicks somewhere else

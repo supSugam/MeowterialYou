@@ -135,44 +135,64 @@ fn load_state() -> Result<LayoutState> {
 
 pub fn get_layout_offsets(target_name: &str, spacing: i32) -> (i32, i32, i32) {
     let state = load_state().unwrap_or_default();
-    let side = state.sides.get(target_name).cloned().unwrap_or_else(|| "right".to_string());
+    let side_str = state.sides.get(target_name).cloned().unwrap_or_else(|| "bottom_right".to_string());
+    let is_bottom = side_str.contains("bottom");
     
-    let mut cumulative_offset = 0;
-    let mut anchor_gap_x = 0;
-    let mut anchor_gap_y = 0;
-    let mut found_anchor = false;
-    let mut found_target = false;
-
+    // We only care about widgets on the same logical side ("left" or "right")
+    let target_side_side = if side_str.contains("left") { "left" } else { "right" };
+    
+    let mut matching_widgets = Vec::new();
     for name in &state.order {
-        // Determine if this widget belongs to the same side
-        let s = state.sides.get(name);
-        if s != Some(&side) { continue; }
-
-        // The first widget we find on this side is the anchor
-        if !found_anchor {
-            let (gx, gy) = state.gaps.get(name).cloned().unwrap_or((24, 24));
-            anchor_gap_x = gx;
-            anchor_gap_y = gy;
-            found_anchor = true;
-        }
-
-        if name == target_name {
-            found_target = true;
-            break;
-        }
-
-        // If it's a preceding widget on the same side, add its height
-        let h = state.heights.get(name).cloned().unwrap_or(0);
-        if h > 0 {
-            cumulative_offset += h + spacing;
+        if let Some(s) = state.sides.get(name) {
+            let s_side = if s.contains("left") { "left" } else { "right" };
+            if s_side == target_side_side {
+                matching_widgets.push(name.clone());
+            }
         }
     }
 
-    if found_target { 
-        return (anchor_gap_x, anchor_gap_y, cumulative_offset); 
+    if matching_widgets.is_empty() {
+        let (gx, gy) = state.gaps.get(target_name).cloned().unwrap_or((24, 24));
+        return (gx, gy, 0);
     }
+
+    // Anchor is the widget "closest" to the edge.
+    // For TOP: the first widget in the list.
+    // For BOTTOM: the last widget in the list.
+    let anchor_name = if is_bottom {
+        matching_widgets.last().unwrap()
+    } else {
+        matching_widgets.first().unwrap()
+    };
     
-    // Fallback if not found in order
+    let (anchor_gx, anchor_gy) = state.gaps.get(anchor_name).cloned().unwrap_or((24, 24));
+
+    let mut cumulative_offset = 0;
+    let target_idx = matching_widgets.iter().position(|r| r == target_name);
+    
+    if let Some(idx) = target_idx {
+        if is_bottom {
+            // Stack UP: count heights of widgets AFTER us in the list (since list is top-to-bottom)
+            for i in (idx + 1)..matching_widgets.len() {
+                let name = &matching_widgets[i];
+                let h = state.heights.get(name).cloned().unwrap_or(0);
+                if h > 0 {
+                    cumulative_offset += h + spacing;
+                }
+            }
+        } else {
+            // Stack DOWN: count heights of widgets BEFORE us in the list
+            for i in 0..idx {
+                let name = &matching_widgets[i];
+                let h = state.heights.get(name).cloned().unwrap_or(0);
+                if h > 0 {
+                    cumulative_offset += h + spacing;
+                }
+            }
+        }
+        return (anchor_gx, anchor_gy, cumulative_offset);
+    }
+
     let (gx, gy) = state.gaps.get(target_name).cloned().unwrap_or((24, 24));
     (gx, gy, 0)
 }

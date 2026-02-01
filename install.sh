@@ -731,6 +731,26 @@ EOF
     if [ "$DESKTOP_WIDGETS" = true ]; then
         print_progress 3 3 "Installing Desktop Widgets..."
         
+        # Decide if we need to perform a full install/restart
+        local MUST_INSTALL=false
+        if [ "$REBUILD_WIDGETS" = true ]; then
+            MUST_INSTALL=true
+        elif [ ! -f "$BIN_DIR/meowterialyou-widget-manager" ]; then
+            MUST_INSTALL=true
+        elif [ "$DO_REAPPLY" = false ]; then
+            # Fresh install or interactive mode
+            MUST_INSTALL=true
+        else
+            # Check if any config file is newer than our installed binary
+            if [ -f "$BIN_DIR/meowterialyou-widget-manager" ]; then
+                if find "$SCRIPT_DIR/desktop_widgets/configs" -name "*.yaml" -newer "$BIN_DIR/meowterialyou-widget-manager" 2>/dev/null | grep -q .; then
+                    MUST_INSTALL=true
+                    print_info "Detected widget configuration changes, updating..."
+                fi
+            fi
+        fi
+
+        if [ "$MUST_INSTALL" = true ]; then
             # Always run an incremental build to reflect any code changes
             # Cargo is smart enough to skip if nothing changed (~0.5s)
             echo -e "\n  ${DIM}Checking for widget updates (incremental build)...${NC}"
@@ -807,6 +827,9 @@ EOF
             pkill -f "meowterialyou-widget-manager" || true
             (cd "$SCRIPT_DIR" && nohup "$BIN_DIR/meowterialyou-widget-manager" >/dev/null 2>&1 &)
             print_info "Started widget manager from repository root"
+        else
+            print_info "Widgets are already running and up to date. Skipping restart."
+        fi
         cd "$SCRIPT_DIR" || exit
     else
         # Disabled - Cleanup if previously installed

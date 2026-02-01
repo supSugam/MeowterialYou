@@ -5,5 +5,5 @@ global:
   # List of enabled widgets. Widgets not in this list will not be loaded.
   # Stacking order follows this list; the first widget sets the anchor gap.
   enabled:
-    - weatherclock
     - mediawidget
+    - weatherclock

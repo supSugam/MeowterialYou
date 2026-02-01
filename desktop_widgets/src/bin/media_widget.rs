@@ -64,8 +64,8 @@ fn build_ui(app: &Application) {
         .title("MeowterialYou MediaWidget")
         .default_width(width)
         .decorated(false)
-        .focusable(true)
-        .can_focus(true)
+        .focusable(false)
+        .can_focus(false)
         .opacity(0.0) // Start invisible
         .build();
     
@@ -135,43 +135,75 @@ use std::rc::Rc; // Ensure Rc is available
         window.set_layer(gtk4_layer_shell::Layer::Bottom);
         window.auto_exclusive_zone_enable();
         
-        let (pos, gap_x, gap_y) = {
+        let pos = {
             let conf = config::CONFIG.read().unwrap();
-            let scale = conf.layout.scale;
-            let gx = (conf.layout.gap.get(0).copied().unwrap_or(24) as f64 * scale).round() as i32;
-            let gy = (conf.layout.gap.get(1).copied().unwrap_or(24) as f64 * scale).round() as i32;
-            (conf.layout.position.clone(), gx, gy)
+            conf.layout.position.clone()
         };
         
         match pos.as_str() {
             "top_left" => {
                 window.set_anchor(gtk4_layer_shell::Edge::Top, true);
                 window.set_anchor(gtk4_layer_shell::Edge::Left, true);
-                window.set_margin(gtk4_layer_shell::Edge::Top, gap_y);
-                window.set_margin(gtk4_layer_shell::Edge::Left, gap_x);
             },
             "top_right" => {
                 window.set_anchor(gtk4_layer_shell::Edge::Top, true);
                 window.set_anchor(gtk4_layer_shell::Edge::Right, true);
-                window.set_margin(gtk4_layer_shell::Edge::Top, gap_y);
-                window.set_margin(gtk4_layer_shell::Edge::Right, gap_x);
             },
             "bottom_left" => {
                 window.set_anchor(gtk4_layer_shell::Edge::Bottom, true);
                 window.set_anchor(gtk4_layer_shell::Edge::Left, true);
-                window.set_margin(gtk4_layer_shell::Edge::Bottom, gap_y);
-                window.set_margin(gtk4_layer_shell::Edge::Left, gap_x);
             },
-            "bottom_right" | _ => {
+            _ => {
                 window.set_anchor(gtk4_layer_shell::Edge::Bottom, true);
                 window.set_anchor(gtk4_layer_shell::Edge::Right, true);
-                window.set_margin(gtk4_layer_shell::Edge::Bottom, gap_y);
-                window.set_margin(gtk4_layer_shell::Edge::Right, gap_x);
             }
         }
 
+        // Stacking Loop for Wayland
+        let window_loop = window.clone();
+        let widget_name_loop = widget_name.clone();
+        let side_sync = side.to_string();
+        let pos_str_loop = pos.clone();
+        let spacing = std::env::var("MEOW_WIDGET_SPACING").ok().and_then(|s| s.parse::<i32>().ok()).unwrap_or(24);
+
+        glib::timeout_add_local(std::time::Duration::from_millis(1000), move || {
+            let (_, actual_w, _, _) = window_loop.measure(gtk4::Orientation::Horizontal, -1);
+            let (_, actual_h, _, _) = window_loop.measure(gtk4::Orientation::Vertical, actual_w);
+            
+            let (gap_x, gap_y) = {
+                let conf = config::CONFIG.read().unwrap();
+                let scale = conf.layout.scale;
+                let gx = (conf.layout.gap.get(0).copied().unwrap_or(24) as f64 * scale).round() as i32;
+                let gy = (conf.layout.gap.get(1).copied().unwrap_or(24) as f64 * scale).round() as i32;
+                (gx, gy)
+            };
+
+            let _ = meowterialyou_widgets::common::layout_sync::update_layout(&widget_name_loop, &side_sync, actual_w, actual_h, gap_x, gap_y);
+            let (anchor_gx, anchor_gy, y_offset) = meowterialyou_widgets::common::layout_sync::get_layout_offsets(&widget_name_loop, spacing);
+            
+            match pos_str_loop.as_str() {
+                "top_left" => {
+                    window_loop.set_margin(gtk4_layer_shell::Edge::Top, anchor_gy + y_offset);
+                    window_loop.set_margin(gtk4_layer_shell::Edge::Left, anchor_gx);
+                },
+                "top_right" => {
+                    window_loop.set_margin(gtk4_layer_shell::Edge::Top, anchor_gy + y_offset);
+                    window_loop.set_margin(gtk4_layer_shell::Edge::Right, anchor_gx);
+                },
+                "bottom_left" => {
+                    window_loop.set_margin(gtk4_layer_shell::Edge::Bottom, anchor_gy + y_offset);
+                    window_loop.set_margin(gtk4_layer_shell::Edge::Left, anchor_gx);
+                },
+                _ => {
+                    window_loop.set_margin(gtk4_layer_shell::Edge::Bottom, anchor_gy + y_offset);
+                    window_loop.set_margin(gtk4_layer_shell::Edge::Right, anchor_gx);
+                }
+            }
+            glib::ControlFlow::Continue
+        });
+
         window.set_keyboard_mode(gtk4_layer_shell::KeyboardMode::None);
-        window.set_opacity(1.0); // Reveal immediately on Wayland
+        window.set_opacity(1.0);
         window.present();
     } else {
         eprintln!("Using X11/XWayland mode with widget-like window hints.");

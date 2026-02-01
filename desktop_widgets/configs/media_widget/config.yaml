@@ -17,7 +17,7 @@ layout:
   mode: portrait
   
   # Offset from screen corner [X, Y]
-  gap: [24, 360]
+  gap: [24, 40]
   
   # Fixed width (pixels). If null, defaults to 300.
   # Recommendation: Set to 360 to match Weather Widget.
