@@ -251,10 +251,10 @@ use std::rc::Rc; // Ensure Rc is available
                     };
 
                     let (lx, ly) = match pos_str.as_str() {
-                        "top_left" => (gap_x, gap_y),
-                        "top_right" => (monitor_w - w - gap_x, gap_y),
-                        "bottom_left" => (gap_x, monitor_h - h - gap_y),
-                        "bottom_right" | _ => (monitor_w - w - gap_x, monitor_h - h - gap_y),
+                        "top_left" => (geo.x() + gap_x, geo.y() + gap_y),
+                        "top_right" => (geo.x() + monitor_w - w - gap_x, geo.y() + gap_y),
+                        "bottom_left" => (geo.x() + gap_x, geo.y() + monitor_h - h - gap_y),
+                        "bottom_right" | _ => (geo.x() + monitor_w - w - gap_x, geo.y() + monitor_h - h - gap_y),
                     };
 
                     let x = lx * scale_factor;
@@ -295,11 +295,12 @@ use std::rc::Rc; // Ensure Rc is available
                         let (anchor_gx, anchor_gy, y_offset) = meowterialyou_widgets::common::layout_sync::get_layout_offsets(&widget_name_loop, spacing);
 
                         // 4. Recalculate dimensions and position
+                        let current_geo = monitor.geometry();
                         let (new_lx, new_ly) = match pos_str.as_str() {
-                            "top_left" => (anchor_gx, anchor_gy + y_offset),
-                            "top_right" => (monitor_w - actual_w - anchor_gx, anchor_gy + y_offset),
-                            "bottom_left" => (anchor_gx, monitor_h - actual_h - anchor_gy - y_offset),
-                            "bottom_right" | _ => (monitor_w - actual_w - anchor_gx, monitor_h - actual_h - anchor_gy - y_offset),
+                            "top_left" => (current_geo.x() + anchor_gx, current_geo.y() + anchor_gy + y_offset),
+                            "top_right" => (current_geo.x() + monitor_w - actual_w - anchor_gx, current_geo.y() + anchor_gy + y_offset),
+                            "bottom_left" => (current_geo.x() + anchor_gx, current_geo.y() + monitor_h - actual_h - anchor_gy - y_offset),
+                            "bottom_right" | _ => (current_geo.x() + monitor_w - actual_w - anchor_gx, current_geo.y() + monitor_h - actual_h - anchor_gy - y_offset),
                         };
                         
                         let new_x = new_lx * scale_factor;

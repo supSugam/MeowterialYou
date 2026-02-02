@@ -807,21 +807,26 @@ EOF
         
         # Decide if we need to perform a full install/restart
         local MUST_INSTALL=false
-        if [ "$REBUILD_WIDGETS" = true ]; then
-            MUST_INSTALL=true
-        elif [ ! -f "$BIN_DIR/meowterialyou-widget-manager" ]; then
+        if [ ! -f "$BIN_DIR/meowterialyou-widget-manager" ]; then
+            REBUILD_WIDGETS=true
             MUST_INSTALL=true
         elif [ "$DO_REAPPLY" = false ]; then
-            # Fresh install or interactive mode
+            # Fresh interactive install usually warrants a check/rebuild if user chose it
             MUST_INSTALL=true
         else
             # Check if any config file is newer than our installed binary
             if [ -f "$BIN_DIR/meowterialyou-widget-manager" ]; then
                 if find "$SCRIPT_DIR/desktop_widgets/configs" -name "*.yaml" -newer "$BIN_DIR/meowterialyou-widget-manager" 2>/dev/null | grep -q .; then
+                    REBUILD_WIDGETS=true
                     MUST_INSTALL=true
                     print_info "Detected widget configuration changes, updating..."
                 fi
             fi
+        fi
+
+        # CLI flag override
+        if [ "$REBUILD_WIDGETS" = true ]; then
+            MUST_INSTALL=true
         fi
 
         if [ "$MUST_INSTALL" = true ]; then
@@ -830,15 +835,18 @@ EOF
              if cd "$SCRIPT_DIR/desktop_widgets"; then
                  if cargo build --release --quiet; then
                      print_success "Widgets built successfully"
-                     # Install binaries only if we rebuilt
-                     cp "$SCRIPT_DIR/target/release/manager" "$BIN_DIR/meowterialyou-widget-manager"
-                     cp "$SCRIPT_DIR/target/release/media_widget" "$BIN_DIR/media_widget"
-                     cp "$SCRIPT_DIR/target/release/weather_widget" "$BIN_DIR/weather_widget"
-                     
-                     # Kill to allow binary replacement effective restart
-                     pkill -f "meowterialyou-widget-manager" || true
-                     pkill -f "media_widget" || true
-                     pkill -f "weather_widget" || true
+                      # Kill processes BEFORE replacing binaries to avoid "Text file busy"
+                      pkill -f "meowterialyou-widget-manager" || true
+                      pkill -f "media_widget" || true
+                      pkill -f "weather_widget" || true
+
+                      # Unlink files first (extra safety)
+                      rm -f "$BIN_DIR/meowterialyou-widget-manager" "$BIN_DIR/media_widget" "$BIN_DIR/weather_widget"
+
+                      # Install binaries
+                      cp "$SCRIPT_DIR/target/release/manager" "$BIN_DIR/meowterialyou-widget-manager"
+                      cp "$SCRIPT_DIR/target/release/media_widget" "$BIN_DIR/media_widget"
+                      cp "$SCRIPT_DIR/target/release/weather_widget" "$BIN_DIR/weather_widget"
                  else
                      print_error "Failed to build widgets"
                      cd "$SCRIPT_DIR" || exit
@@ -1064,7 +1072,6 @@ UI_IMPROVEMENTS=$UI_IMPROVEMENTS
 
 # Desktop widgets (Clock, Weather, Media) - Requires Rust/Cargo
 DESKTOP_WIDGETS=$DESKTOP_WIDGETS
-REBUILD_WIDGETS=$REBUILD_WIDGETS
 
 # Fully transparent top panel (auto-adjusts text contrast)
 TRANSPARENT_PANEL=$TRANSPARENT_PANEL

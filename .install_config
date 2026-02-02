@@ -44,7 +44,6 @@ UI_IMPROVEMENTS=true
 
 # Desktop widgets (Clock, Weather, Media) - Requires Rust/Cargo
 DESKTOP_WIDGETS=true
-REBUILD_WIDGETS=false
 
 # Fully transparent top panel (auto-adjusts text contrast)
 TRANSPARENT_PANEL=true
