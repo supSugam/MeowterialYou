@@ -162,11 +162,9 @@ cython_debug/
 #.idea/
 .envrc
 
-# MeowterialYou installation config (user-specific)
-.install_config
-
-# AGS Widget
 package-lock.json
 node_modules
 /*.json
 /*.css
+layout_sync.json
+desktop_widgets/configs/**/theme.css

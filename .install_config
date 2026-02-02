@@ -1,0 +1,63 @@
+# MeowterialYou Installation Config
+# This file tracks your installation preferences. 
+# You can manually edit this and run `./install.sh --reapply`
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Core Appearance
+# ─────────────────────────────────────────────────────────────────────────────
+
+# Theme mode: system (auto-detect), dark, or light
+THEME=system
+
+# Window button style: native (GNOME default) or mac (circular)
+TITLE_BUTTONS=mac
+
+# Window button position: right or left
+TITLE_BUTTONS_POSITION=right
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Wallpaper Conversion
+# ─────────────────────────────────────────────────────────────────────────────
+
+# CONVERT_THEME: Match wallpaper colors to specific palettes before theming.
+# Options:
+#   - false           : No conversion (default Material You behavior)
+#   - randomize       : Choose a random scheme on every apply
+#   - [Theme Name]    : e.g. Gruvbox, Nord, Everforest, Solarized, Dracula,
+#                       Tokyo Night, Kanagawa, Digital Rust
+#   - Catppuccin      : Catppuccin Latte, Catppuccin Frappe, 
+#                       Catppuccin Macchiato, Catppuccin Mocha
+#   - Rose Pine       : Rose Pine, Rose Pine Moon, Rose Pine Dawn
+#   - [List]          : Comma separated list (e.g. "Nord, Gruvbox"). 
+#                       Cycles to the NEXT one every time you run --reapply.
+CONVERT_THEME="Rose Pine"
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Addons & Extensions
+# ─────────────────────────────────────────────────────────────────────────────
+
+# Enable GTK4 theme for Chrome/Chromium (requires restart)
+CHROME_GTK4=true
+
+# Transparent tray icons and system tray improvements
+UI_IMPROVEMENTS=true
+
+# Desktop widgets (Clock, Weather, Media) - Requires Rust/Cargo
+DESKTOP_WIDGETS=true
+REBUILD_WIDGETS=false
+
+# Fully transparent top panel (auto-adjusts text contrast)
+TRANSPARENT_PANEL=true
+
+# Recolors folder icons to match your current wallpaper theme
+THEMED_FOLDER_ICONS="true"
+
+# ─────────────────────────────────────────────────────────────────────────────
+# App Theming
+# ─────────────────────────────────────────────────────────────────────────────
+THEME_GNOME_TERMINAL=true
+THEME_SPOTIFY=false
+THEME_DISCORD=false
+THEME_VSCODE=false
+THEME_OBSIDIAN=false
+THEME_VIVALDI=false

@@ -149,7 +149,14 @@ fn resolve_widget_alias(alias: &str) -> String {
 }
 
 fn log(msg: &str) {
-    let log_file = "/tmp/meowterialyou-manager.log";
+    let home = get_home();
+    let log_dir = PathBuf::from(format!("{}/.cache/meowterialyou", home));
+    if !log_dir.exists() {
+        let _ = std::fs::create_dir_all(&log_dir);
+    }
+    
+    let log_file = log_dir.join("manager.log");
+    
     if let Ok(mut file) = std::fs::OpenOptions::new()
         .create(true)
         .append(true)

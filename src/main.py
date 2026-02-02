@@ -57,6 +57,8 @@ def main():  # sourcery skip: raise-specific-error
             wallpaper_path=arguments.wallpaper
             or ApplierDomain.get_current_system_wallpaper_path(),
             silent=arguments.silent,
+            convert_theme=arguments.convert_theme
+            or Config.load_prefs().get("CONVERT_THEME"),
         ),
     )
 

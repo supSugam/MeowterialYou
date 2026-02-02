@@ -67,6 +67,7 @@ THEME_DISCORD=false
 THEME_VSCODE=false
 THEME_OBSIDIAN=false
 THEME_VIVALDI=false
+CONVERT_THEME="false"
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -231,7 +232,22 @@ uninstall_meowterialyou() {
     echo -e "  ${DOT} Removing config directory..."
     rm -rf ~/.config/meowterialyou
     rm -rf ~/.config/meowterialyou-widgets
+    rm -rf ~/.config/meowterialyou-widget                 # Legacy
+    rm -f ~/.config/meowterialyou-widget.desktop          # Legacy
+    rm -f ~/.config/meowterialyou-widgets.desktop         # Legacy
+    rm -f ~/.config/meowterialyou_weather.py              # Legacy
+    rm -f ~/.config/autostart/meowterialyou-widgets.desktop
+    
     rm -f /tmp/meowterialyou-widget-manager.lock
+
+    # Caches and Logs
+    echo -e "  ${DOT} Cleaning up cache and logs..."
+    rm -rf ~/.cache/meowterialyou
+    rm -f ~/.cache/meowterialyou-manager.log
+    rm -f ~/.cache/meowterialyou-mediawidget.log
+    rm -f ~/.cache/meowterialyou-weatherclock.log
+    rm -f ~/.cache/meowterialyou-widget.log
+    rm -f ~/.cache/meowterialyou-art-*.jpg
 
     # Stop running widgets
     echo -e "  ${DOT} Stopping widgets..."
@@ -368,8 +384,16 @@ run_interactive() {
             --prompt.foreground="255" --selected.background="212" --default=false \
             "     Enable desktop widget?"; then
             DESKTOP_WIDGETS=true
-            echo -e "     ${CHECK} Desktop Widget: ${BOLD}${GREEN}enabled${NC}"
-            echo -e "     ${CHECK} Desktop Widget: ${BOLD}${GREEN}enabled${NC}"
+            
+            if gum confirm --affirmative="  Yes, rebuild  " --negative="  No, preserve  " \
+                --prompt.foreground="255" --selected.background="212" --default=false \
+                "     Rebuild widgets from source? (Requires Rust)"; then
+                REBUILD_WIDGETS=true
+                echo -e "     ${CHECK} Desktop Widget: ${BOLD}${GREEN}enabled${NC} (Rebuild: ${BOLD}${YELLOW}yes${NC})"
+            else
+                REBUILD_WIDGETS=false
+                echo -e "     ${CHECK} Desktop Widget: ${BOLD}${GREEN}enabled${NC} (Rebuild: ${DIM}no${NC})"
+            fi
             echo -e "     ${DIM}Built from source (Rust)${NC}"
         else
             DESKTOP_WIDGETS=false
@@ -404,7 +428,51 @@ run_interactive() {
         echo ""
         
 
+        echo ""
         
+        # ─── Wallpaper Conversion ───
+        echo -e "  ${BOLD}10. Wallpaper Conversion${NC}"
+        echo -e "     ${DIM}Match wallpaper colors to a specific theme (Gruvbox, Nord, etc.)${NC}"
+        if gum confirm --affirmative="  Yes, select  " --negative="  No, skip  " \
+            --prompt.foreground="255" --selected.background="212" --default=false \
+            "     Enable wallpaper theme conversion?"; then
+            
+            # Parse theme names from src/themes.json (using absolute path)
+            local THEME_LIST
+            THEME_LIST=$(grep -Po '"[^"]*"(?=:)' "$SCRIPT_DIR/src/themes.json" | tr -d '"' | sort)
+            
+            echo -e "     ${BOLD}${YELLOW}PRESS SPACE TO SELECT THEMES${NC}${ITALIC} (then Enter to confirm)${NC}"
+            local CHOSEN
+            CHOSEN=$(echo -e "randomize\n$THEME_LIST" | gum choose --no-limit --cursor="  ▸ " --cursor.foreground="212" \
+                --selected.foreground="212" --selected="$CONVERT_THEME" --height=10 | paste -sd "," -)
+            
+            # If user confirmed but didn't select anything, default to randomize
+            # Fallback: If nothing selected, offer Single-Select mode (easier UX)
+            if [ -z "$CHOSEN" ]; then
+                echo -e "     ${YELLOW}No themes selected with Space.${NC}"
+                echo -e "     ${ITALIC}Switching to Single Selection Mode (Just press Enter)...${NC}"
+                
+                CHOSEN=$(echo -e "randomize\n$THEME_LIST" | gum choose --cursor="  ▸ " --cursor.foreground="212" \
+                    --selected.foreground="212" --height=10)
+                
+                # If STILL empty (e.g. esc), default to randomize
+                if [ -z "$CHOSEN" ]; then
+                    CONVERT_THEME="randomize"
+                    echo -e "     ${CHECK} Selected: ${BOLD}${YELLOW}randomize${NC} ${DIM}(defaulting)${NC}"
+                else
+                    CONVERT_THEME="$CHOSEN"
+                    echo -e "     ${CHECK} Selected: ${BOLD}${MAGENTA}$CONVERT_THEME${NC}"
+                fi
+            else
+                CONVERT_THEME="$CHOSEN"
+                echo -e "     ${CHECK} Selected: ${BOLD}${MAGENTA}$CONVERT_THEME${NC}"
+            fi
+        else
+            CONVERT_THEME="false"
+            echo -e "     ${CHECK} Conversion: ${DIM}disabled${NC}"
+        fi
+        echo ""
+
         # ─── Wallpaper ───
         echo -e "  ${BOLD}11. Wallpaper${NC}"
         echo -e "     ${DIM}Press Enter to use your current wallpaper${NC}"
@@ -529,6 +597,11 @@ run_interactive() {
         
         echo -e "  ${BOLD}Wallpaper Path${NC} (Enter for current)"
         read -rp "     ▸ " WALLPAPER
+        echo ""
+
+        echo -e "  ${BOLD}Wallpaper Conversion${NC} [randomize / Gruvbox / Catppuccin Mocha / etc.] (or 'false')"
+        read -rp "     ▸ " input
+        CONVERT_THEME=${input:-false}
     fi
     
     # ─── Summary ───
@@ -541,6 +614,7 @@ run_interactive() {
     echo -e "  ${DOT} Desktop Widget:  ${BOLD}$([ "$DESKTOP_WIDGETS" = true ] && echo "enabled" || echo "disabled")${NC}"
     echo -e "  ${DOT} Transp. Panel:  ${BOLD}$([ "$TRANSPARENT_PANEL" = true ] && echo "enabled" || echo "disabled")${NC}"
     echo -e "  ${DOT} Terminal Theme:  ${BOLD}$([ "$THEME_GNOME_TERMINAL" = true ] && echo "enabled" || echo "disabled")${NC}"
+    echo -e "  ${DOT} Conv. Theme:    ${BOLD}${CONVERT_THEME:-"disabled"}${NC}"
     echo -e "  ${DOT} Wallpaper:       ${BOLD}${WALLPAPER:-"Current system wallpaper"}${NC}"
     
     # Show optional apps if any enabled
@@ -751,32 +825,31 @@ EOF
         fi
 
         if [ "$MUST_INSTALL" = true ]; then
-            # Always run an incremental build to reflect any code changes
-            # Cargo is smart enough to skip if nothing changed (~0.5s)
-            echo -e "\n  ${DIM}Checking for widget updates (incremental build)...${NC}"
-            if cd "$SCRIPT_DIR/desktop_widgets"; then
-                if cargo build --release --quiet; then
-                    print_success "Widgets up to date"
-                else
-                    print_error "Failed to build widgets"
-                    cd "$SCRIPT_DIR" || exit
-                    return 1
-                fi
-            else
-                print_error "Could not enter widget directory"
-                return 1
+            if [ "$REBUILD_WIDGETS" = true ]; then
+             echo -e "\n  ${DIM}Building widgets from source...${NC}"
+             if cd "$SCRIPT_DIR/desktop_widgets"; then
+                 if cargo build --release --quiet; then
+                     print_success "Widgets built successfully"
+                     # Install binaries only if we rebuilt
+                     cp "$SCRIPT_DIR/target/release/manager" "$BIN_DIR/meowterialyou-widget-manager"
+                     cp "$SCRIPT_DIR/target/release/media_widget" "$BIN_DIR/media_widget"
+                     cp "$SCRIPT_DIR/target/release/weather_widget" "$BIN_DIR/weather_widget"
+                     
+                     # Kill to allow binary replacement effective restart
+                     pkill -f "meowterialyou-widget-manager" || true
+                     pkill -f "media_widget" || true
+                     pkill -f "weather_widget" || true
+                 else
+                     print_error "Failed to build widgets"
+                     cd "$SCRIPT_DIR" || exit
+                     return 1
+                 fi
+             else
+                 print_error "Could not enter widget directory"
+                 return 1
+             fi
             fi
             
-            # Stop existing instances before copying (Fixes "Text file busy")
-            pkill -f "meowterialyou-widget-manager" || true
-            pkill -f "media_widget" || true
-            pkill -f "weather_widget" || true
-            sleep 0.5
-            
-            # Install binaries
-            cp "$SCRIPT_DIR/target/release/manager" "$BIN_DIR/meowterialyou-widget-manager"
-            cp "$SCRIPT_DIR/target/release/media_widget" "$BIN_DIR/media_widget"
-            cp "$SCRIPT_DIR/target/release/weather_widget" "$BIN_DIR/weather_widget"
             
             # Install Configs (Generic Loop for all widgets)
             local CONFIG_SRC="$SCRIPT_DIR/desktop_widgets/configs"
@@ -791,6 +864,8 @@ EOF
                         
                         mkdir -p "$target_dir"
                         
+                        # Update config if missing OR we just rebuilt (fresh start) use logic implies
+                        # Actually: Logic is we only copy if missing to preserve user edits.
                         if [ ! -f "$target_dir/config.yaml" ]; then
                             if [ -f "$widget_dir/config.yaml" ]; then
                                 cp "$widget_dir/config.yaml" "$target_dir/config.yaml"
@@ -823,10 +898,21 @@ X-GNOME-Autostart-enabled=true
 EOF
             print_success "Widget autostart configured"
             
-            # Ensure started from repo root for local config prioritization
-            pkill -f "meowterialyou-widget-manager" || true
-            (cd "$SCRIPT_DIR" && nohup "$BIN_DIR/meowterialyou-widget-manager" >/dev/null 2>&1 &)
-            print_info "Started widget manager from repository root"
+            # RESTART LOGIC:
+            # 1. If we rebuilt binaries, we MUST restart (already done in build block via pkill)
+            # 2. If we just updated config, we DO NOT restart (manager hot-reloads)
+            # 3. If manager is NOT running, we MUST start it.
+            
+            if ! pgrep -f "meowterialyou-widget-manager" > /dev/null; then
+                 (cd "$SCRIPT_DIR" && nohup "$BIN_DIR/meowterialyou-widget-manager" >/dev/null 2>&1 &)
+                 print_info "Started widget manager"
+            elif [ "$REBUILD_WIDGETS" = true ]; then
+                 # Binaries were killed above, restart them
+                 (cd "$SCRIPT_DIR" && nohup "$BIN_DIR/meowterialyou-widget-manager" >/dev/null 2>&1 &)
+                 print_info "Restarted widget manager"
+            else
+                 print_info "Widgets updated (hot-reload active)"
+            fi
         else
             print_info "Widgets are already running and up to date. Skipping restart."
         fi
@@ -871,6 +957,7 @@ apply_theme() {
     [ "$DESKTOP_WIDGETS" = true ] && args="$args --desktop-widget"
     [ "$TRANSPARENT_PANEL" = true ] && args="$args --transparent-panel"
     [ "$THEMED_FOLDER_ICONS" = true ] && args="$args --themed-folder-icons"
+    [ -n "$CONVERT_THEME" ] && [ "$CONVERT_THEME" != "false" ] && args="$args --convert-theme \"$CONVERT_THEME\""
 
     { [ "$DO_REAPPLY" = true ] || [ "$SILENT" = true ]; } && args="$args --silent"
     
@@ -930,25 +1017,70 @@ EOF
 # ─────────────────────────────────────────────────────────────────────────────
 
 save_config() {
-    # Save current installation choices to repo
     cat > "$CONFIG_FILE" << EOF
 # MeowterialYou Installation Config
-# Generated on $(date)
+# This file tracks your installation preferences. 
+# You can manually edit this and run \`./install.sh --reapply\`
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Core Appearance
+# ─────────────────────────────────────────────────────────────────────────────
+
+# Theme mode: system (auto-detect), dark, or light
 THEME=$THEME
+
+# Window button style: native (GNOME default) or mac (circular)
 TITLE_BUTTONS=$TITLE_BUTTONS
+
+# Window button position: right or left
 TITLE_BUTTONS_POSITION=$TITLE_BUTTONS_POSITION
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Wallpaper Conversion
+# ─────────────────────────────────────────────────────────────────────────────
+
+# CONVERT_THEME: Match wallpaper colors to specific palettes before theming.
+# Options:
+#   - false           : No conversion (default Material You behavior)
+#   - randomize       : Choose a random scheme on every apply
+#   - [Theme Name]    : e.g. Gruvbox, Nord, Everforest, Solarized, Dracula,
+#                       Tokyo Night, Kanagawa, Digital Rust
+#   - Catppuccin      : Catppuccin Latte, Catppuccin Frappe, 
+#                       Catppuccin Macchiato, Catppuccin Mocha
+#   - Rose Pine       : Rose Pine, Rose Pine Moon, Rose Pine Dawn
+#   - [List]          : Comma separated list (e.g. "Nord, Gruvbox"). 
+#                       Cycles to the NEXT one every time you run --reapply.
+CONVERT_THEME="$CONVERT_THEME"
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Addons & Extensions
+# ─────────────────────────────────────────────────────────────────────────────
+
+# Enable GTK4 theme for Chrome/Chromium (requires restart)
 CHROME_GTK4=$CHROME_GTK4
+
+# Transparent tray icons and system tray improvements
 UI_IMPROVEMENTS=$UI_IMPROVEMENTS
+
+# Desktop widgets (Clock, Weather, Media) - Requires Rust/Cargo
 DESKTOP_WIDGETS=$DESKTOP_WIDGETS
 REBUILD_WIDGETS=$REBUILD_WIDGETS
+
+# Fully transparent top panel (auto-adjusts text contrast)
 TRANSPARENT_PANEL=$TRANSPARENT_PANEL
+
+# Recolors folder icons to match your current wallpaper theme
+THEMED_FOLDER_ICONS="$THEMED_FOLDER_ICONS"
+
+# ─────────────────────────────────────────────────────────────────────────────
+# App Theming
+# ─────────────────────────────────────────────────────────────────────────────
 THEME_GNOME_TERMINAL=$THEME_GNOME_TERMINAL
 THEME_SPOTIFY=$THEME_SPOTIFY
 THEME_DISCORD=$THEME_DISCORD
 THEME_VSCODE=$THEME_VSCODE
 THEME_OBSIDIAN=$THEME_OBSIDIAN
 THEME_VIVALDI=$THEME_VIVALDI
-THEMED_FOLDER_ICONS=$THEMED_FOLDER_ICONS
 EOF
 }
 
@@ -1006,7 +1138,6 @@ main() {
                 echo "  --transparent-panel    Enable transparent panel addon"
                 echo "  --themed-folder-icons  Enable themed folder icons"
                 echo "  --rebuild-widgets      Force rebuild of Rust desktop widgets"
-
                 echo "  --silent               Disable desktop notifications"
                 echo "  --uninstall            Uninstall MeowterialYou"
                 echo ""

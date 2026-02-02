@@ -12,7 +12,15 @@ from src.material_color_utilities_python.closest_folder_color.domain import (
 )
 from src.icon_theme import IconThemeGenerator
 from src.models import MaterialColors
-from src.util import Config, Scheme, Theme, reload_apps, set_wallpaper, on_theme_applied
+from src.util import (
+    Config,
+    Scheme,
+    Theme,
+    reload_apps,
+    set_wallpaper,
+    on_theme_applied,
+    log,
+)
 
 
 class GenerationOptions(BaseModel):
@@ -33,6 +41,7 @@ class GenerationOptions(BaseModel):
     scheme: MaterialColors | None = None
     wallpaper_path: str | None = None
     scheme_variant: str = "tonal_spot"
+    convert_theme: str | None = None
 
 
 def print_scheme(scheme: MaterialColors):
@@ -50,6 +59,9 @@ class ApplierDomain:
         self._conf = conf
         self._closest_folder_color_domain = ClosestFolderColorDomain()
         self._top_colors: list[str] = []
+        self._state_file = os.path.join(
+            self._generation_options.parent_dir, ".wallpaper_state.json"
+        )
 
     @staticmethod
     def uninstall_theme() -> None:
@@ -83,15 +95,33 @@ class ApplierDomain:
             os.path.join(home, ".config/gtk-4.0/assets"),
             # MeowterialYou config directory
             os.path.join(home, ".config/meowterialyou"),
+            os.path.join(home, ".config/meowterialyou-widgets"),
+            os.path.join(home, ".config/meowterialyou-widget"),  # Legacy
+            os.path.join(home, ".config/meowterialyou-widget.desktop"),  # Legacy
+            os.path.join(home, ".config/meowterialyou-widgets.desktop"),  # Legacy
+            os.path.join(home, ".config/autostart/meowterialyou-widgets.desktop"),
             # Legacy installation directory (old copy-based install)
             os.path.join(home, ".local/share/meowterialyou"),
             # Desktop widget (Conky) files
             os.path.join(home, ".config/conky/meowterialyou.conf"),
             os.path.join(home, ".config/conky/meowterialyou_weather.sh"),
-            os.path.join(home, ".cache/meowterialyou_weather"),
+            os.path.join(home, ".config/meowterialyou_weather.py"),  # Legacy
+            # Caches and logs
+            os.path.join(home, ".cache/meowterialyou_weather"),  # Legacy
+            os.path.join(home, ".cache/meowterialyou"),  # Current cache dir
+            os.path.join(home, ".cache/meowterialyou-manager.log"),
+            os.path.join(home, ".cache/meowterialyou-mediawidget.log"),
+            os.path.join(home, ".cache/meowterialyou-weatherclock.log"),
+            os.path.join(home, ".cache/meowterialyou-widget.log"),
             # Icon theme
             os.path.join(home, ".local/share/icons/MeowterialYou"),
         ]
+
+        # Clean up scattered art cache files
+        import glob
+
+        for art_file in glob.glob(os.path.join(home, ".cache/meowterialyou-art-*.jpg")):
+            paths_to_remove.append(art_file)
 
         # Kill any running Conky widget
         subprocess.run(
@@ -223,9 +253,192 @@ class ApplierDomain:
             self._generation_options.scheme = self._get_scheme()
         return self._generation_options.scheme
 
+    def _load_state(self) -> dict:
+        import json
+
+        if os.path.exists(self._state_file):
+            try:
+                with open(self._state_file, "r") as f:
+                    return json.load(f)
+            except Exception as e:
+                log.warning(f"Failed to load wallpaper state: {e}")
+        return {}
+
+    def _save_state(
+        self,
+        original_path: str,
+        theme: str,
+        last_generated_path: str,
+        original_hash: str | None = None,
+        converted_hash: str | None = None,
+        cycle_indexes: dict[str, int] | None = None,
+    ):
+        import json
+
+        state = {
+            "original_path": original_path,
+            "theme": theme,
+            "last_generated_path": last_generated_path,
+            "original_hash": original_hash,
+            "converted_hash": converted_hash,
+            "cycle_indexes": cycle_indexes or {},
+        }
+        try:
+            with open(self._state_file, "w") as f:
+                json.dump(state, f, indent=2)
+        except Exception as e:
+            log.warning(f"Failed to save wallpaper state: {e}")
+
     def apply_theme(self) -> None:
+        log.info(f"Applying theme with options: {self._generation_options.dict()}")
         if self._generation_options.wallpaper_path is None:
             raise ValueError("Wallpaper path is None")
+
+        if self._generation_options.convert_theme:
+            from src.wallpaper_converter import WallpaperConverter
+
+            try:
+                # 1. Gather Context
+                converter = WallpaperConverter()
+                target_theme = self._generation_options.convert_theme
+
+                # Input path provided by args (e.g. from TUI) OR resolved from GSettings
+                input_path = self._generation_options.wallpaper_path
+
+                # Load persistent state
+                state = self._load_state()
+                last_generated = state.get("last_generated_path")
+                last_theme = state.get("theme")
+                stored_original = state.get("original_path")
+                last_converted_hash = state.get("converted_hash")
+                cycle_indexes = state.get("cycle_indexes", {})
+
+                # Determine the cycle index for this specific config string
+                current_cycle_idx = cycle_indexes.get(target_theme, 0)
+
+                # Resolve what the *next* theme will be WITHOUT converting yet
+                pending_theme_name, pending_next_idx = converter.resolve_next_theme(
+                    target_theme, current_cycle_idx
+                )
+
+                # Use pending theme name for filename generation
+                # Safe fallback if pending_theme_name is None (e.g. false/disabled config)
+                safe_theme_name = pending_theme_name or "default"
+                safe_theme = safe_theme_name.lower().replace(" ", "_").replace("-", "_")
+
+                # Determine "Target" filename for this theme (Clean Refresh strategy)
+                import time
+                import glob
+
+                # Use timestamp to force GNOME refresh (bypass cache)
+                target_filename = (
+                    f"wallpaper_converted_{safe_theme}_{int(time.time())}.png"
+                )
+
+                # Helper to clean up old converted wallpapers for this theme
+                def cleanup_old_wallpapers():
+                    cache_dir = os.path.join(
+                        os.path.expanduser("~"), ".cache", "meowterialyou"
+                    )
+                    pattern = os.path.join(
+                        cache_dir, f"wallpaper_converted_{safe_theme}_*.png"
+                    )
+                    for f in glob.glob(pattern):
+                        try:
+                            os.remove(f)
+                        except Exception:
+                            pass
+
+                # --- HASH LOGIC ---
+                from src.util import get_file_hash
+
+                current_hash = get_file_hash(input_path)
+
+                # Path A: Loop Breaker (Current is Converted)
+                is_our_converted = False
+                if current_hash and last_converted_hash:
+                    if current_hash == last_converted_hash:
+                        is_our_converted = True
+
+                should_skip = False
+                if is_our_converted:
+                    if pending_theme_name == last_theme:
+                        should_skip = True
+
+                if should_skip:
+                    log.info(
+                        "  ✨ Current wallpaper is already converted and theme matches. No change."
+                    )
+                    self._generation_options.wallpaper_path = input_path
+                    # Ensure scheme is loaded for apps re-apply
+                    self._generation_options.scheme = None
+                    self._generation_options.scheme = self._get_scheme()
+                else:
+                    if is_our_converted:
+                        log.info(
+                            f"  🔄 Theme changed ({last_theme} -> {pending_theme_name}). Using stored original."
+                        )
+                        true_original = (
+                            stored_original
+                            if stored_original and os.path.exists(stored_original)
+                            else input_path
+                        )
+                    else:
+                        # Path B: New Wallpaper
+                        log.info("  📸 New wallpaper detected. Using as original.")
+                        true_original = input_path
+
+                    cleanup_old_wallpapers()
+
+                    # Convert!
+                    converted_path, actual_theme, new_cycle_idx = converter.convert(
+                        true_original,
+                        target_theme,
+                        output_name=target_filename,
+                        cycle_idx=current_cycle_idx,
+                    )
+
+                    # Update cycle index for this theme config string
+                    cycle_indexes[target_theme] = new_cycle_idx
+
+                    # Compute new hash
+                    new_hash = get_file_hash(converted_path)
+
+                    self.set_wallpaper_path(converted_path)
+
+                    # Update State
+                    self._save_state(
+                        original_path=true_original,
+                        theme=actual_theme or "unknown",
+                        last_generated_path=converted_path,
+                        original_hash=(
+                            get_file_hash(true_original)
+                            if not is_our_converted
+                            else state.get("original_hash")
+                        ),
+                        converted_hash=new_hash,
+                        cycle_indexes=cycle_indexes,
+                    )
+
+                # Reset Scheme because colors changed
+                self._generation_options.scheme = None
+
+                # Clean up legacy state file if it exists
+                legacy_state = os.path.join(
+                    os.path.expanduser("~"),
+                    ".config/meowterialyou/converter_state.json",
+                )
+                if os.path.exists(legacy_state):
+                    try:
+                        os.remove(legacy_state)
+                    except:
+                        pass
+
+            except Exception as e:
+                import traceback
+
+                log.error(f"  ⚠ Failed to convert wallpaper: {e}")
+                log.error(traceback.format_exc())
 
         lightmode_enabled = self._generation_options.lightmode_enabled
         postfix = "light" if lightmode_enabled else "dark"
@@ -1076,12 +1289,56 @@ class ApplierDomain:
 
     @staticmethod
     def get_current_system_wallpaper_path() -> str:
-        command = "gsettings get org.gnome.desktop.background picture-uri"
-        output = subprocess.check_output(command, shell=True, text=True)
+        """
+        Robustly detect the current wallpaper path.
+        Checks both Light and Dark URI to handle race conditions where one might lag.
+        Prioritizes any path that is NOT a 'converted' wallpaper to catch manual user changes.
+        """
 
-        # Remove leading/trailing whitespace and newline characters from the output
-        output = output.strip()
-        output = output.replace("'", "")
-        # Remove file:// from the output. If exists
-        output = output.replace("file://", "")
-        return output
+        def clean_uri(uri: str) -> str:
+            uri = uri.strip().strip("'")
+            if uri.startswith("file://"):
+                uri = uri[7:]
+            return uri
+
+        path_dark = ""
+        path_light = ""
+
+        try:
+            cmd_dark = "gsettings get org.gnome.desktop.background picture-uri-dark"
+            path_dark = clean_uri(
+                subprocess.check_output(cmd_dark, shell=True, text=True)
+            )
+        except Exception:
+            pass
+
+        try:
+            cmd_light = "gsettings get org.gnome.desktop.background picture-uri"
+            path_light = clean_uri(
+                subprocess.check_output(cmd_light, shell=True, text=True)
+            )
+        except Exception:
+            pass
+
+        # Decision Logic:
+        # 1. If dark is a USER image (not converted), trust it immediately (User changed it in Dark Mode)
+        if (
+            path_dark
+            and "wallpaper_converted" not in path_dark
+            and os.path.exists(path_dark)
+        ):
+            return path_dark
+
+        # 2. If light is a USER image (not converted), trust it immediately (User changed it in Light Mode)
+        if (
+            path_light
+            and "wallpaper_converted" not in path_light
+            and os.path.exists(path_light)
+        ):
+            return path_light
+
+        # 3. Fallback to whatever exists (likely the converted one)
+        if path_dark and os.path.exists(path_dark):
+            return path_dark
+
+        return path_light

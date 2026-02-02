@@ -122,6 +122,13 @@ def parse_arguments():
         action="store_true",
     )
 
+    parser.add_argument(
+        "--convert-theme",
+        help="convert wallpaper to specific color scheme (e.g. Catppuccin, Gruvbox, randomize, or comma-separated list)",
+        type=str,
+        default=None,
+    )
+
     # Path to store last arguments (XDG config directory)
     config_dir = Path.home() / ".config/meowterialyou"
     args_file = config_dir / "last_args.json"
@@ -1014,10 +1021,30 @@ _my_header() {{ echo -e "${{_MY_BOLD}}${{_MY_PRIMARY}}══ $1 ══${{_MY_RES
                 log.info(f"Added prompt source to {shell_rc}")
 
 
+def get_file_hash(path: str) -> str | None:
+    """Calculates the MD5 hash of a file."""
+    if not path or not os.path.exists(path):
+        return None
+    import hashlib
+
+    try:
+        hash_md5 = hashlib.md5()
+        with open(path, "rb") as f:
+            for chunk in iter(lambda: f.read(4096), b""):
+                hash_md5.update(chunk)
+        return hash_md5.hexdigest()
+    except Exception:
+        return None
+
+
 def set_wallpaper(path: str):
     if not path.startswith("file://"):
         path = f"file://{path}"
-    log.info("Setting wallpaper in gnome")
+
+    # Force GSettings update even if path is same (content might have changed)
+    # logic removed: check current setting
+
+    log.info(f"Setting wallpaper in gnome: {path}")
     os.system("gsettings set org.gnome.desktop.background picture-options 'zoom'")
     os.system(f"gsettings set org.gnome.desktop.background picture-uri {path}")
     os.system(f"gsettings set org.gnome.desktop.background picture-uri-dark {path}")
@@ -1055,7 +1082,13 @@ class Config:
                     line = line.strip()
                     if line and not line.startswith("#") and "=" in line:
                         key, value = line.split("=", 1)
-                        prefs[key.strip()] = value.strip().lower() == "true"
+                        val = value.strip()
+                        if val.lower() == "true":
+                            prefs[key.strip()] = True
+                        elif val.lower() == "false":
+                            prefs[key.strip()] = False
+                        else:
+                            prefs[key.strip()] = val
         return prefs
 
     @classmethod

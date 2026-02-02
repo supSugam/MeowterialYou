@@ -24,3 +24,21 @@ is it impossible to not let widget float over any apps?
 like when it starts now it floats over than goes beneath, which can ruin user experience, imagine user working on a typing something or gaming and our widget draws over to take focus for few seconds to ruin every keystrokes in that moment? catastrophical
 
 this is what happens rn: widgets still initially render over other windows, mediawidget does beneath after few second, weatherwidget still floats above until user clicks somewhere else
+
+[First Time]
+
+-> Wallpaper Changes
+-> meowterialyou --reapply happens
+-> Get current wallpaper from .config/background
+-> Hash the image and store somewhere
+-> Convert to color scheme if specified and hash the converted image
+-> Now we have two hashes, one for the original image and one for the converted image
+-> MaterialYou colors generate from converted image if converted image exists, else from original image
+-> Set wallpaper to converted image if converted image exists, else to original image
+
+Now setting wallpaper to converted image triggers reapply again probably.
+
+-> meowterialyou --reapply happens again
+-> Get current wallpaper (which is likely converted) from .config/background
+-> Hash and compare with previous hash of converted
+-> If they match, skip the rest of the process
