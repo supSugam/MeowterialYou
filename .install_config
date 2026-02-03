@@ -30,7 +30,7 @@ TITLE_BUTTONS_POSITION=right
 #   - Rose Pine       : Rose Pine, Rose Pine Moon, Rose Pine Dawn
 #   - [List]          : Comma separated list (e.g. "Nord, Gruvbox"). 
 #                       Cycles to the NEXT one every time you run --reapply.
-CONVERT_THEME="Rose Pine"
+CONVERT_THEME="false"
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Addons & Extensions

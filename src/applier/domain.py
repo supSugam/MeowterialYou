@@ -443,6 +443,46 @@ class ApplierDomain:
                 log.error(f"  ⚠ Failed to convert wallpaper: {e}")
                 log.error(traceback.format_exc())
 
+        else:
+            # Conversion disabled (or not requested)
+            # Check if we are stuck on an old converted wallpaper and should revert
+            try:
+                input_path = self._generation_options.wallpaper_path
+                state = self._load_state()
+                stored_original = state.get("original_path")
+                last_converted_hash = state.get("converted_hash")
+
+                if stored_original and last_converted_hash:
+                    # Calculate hash of current input
+                    from src.util import get_file_hash
+
+                    current_hash = get_file_hash(input_path)
+
+                    if current_hash and current_hash == last_converted_hash:
+                        # We are looking at the converted file!
+                        # Safety check: make sure original file hasn't been overwritten by the converted one
+                        original_hash = get_file_hash(stored_original)
+
+                        if original_hash != last_converted_hash:
+                            if os.path.exists(stored_original):
+                                log.info(
+                                    "  ↩️  Conversion disabled & converted wallpaper detected."
+                                )
+                                log.info(
+                                    f"      Reverting to original: {stored_original}"
+                                )
+
+                                self.set_wallpaper_path(stored_original)
+                                set_wallpaper(stored_original)
+                                # Reset scheme to force re-extraction from original
+                                self._generation_options.scheme = None
+                        else:
+                            log.warning(
+                                "  ⚠️  Original wallpaper seems to be overwritten by converted version. Cannot revert safely."
+                            )
+            except Exception as e:
+                log.warning(f"Failed to check/revert converted wallpaper: {e}")
+
         lightmode_enabled = self._generation_options.lightmode_enabled
         postfix = "light" if lightmode_enabled else "dark"
         theme_name = f"MeowterialYou-{postfix}"
