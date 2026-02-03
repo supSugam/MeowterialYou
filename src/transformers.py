@@ -36,5 +36,6 @@ class ColorTransformer:
 
     @classmethod
     def hex_to_hls(cls, hexa: str) -> Tuple[int, int, int]:
-        hue, light, saturation = colorsys.rgb_to_hls(*cls.hex_to_rgb(hexa))
-        return int(hue * 360), int(light), int(saturation)
+        r, g, b = cls.hex_to_rgb(hexa)
+        hue, light, saturation = colorsys.rgb_to_hls(r / 255.0, g / 255.0, b / 255.0)
+        return int(hue * 360), int(light * 100), int(saturation * 100)

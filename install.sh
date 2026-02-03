@@ -529,6 +529,17 @@ run_interactive() {
             fi
         fi
         
+        # Obsidian
+        if [ -f "$HOME/.config/obsidian/obsidian.json" ] || [ -f "$HOME/.var/app/md.obsidian.Obsidian/config/obsidian/obsidian.json" ] || [ -f "$HOME/snap/obsidian/current/.config/obsidian/obsidian.json" ]; then
+            if gum confirm --affirmative="Yes" --negative="No" --default=false \
+                "     Theme Obsidian?"; then
+                THEME_OBSIDIAN=true
+                echo -e "     ${CHECK} Obsidian: ${GREEN}yes${NC}"
+            else
+                echo -e "     ${CHECK} Obsidian: ${DIM}no${NC}"
+            fi
+        fi
+        
         # Vivaldi
         if [ -d "$HOME/.config/vivaldi" ]; then
             if gum confirm --affirmative="Yes" --negative="No" --default=false \
@@ -593,6 +604,11 @@ run_interactive() {
         else
             THEME_GNOME_TERMINAL=true
         fi
+        echo ""
+
+        echo -e "  ${BOLD}Theme Obsidian?${NC} [y/N]"
+        read -rp "     ▸ " input
+        [[ "$input" =~ ^[Yy]$ ]] && THEME_OBSIDIAN=true
         echo ""
         
         echo -e "  ${BOLD}Wallpaper Path${NC} (Enter for current)"
@@ -965,6 +981,7 @@ apply_theme() {
     [ "$DESKTOP_WIDGETS" = true ] && args="$args --desktop-widget"
     [ "$TRANSPARENT_PANEL" = true ] && args="$args --transparent-panel"
     [ "$THEMED_FOLDER_ICONS" = true ] && args="$args --themed-folder-icons"
+    [ "$THEME_OBSIDIAN" = true ] && args="$args --obsidian"
     [ -n "$CONVERT_THEME" ] && [ "$CONVERT_THEME" != "false" ] && args="$args --convert-theme \"$CONVERT_THEME\""
 
     { [ "$DO_REAPPLY" = true ] || [ "$SILENT" = true ]; } && args="$args --silent"
@@ -1125,6 +1142,7 @@ main() {
             --defaults)    DO_DEFAULTS=true; SKIP_INTERACTIVE=true; shift ;;
             --reapply)     DO_REAPPLY=true; SKIP_INTERACTIVE=true; shift ;;
             --rebuild-widgets) CLI_REBUILD_WIDGETS=true; shift ;;
+            --obsidian)    CLI_THEME_OBSIDIAN=true; shift ;;
             --silent)      SILENT=true; shift ;;
             --help|-h)
                 echo "Usage: meowterialyou [OPTIONS]"
@@ -1133,6 +1151,7 @@ main() {
                 echo "  (no args)              Interactive installation"
                 echo "  --defaults             Install with default settings (dark, native buttons)"
                 echo "  --reapply              Reinstall using last saved configuration"
+                echo "  --obsidian             Enable theme for Obsidian"
                 echo ""
                 echo "Options:"
                 echo "  --wallpaper PATH       Path to wallpaper image"
@@ -1167,6 +1186,9 @@ main() {
     # CLI flag overrides config
     if [ "$CLI_REBUILD_WIDGETS" = true ]; then
         REBUILD_WIDGETS=true
+    fi
+    if [ "$CLI_THEME_OBSIDIAN" = true ]; then
+        THEME_OBSIDIAN=true
     fi
     
     print_banner

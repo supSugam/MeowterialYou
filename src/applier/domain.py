@@ -2,6 +2,7 @@ import os
 import subprocess
 from configparser import ConfigParser
 import concurrent.futures
+import json
 from pathlib import Path
 
 from pydantic import BaseModel
@@ -21,6 +22,7 @@ from src.util import (
     on_theme_applied,
     log,
 )
+from src.transformers import ColorTransformer
 
 
 class GenerationOptions(BaseModel):
@@ -36,6 +38,7 @@ class GenerationOptions(BaseModel):
     )
     transparent_panel_enabled: bool = False  # Transparent panel addon
     themed_folder_icons_enabled: bool = True  # Themed folder icons (default: enabled)
+    obsidian_enabled: bool = False
 
     silent: bool = False
     scheme: MaterialColors | None = None
@@ -564,6 +567,10 @@ class ApplierDomain:
             # Icon generation and Papirus settings
             if self._generation_options.themed_folder_icons_enabled:
                 tasks.append(executor.submit(self._generate_material_you_icons, scheme))
+
+            # Obsidian theming
+            if self._generation_options.obsidian_enabled:
+                tasks.append(executor.submit(self._apply_obsidian_theme, scheme))
 
             # This task is quick but safe to run in parallel
             primary_color = scheme["primary"]
@@ -1226,6 +1233,113 @@ class ApplierDomain:
 
         # Cleanup temp file
         os.unlink(tmp_path)
+
+    def _discover_obsidian_vaults(self) -> list[str]:
+        """Discover Obsidian vaults from various config locations."""
+        configs = [
+            "~/.config/obsidian/obsidian.json",
+            "~/.var/app/md.obsidian.Obsidian/config/obsidian/obsidian.json",
+            "~/snap/obsidian/current/.config/obsidian/obsidian.json",
+        ]
+        vaults = []
+        for conf_path in configs:
+            full_path = Path(conf_path).expanduser()
+            if full_path.exists():
+                try:
+                    with open(full_path, "r") as f:
+                        data = json.load(f)
+                        for vault_info in data.get("vaults", {}).values():
+                            path = vault_info.get("path")
+                            if path and os.path.exists(path):
+                                vaults.append(path)
+                except Exception as e:
+                    log.warning(f"Could not parse {full_path}: {e}")
+        return list(set(vaults))  # Unique paths
+
+    def _apply_obsidian_theme(self, scheme: MaterialColors):
+        """Apply high-fidelity Material You theme to all discovered Obsidian vaults."""
+        vaults = self._discover_obsidian_vaults()
+        if not vaults:
+            log.info("No Obsidian vaults discovered for theming.")
+            return
+
+        parent_dir = self._generation_options.parent_dir
+        template_css = Path(f"{parent_dir}/example/templates/obsidian-theme.css")
+        template_manifest = Path(
+            f"{parent_dir}/example/templates/obsidian-manifest.json"
+        )
+
+        if not template_css.exists() or not template_manifest.exists():
+            log.warning("Obsidian theme templates missing!")
+            return
+
+        with open(template_css, "r") as f:
+            css_data = f.read()
+        with open(template_manifest, "r") as f:
+            manifest_data = f.read()
+
+        # Generate separate schemes for Light and Dark modes
+        if self._generation_options.wallpaper_path:
+            from src.util import Theme
+
+            theme_source, _ = Theme.get(
+                self._generation_options.wallpaper_path,
+                style=self._generation_options.scheme_variant,
+            )
+            scheme_light = Scheme(theme=theme_source, lightmode=True).to_hex()
+            scheme_dark = Scheme(theme=theme_source, lightmode=False).to_hex()
+        else:
+            # Fallback if no wallpaper path (shouldn't happen in normal flow)
+            scheme_light = scheme
+            scheme_dark = scheme
+
+        # Helper for substitution
+        def substitute(data, current_scheme, prefix):
+            # Sort keys by length descending to avoid partial matches
+            sorted_keys = sorted(current_scheme.keys(), key=len, reverse=True)
+            for key in sorted_keys:
+                value = current_scheme[key]
+                hex_stripped = value[1:] if value.startswith("#") else value
+                rgb_tuple = ColorTransformer.hex_to_rgb(hex_stripped)
+                rgb_comma = f"{rgb_tuple[0]}, {rgb_tuple[1]}, {rgb_tuple[2]}"
+
+                # Use improved HSL scaling
+                r, g, b = ColorTransformer.hex_to_rgb(hex_stripped)
+                import colorsys
+
+                hue, light_val, saturation = colorsys.rgb_to_hls(
+                    r / 255.0, g / 255.0, b / 255.0
+                )
+                hue_val = int(hue * 360)
+                light_val = int(light_val * 100)
+                sat_val = int(saturation * 100)
+
+                # Replace prefixes
+                # e.g. @light:primary.hex
+                p = "@" + prefix + ":" + key
+                data = data.replace(p + ".hex", value)
+                data = data.replace(p + ".rgb", rgb_comma)
+                data = data.replace(p + ".hue", str(hue_val))
+                data = data.replace(p + ".sat", str(sat_val))
+                data = data.replace(p + ".light", str(light_val))
+                data = data.replace(p, hex_stripped)
+            return data
+
+        # Apply substitutions
+        css_data = substitute(css_data, scheme_light, "light")
+        css_data = substitute(css_data, scheme_dark, "dark")
+
+        for vault in vaults:
+            theme_dir = Path(vault) / ".obsidian/themes/MeowterialYou"
+            try:
+                theme_dir.mkdir(parents=True, exist_ok=True)
+                with open(theme_dir / "theme.css", "w") as f:
+                    f.write(css_data)
+                with open(theme_dir / "manifest.json", "w") as f:
+                    f.write(manifest_data)
+                log.info(f"Applied MeowterialYou theme to Obsidian vault: {vault}")
+            except Exception as e:
+                log.warning(f"Failed to theme vault {vault}: {e}")
 
     def _has_config_key(self, key: str) -> bool:
         return any(key in self._conf[section].name for section in self._conf.sections())

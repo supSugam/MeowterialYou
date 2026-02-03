@@ -123,6 +123,12 @@ def parse_arguments():
     )
 
     parser.add_argument(
+        "--obsidian",
+        help="enable Obsidian theming",
+        action="store_true",
+    )
+
+    parser.add_argument(
         "--convert-theme",
         help="convert wallpaper to specific color scheme (e.g. Catppuccin, Gruvbox, randomize, or comma-separated list)",
         type=str,
