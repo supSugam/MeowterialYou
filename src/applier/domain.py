@@ -633,11 +633,10 @@ class ApplierDomain:
             )
             tasks.append(executor.submit(self._set_papirus_folder_color, folder_color))
 
-            # VSCode CSS injection (Light/Dark themes)
-            # This is handled by Config.generate() writing to vscode-custom-css location.
-            # But we also need to install the icon theme for the Native Extension.
-            if self._has_config_key("VSCODE"):
+            # VSCode CSS injection and Extension Sync
+            if self._has_config_key("VSCODE") or self._has_config_key("VSCODE-THEME"):
                 tasks.append(executor.submit(self._install_vscode_icons))
+                tasks.append(executor.submit(self._sync_vscode_extensions))
 
             # Wait for all parallel tasks to finish before reloading
             concurrent.futures.wait(tasks)
@@ -867,43 +866,72 @@ class ApplierDomain:
                 f"Failed to set DTP title color (extension may not be installed): {e}"
             )
 
-    def _install_vscode_icons(self) -> None:
-        """Copy Monokai Pro icon assets to the VSCode extension directory."""
-        from src.util import log
+    def _sync_vscode_extensions(self) -> None:
+        """Sync the generated VSCode extension to other editor forks."""
         import shutil
+        from src.util import log
 
         home = os.path.expanduser("~")
-        vscode_ext_dir = os.path.join(home, ".vscode/extensions/meowterialyou-theme")
-        icon_theme_dir = os.path.join(vscode_ext_dir, "icon-themes")
+        source = os.path.join(home, ".vscode/extensions/meowterialyou-theme")
 
-        # Source paths (Hardcoded based on user workspace for now)
-        repo_root = self._generation_options.parent_dir
-        source_dir = os.path.join(
-            repo_root, "monokai.theme-monokai-pro-vscode-2.0.12/icon-themes"
-        )
+        targets = [
+            os.path.join(home, ".cursor/extensions/meowterialyou-theme"),
+            os.path.join(home, ".antigravity/extensions/meowterialyou-theme"),
+        ]
 
-        source_json = os.path.join(source_dir, "Monokai Pro icon-theme.json")
-        source_woff = os.path.join(source_dir, "monokai-pro-icons.woff")
-
-        if not os.path.exists(source_json) or not os.path.exists(source_woff):
-            log.warning("VSCode icon assets not found. Skipping icon installation.")
+        if not os.path.exists(source):
             return
 
-        try:
-            os.makedirs(icon_theme_dir, exist_ok=True)
+        for target in targets:
+            try:
+                # Ensure parent dir exists (e.g. ~/.cursor/extensions)
+                os.makedirs(os.path.dirname(target), exist_ok=True)
+                if os.path.exists(target):
+                    shutil.rmtree(target)
+                shutil.copytree(source, target)
+                log.info(f"Synced extension to {target}")
+            except Exception as e:
+                log.warning(f"Failed to sync extension to {target}: {e}")
 
-            # 1. Copy and rename JSON
-            dest_json = os.path.join(icon_theme_dir, "MeowterialYou Icons.json")
-            shutil.copy2(source_json, dest_json)
+    def _install_vscode_icons(self) -> None:
+        """Install and set Material Icon Theme extension for VSCode and forks."""
+        from src.util import log
+        import subprocess
+        import shutil
 
-            # 2. Copy Font
-            dest_woff = os.path.join(icon_theme_dir, "monokai-pro-icons.woff")
-            shutil.copy2(source_woff, dest_woff)
+        editors = [
+            {"name": "VSCode", "cmd": "code", "install_arg": "--install-extension"},
+            {"name": "Cursor", "cmd": "cursor", "install_arg": "--install-extension"},
+            {
+                "name": "Antigravity",
+                "cmd": "antigravity",
+                "install_arg": "--install-extension",
+            },
+        ]
 
-            log.info(f"Installed VSCode icons to {icon_theme_dir}")
+        extension_id = "PKief.material-icon-theme"
 
-        except Exception as e:
-            log.error(f"Failed to install VSCode icons: {e}")
+        for editor in editors:
+            try:
+                # Check if command exists using shutil.which for cross-platform reliability
+                if not shutil.which(editor["cmd"]):
+                    continue
+
+                log.info(f"Installing icon theme for {editor['name']}...")
+                result = subprocess.run(
+                    [editor["cmd"], editor["install_arg"], extension_id, "--force"],
+                    capture_output=True,
+                    text=True,
+                )
+                if result.returncode == 0:
+                    log.info(f"Installed {extension_id} for {editor['name']}")
+                else:
+                    log.warning(
+                        f"Could not install {extension_id} for {editor['name']}: {result.stderr}"
+                    )
+
+            except Exception as e:
+                log.error(f"Failed to install icon extension for {editor['name']}: {e}")
 
     def _detect_panel_position(self) -> str:
         """Detect panel position (TOP/BOTTOM/LEFT/RIGHT). Defaults to TOP."""

@@ -22,13 +22,6 @@
         "uiTheme": "vs-dark",
         "path": "./themes/meowterialyou-dark-color-theme.json"
       }
-    ],
-    "iconThemes": [
-      {
-        "label": "MeowterialYou Icons",
-        "id": "MeowterialYou Icons",
-        "path": "./icon-themes/MeowterialYou Icons.json"
-      }
     ]
   }
 }
