@@ -1,0 +1,34 @@
+{
+  "name": "meowterialyou-theme",
+  "displayName": "MeowterialYou",
+  "description": "Material You theme dynamically generated from your wallpaper",
+  "version": "1.0.0",
+  "publisher": "meowterialyou",
+  "engines": {
+    "vscode": "^1.50.0"
+  },
+  "categories": [
+    "Themes"
+  ],
+  "contributes": {
+    "themes": [
+      {
+        "label": "MeowterialYou Light",
+        "uiTheme": "vs",
+        "path": "./themes/meowterialyou-light-color-theme.json"
+      },
+      {
+        "label": "MeowterialYou Dark",
+        "uiTheme": "vs-dark",
+        "path": "./themes/meowterialyou-dark-color-theme.json"
+      }
+    ],
+    "iconThemes": [
+      {
+        "label": "MeowterialYou Icons",
+        "id": "MeowterialYou Icons",
+        "path": "./icon-themes/MeowterialYou Icons.json"
+      }
+    ]
+  }
+}

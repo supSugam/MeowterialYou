@@ -1066,6 +1066,14 @@ class Config:
         "VIVALDI": "THEME_VIVALDI",
     }
 
+    # Sections that should be generated in both light and dark modes
+    ALWAYS_GENERATE = [
+        "VSCODE-THEME",
+        "VSCODE-THEME-DARK",
+        "VSCODE-THEME-PACKAGE",
+        "VSCODE-THEME-PACKAGE-DARK",
+    ]
+
     @staticmethod
     def load_prefs() -> dict:
         """Load user preferences from XDG config directory."""
@@ -1122,7 +1130,7 @@ class Config:
     @classmethod
     def generate(
         cls,
-        scheme: MaterialColors,
+        schemes: dict[str, MaterialColors],
         config: ConfigParser,
         wallpaper: str,
         lightmode_enabled: bool,
@@ -1131,9 +1139,11 @@ class Config:
         """Generate a config file from a template
 
         Args:
-            scheme (MaterialColors): The color scheme to use
+            schemes (dict[str, MaterialColors]): The color schemes to use (keys: "light", "dark")
             config (ConfigParser): The config file to use
             wallpaper (str): The path to the wallpaper
+            lightmode_enabled (bool): Whether light mode is the primary system mode
+            parent_dir (str): Parent directory for relative paths
 
         Returns:
             dict | None: The generated config file. None if error
@@ -1157,10 +1167,24 @@ class Config:
             # if its a relative path use parent dir as base.
             output_path = Path(config[item]["output_path"]).expanduser()
 
-            if lightmode_enabled and cls._is_dark_theme(template_name):
-                continue
+            if template_name.upper() in cls.ALWAYS_GENERATE:
+                # Use the appropriate scheme for the specific template version
+                current_mode = "dark" if cls._is_dark_theme(template_name) else "light"
+                scheme = schemes.get(
+                    current_mode, schemes.get("light" if lightmode_enabled else "dark")
+                )
+            else:
+                if lightmode_enabled and cls._is_dark_theme(template_name):
+                    continue
 
-            if not lightmode_enabled and not cls._is_dark_theme(template_name):
+                if not lightmode_enabled and not cls._is_dark_theme(template_name):
+                    continue
+
+                # Use the system's primary scheme
+                scheme = schemes.get("light" if lightmode_enabled else "dark")
+
+            if not scheme:
+                logging.error(f"No scheme available for {template_name}, skipping...")
                 continue
 
             try:
@@ -1177,6 +1201,11 @@ class Config:
                 pattern = f"@{{{key}}}"
                 pattern_hex = f"@{{{key}.hex}}"
                 pattern_rgb = f"@{{{key}.rgb}}"
+                pattern_rgba08 = f"@{{{key}.rgba08}}"
+                pattern_rgba12 = f"@{{{key}.rgba12}}"
+                pattern_rgba16 = f"@{{{key}.rgba16}}"
+                pattern_rgba24 = f"@{{{key}.rgba24}}"
+                pattern_rgba32 = f"@{{{key}.rgba32}}"
                 pattern_rgba50 = f"@{{{key}.rgba50}}"
                 pattern_hue = f"@{{{key}.hue}}"
                 pattern_sat = f"@{{{key}.sat}}"
@@ -1186,15 +1215,20 @@ class Config:
                 hex_stripped = value[1:]  # type: ignore
                 rgb_tuple = ColorTransformer.hex_to_rgb(hex_stripped)
                 rgb_value = f"rgb{rgb_tuple}"
-                rgba50_value = (
-                    f"rgba({rgb_tuple[0]}, {rgb_tuple[1]}, {rgb_tuple[2]}, 0.5)"
-                )
+                # Convert to hex with alpha channel (#RRGGBBAA) instead of rgba()
+                # VSCode CSS variables don't parse rgba() properly and fall back to red
+                rgba50_value = f"#{hex_stripped}80"  # 80 in hex = 128/255 ≈ 0.5 alpha
                 hue, light, saturation = ColorTransformer.hex_to_hls(hex_stripped)
                 wallpaper_value = os.path.abspath(wallpaper)
 
                 output_data = re.sub(pattern, hex_stripped, output_data)
                 output_data = re.sub(pattern_hex, value, output_data)
                 output_data = re.sub(pattern_rgb, rgb_value, output_data)
+                output_data = re.sub(pattern_rgba08, f"#{hex_stripped}14", output_data)
+                output_data = re.sub(pattern_rgba12, f"#{hex_stripped}1f", output_data)
+                output_data = re.sub(pattern_rgba16, f"#{hex_stripped}29", output_data)
+                output_data = re.sub(pattern_rgba24, f"#{hex_stripped}3d", output_data)
+                output_data = re.sub(pattern_rgba32, f"#{hex_stripped}52", output_data)
                 output_data = re.sub(pattern_rgba50, rgba50_value, output_data)
                 output_data = re.sub(pattern_wallpaper, wallpaper_value, output_data)
                 output_data = re.sub(pattern_hue, f"{hue}", output_data)

@@ -541,9 +541,12 @@ class ApplierDomain:
 
             shutil.rmtree(legacy_theme)
 
-        scheme = self._generation_options.scheme or self._get_scheme()
+        schemes = self._get_all_schemes()
+        scheme = schemes[
+            "light" if self._generation_options.lightmode_enabled else "dark"
+        ]
         Config.generate(
-            scheme=scheme,
+            schemes=schemes,
             config=self._conf,
             wallpaper=self._generation_options.wallpaper_path,
             lightmode_enabled=self._generation_options.lightmode_enabled,
@@ -600,13 +603,24 @@ class ApplierDomain:
                 for variant in ["dark", "light"]:
                     tasks.append(
                         executor.submit(
-                            self._install_system_gtk4_theme, variant, scheme
+                            self._install_system_gtk4_theme, variant, schemes[variant]
                         )
                     )
 
             # Icon generation and Papirus settings
             if self._generation_options.themed_folder_icons_enabled:
-                tasks.append(executor.submit(self._generate_material_you_icons, scheme))
+                tasks.append(
+                    executor.submit(
+                        self._generate_material_you_icons,
+                        schemes[
+                            (
+                                "light"
+                                if self._generation_options.lightmode_enabled
+                                else "dark"
+                            )
+                        ],
+                    )
+                )
 
             # Obsidian theming
             if self._generation_options.obsidian_enabled:
@@ -618,6 +632,12 @@ class ApplierDomain:
                 primary_color
             )
             tasks.append(executor.submit(self._set_papirus_folder_color, folder_color))
+
+            # VSCode CSS injection (Light/Dark themes)
+            # This is handled by Config.generate() writing to vscode-custom-css location.
+            # But we also need to install the icon theme for the Native Extension.
+            if self._has_config_key("VSCODE"):
+                tasks.append(executor.submit(self._install_vscode_icons))
 
             # Wait for all parallel tasks to finish before reloading
             concurrent.futures.wait(tasks)
@@ -846,6 +866,44 @@ class ApplierDomain:
             log.warning(
                 f"Failed to set DTP title color (extension may not be installed): {e}"
             )
+
+    def _install_vscode_icons(self) -> None:
+        """Copy Monokai Pro icon assets to the VSCode extension directory."""
+        from src.util import log
+        import shutil
+
+        home = os.path.expanduser("~")
+        vscode_ext_dir = os.path.join(home, ".vscode/extensions/meowterialyou-theme")
+        icon_theme_dir = os.path.join(vscode_ext_dir, "icon-themes")
+
+        # Source paths (Hardcoded based on user workspace for now)
+        repo_root = self._generation_options.parent_dir
+        source_dir = os.path.join(
+            repo_root, "monokai.theme-monokai-pro-vscode-2.0.12/icon-themes"
+        )
+
+        source_json = os.path.join(source_dir, "Monokai Pro icon-theme.json")
+        source_woff = os.path.join(source_dir, "monokai-pro-icons.woff")
+
+        if not os.path.exists(source_json) or not os.path.exists(source_woff):
+            log.warning("VSCode icon assets not found. Skipping icon installation.")
+            return
+
+        try:
+            os.makedirs(icon_theme_dir, exist_ok=True)
+
+            # 1. Copy and rename JSON
+            dest_json = os.path.join(icon_theme_dir, "MeowterialYou Icons.json")
+            shutil.copy2(source_json, dest_json)
+
+            # 2. Copy Font
+            dest_woff = os.path.join(icon_theme_dir, "monokai-pro-icons.woff")
+            shutil.copy2(source_woff, dest_woff)
+
+            log.info(f"Installed VSCode icons to {icon_theme_dir}")
+
+        except Exception as e:
+            log.error(f"Failed to install VSCode icons: {e}")
 
     def _detect_panel_position(self) -> str:
         """Detect panel position (TOP/BOTTOM/LEFT/RIGHT). Defaults to TOP."""
@@ -1410,7 +1468,7 @@ class ApplierDomain:
                 "notify-send --app-name='MeowterialYou' -i preferences-desktop-theme 'Theme Applied 😼' 'Please restart your GNOME shell for fresher start 🐾'"
             )
 
-    def _get_scheme(self, color: str | None = None) -> MaterialColors:
+    def _get_all_schemes(self, color: str | None = None) -> dict[str, MaterialColors]:
         if not color:
             if self._generation_options.wallpaper_path is None:
                 raise ValueError("Wallpaper path is None")
@@ -1424,7 +1482,24 @@ class ApplierDomain:
                 color, style=self._generation_options.scheme_variant
             )
 
-        return self._get_scheme_from_theme(theme)
+        # Extract both light and dark schemes
+        light_scheme = self._get_scheme_from_theme(theme, lightmode=True)
+        dark_scheme = self._get_scheme_from_theme(theme, lightmode=False)
+
+        # Apply user override if present (will override only the system-matching mode)
+        if self._generation_options.scheme:
+            if self._generation_options.lightmode_enabled:
+                light_scheme = self._generation_options.scheme
+            else:
+                dark_scheme = self._generation_options.scheme
+
+        return {"light": light_scheme, "dark": dark_scheme}
+
+    def _get_scheme(self, color: str | None = None) -> MaterialColors:
+        schemes = self._get_all_schemes(color)
+        return schemes[
+            "light" if self._generation_options.lightmode_enabled else "dark"
+        ]
 
     @property
     def top_colors(self) -> list[str]:
@@ -1432,10 +1507,15 @@ class ApplierDomain:
             self._get_scheme()
         return self._top_colors
 
-    def _get_scheme_from_theme(self, theme: dict) -> MaterialColors:
+    def _get_scheme_from_theme(
+        self, theme: dict, lightmode: bool | None = None
+    ) -> MaterialColors:
+        if lightmode is None:
+            lightmode = self._generation_options.lightmode_enabled
+
         scheme = Scheme(
             theme=theme,
-            lightmode=self._generation_options.lightmode_enabled,
+            lightmode=lightmode,
         )
         colors = scheme.to_hex()
         print_scheme(colors)

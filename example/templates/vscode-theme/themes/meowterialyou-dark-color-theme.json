@@ -1,0 +1,753 @@
+{
+  "$schema": "vscode://schemas/color-theme",
+  "name": "MeowterialYou Dark",
+  "type": "dark",
+  "semanticHighlighting": true,
+  "colors": {
+    "focusBorder": "@{outline.hex}1a",
+    "foreground": "@{onSurface.hex}",
+    "descriptionForeground": "@{onSurfaceVariant.hex}",
+    "errorForeground": "@{error.hex}",
+    "icon.foreground": "@{onSurfaceVariant.hex}",
+    "selection.background": "@{primaryContainer.rgba50}",
+    "sash.hoverBorder": "@{primary.hex}",
+    
+    "textLink.foreground": "@{primary.hex}",
+    "textLink.activeForeground": "@{inversePrimary.hex}",
+    "textBlockQuote.background": "@{surfaceContainerLow.hex}",
+    "textBlockQuote.border": "@{primary.hex}",
+    "textCodeBlock.background": "@{surfaceContainerLowest.hex}",
+    "textPreformat.foreground": "@{tertiary.hex}",
+    "textSeparator.foreground": "@{outline.hex}",
+    
+    "button.background": "@{primary.hex}",
+    "button.foreground": "@{onPrimary.hex}",
+    "button.hoverBackground": "@{primary.hex}e6",
+    "button.secondaryBackground": "@{secondaryContainer.hex}",
+    "button.secondaryForeground": "@{onSecondaryContainer.hex}",
+    "button.secondaryHoverBackground": "@{secondaryContainer.hex}e6",
+    
+    "checkbox.background": "@{surfaceContainerHighest.hex}",
+    "checkbox.border": "@{outline.hex}1a",
+    "checkbox.foreground": "@{primary.hex}",
+    
+    "dropdown.background": "@{surfaceContainerHighest.hex}",
+    "dropdown.border": "@{outline.hex}1a",
+    "dropdown.foreground": "@{onSurface.hex}",
+    "dropdown.listBackground": "@{surfaceContainerHigh.hex}",
+    
+    "input.background": "@{surfaceContainerHighest.hex}",
+    "input.border": "@{outline.hex}1a", 
+    "input.foreground": "@{onSurface.hex}",
+    "input.placeholderForeground": "@{onSurfaceVariant.hex}",
+    "inputOption.activeBackground": "@{primaryContainer.hex}",
+    "inputOption.activeBorder": "@{primary.hex}",
+    "inputOption.activeForeground": "@{onPrimaryContainer.hex}",
+    "inputValidation.errorBackground": "@{errorContainer.hex}",
+    "inputValidation.errorBorder": "@{error.hex}",
+    "inputValidation.errorForeground": "@{onErrorContainer.hex}",
+    "inputValidation.infoBackground": "@{primaryContainer.hex}",
+    "inputValidation.infoBorder": "@{primary.hex}",
+    "inputValidation.infoForeground": "@{onPrimaryContainer.hex}",
+    "inputValidation.warningBackground": "@{tertiaryContainer.hex}",
+    "inputValidation.warningBorder": "@{tertiary.hex}",
+    "inputValidation.warningForeground": "@{onTertiaryContainer.hex}",
+    
+    "scrollbar.shadow": "#00000020",
+    "scrollbarSlider.background": "@{outlineVariant.rgba50}",
+    "scrollbarSlider.hoverBackground": "@{outline.hex}",
+    "scrollbarSlider.activeBackground": "@{primary.hex}",
+    
+    "badge.background": "@{primary.hex}",
+    "badge.foreground": "@{onPrimary.hex}",
+    
+    "progressBar.background": "@{primary.hex}",
+    
+    "list.activeSelectionBackground": "@{primary.rgba24}",
+    "list.activeSelectionForeground": "@{onSurface.hex}",
+    "list.inactiveSelectionBackground": "@{primary.rgba12}",
+    "list.inactiveSelectionForeground": "@{onSurface.hex}",
+    "list.hoverBackground": "@{primary.rgba12}",
+    "list.hoverForeground": "@{onSurface.hex}",
+    "list.focusBackground": "@{primary.rgba24}",
+    "list.focusForeground": "@{onSurface.hex}",
+    "list.focusOutline": "@{primary.hex}",
+    "list.highlightForeground": "@{primary.hex}",
+    "list.invalidItemForeground": "@{error.hex}",
+    "list.errorForeground": "@{error.hex}",
+    "list.warningForeground": "@{tertiary.hex}",
+    "listFilterWidget.background": "@{surfaceContainerHigh.hex}",
+    "listFilterWidget.outline": "@{primary.hex}",
+    "listFilterWidget.noMatchesOutline": "@{error.hex}",
+    "list.filterMatchBackground": "@{primaryContainer.rgba50}",
+    "list.filterMatchBorder": "@{primary.hex}",
+    "tree.indentGuidesStroke": "@{outlineVariant.hex}",
+    
+    "activityBar.background": "@{surfaceContainerLowest.hex}",
+    "activityBar.foreground": "@{onSurfaceVariant.hex}",
+    "activityBar.inactiveForeground": "@{outline.hex}",
+    "activityBar.border": "@{outline.hex}1a",
+    "activityBar.activeBorder": "@{primary.hex}",
+    "activityBar.activeBackground": "@{surfaceContainerLow.hex}",
+    "activityBarBadge.background": "@{primary.hex}",
+    "activityBarBadge.foreground": "@{onPrimary.hex}",
+    
+    "sideBar.background": "@{surfaceContainerLow.hex}",
+    "sideBar.foreground": "@{onSurface.hex}",
+    "sideBar.border": "@{outline.hex}1a",
+    "sideBarTitle.foreground": "@{onSurface.hex}",
+    "sideBarSectionHeader.background": "@{surfaceContainerLowest.hex}",
+    "sideBarSectionHeader.foreground": "@{onSurface.hex}",
+    "sideBarSectionHeader.border": "@{outline.hex}1a",
+    
+    "minimap.findMatchHighlight": "@{primary.hex}",
+    "minimap.selectionHighlight": "@{primaryContainer.hex}",
+    "minimap.errorHighlight": "@{error.hex}",
+    "minimap.warningHighlight": "@{tertiary.hex}",
+    "minimapGutter.addedBackground": "@{primary.hex}",
+    "minimapGutter.modifiedBackground": "@{tertiary.hex}",
+    "minimapGutter.deletedBackground": "@{error.hex}",
+    
+    "editorGroup.border": "@{outline.hex}1a",
+    "editorGroupHeader.tabsBackground": "@{surfaceContainerLowest.hex}",
+    "editorGroupHeader.tabsBorder": "@{outline.hex}1a",
+    "editorGroupHeader.noTabsBackground": "@{surfaceContainerLowest.hex}",
+    
+    "tab.activeBackground": "@{surface.hex}",
+    "tab.activeForeground": "@{onSurface.hex}",
+    "tab.activeBorder": "@{outline.hex}1a",
+    "tab.activeBorderTop": "@{primary.hex}",
+    "tab.inactiveBackground": "@{surfaceContainerLow.hex}",
+    "tab.inactiveForeground": "@{onSurfaceVariant.hex}",
+    "tab.border": "@{outline.hex}1a",
+    "tab.hoverBackground": "@{surfaceContainerHigh.hex}",
+    "tab.unfocusedActiveBackground": "@{surface.hex}",
+    "tab.unfocusedActiveForeground": "@{onSurfaceVariant.hex}",
+    "tab.unfocusedInactiveBackground": "@{surfaceContainerLow.hex}",
+    "tab.unfocusedInactiveForeground": "@{outline.hex}",
+    "tab.lastPinnedBorder": "@{outline.hex}1a",
+    
+    "editor.background": "@{surface.hex}",
+    "editor.foreground": "@{onSurface.hex}",
+    "editorLineNumber.foreground": "@{outline.hex}",
+    "editorLineNumber.activeForeground": "@{primary.hex}",
+    "editorCursor.foreground": "@{primary.hex}",
+    "editor.selectionBackground": "@{primaryContainer.rgba50}",
+    "editor.selectionHighlightBackground": "@{secondaryContainer.rgba50}",
+    "editor.wordHighlightBackground": "@{secondaryContainer.rgba50}",
+    "editor.wordHighlightStrongBackground": "@{tertiaryContainer.rgba50}",
+    "editor.findMatchBackground": "@{primaryContainer.hex}",
+    "editor.findMatchHighlightBackground": "@{secondaryContainer.rgba50}",
+    "editor.findRangeHighlightBackground": "@{surfaceContainerHighest.rgba50}",
+    "editor.hoverHighlightBackground": "@{surfaceContainerHighest.rgba50}",
+    "editor.lineHighlightBackground": "@{surfaceContainerHighest.rgba50}",
+    "editor.rangeHighlightBackground": "@{surfaceContainerHighest.rgba50}",
+    "editorLink.activeForeground": "@{primary.hex}",
+    "editorWhitespace.foreground": "@{outline.hex}1a",
+    "editorIndentGuide.background": "@{outline.hex}1a",
+    "editorIndentGuide.activeBackground": "@{outline.hex}",
+    "editorRuler.foreground": "@{outline.hex}1a",
+    "editorBracketMatch.background": "@{primaryContainer.rgba50}",
+    "editorBracketMatch.border": "@{primary.hex}",
+    "editorBracketHighlight.foreground1": "@{primary.hex}",
+    "editorBracketHighlight.foreground2": "@{tertiary.hex}",
+    "editorBracketHighlight.foreground3": "@{secondary.hex}",
+    "editorBracketHighlight.foreground4": "@{primary.hex}",
+    "editorBracketHighlight.foreground5": "@{tertiary.hex}",
+    "editorBracketHighlight.foreground6": "@{secondary.hex}",
+    "editorBracketHighlight.unexpectedBracket.foreground": "@{error.hex}",
+    
+    "editorOverviewRuler.border": "@{outlineVariant.hex}",
+    "editorOverviewRuler.findMatchForeground": "@{primary.hex}",
+    "editorOverviewRuler.rangeHighlightForeground": "@{primaryContainer.hex}",
+    "editorOverviewRuler.selectionHighlightForeground": "@{secondaryContainer.hex}",
+    "editorOverviewRuler.wordHighlightForeground": "@{secondary.hex}",
+    "editorOverviewRuler.wordHighlightStrongForeground": "@{tertiary.hex}",
+    "editorOverviewRuler.modifiedForeground": "@{tertiary.hex}",
+    "editorOverviewRuler.addedForeground": "@{primary.hex}",
+    "editorOverviewRuler.deletedForeground": "@{error.hex}",
+    "editorOverviewRuler.errorForeground": "@{error.hex}",
+    "editorOverviewRuler.warningForeground": "@{tertiary.hex}",
+    "editorOverviewRuler.infoForeground": "@{primary.hex}",
+    
+    "editorError.foreground": "@{error.hex}",
+    "editorWarning.foreground": "@{tertiary.hex}",
+    "editorInfo.foreground": "@{primary.hex}",
+    "editorHint.foreground": "@{secondary.hex}",
+    
+    "editorGutter.background": "@{surface.hex}",
+    "editorGutter.modifiedBackground": "@{tertiary.hex}",
+    "editorGutter.addedBackground": "@{primary.hex}",
+    "editorGutter.deletedBackground": "@{error.hex}",
+    "editorGutter.commentRangeForeground": "@{outline.hex}",
+    "editorGutter.foldingControlForeground": "@{onSurfaceVariant.hex}",
+    
+    "diffEditor.insertedTextBackground": "@{primaryContainer.rgba50}",
+    "diffEditor.removedTextBackground": "@{errorContainer.rgba50}",
+    "diffEditor.insertedLineBackground": "@{primaryContainer.rgba50}",
+    "diffEditor.removedLineBackground": "@{errorContainer.rgba50}",
+    "diffEditor.border": "@{outline.hex}1a",
+    "diffEditor.diagonalFill": "@{outline.hex}1a",
+    
+    "editorWidget.background": "@{surfaceContainerHigh.hex}",
+    "editorWidget.foreground": "@{onSurface.hex}",
+    "editorWidget.border": "@{outline.hex}1a",
+    "editorWidget.resizeBorder": "@{primary.hex}",
+    
+    "editorSuggestWidget.background": "@{surfaceContainerHighest.hex}",
+    "editorSuggestWidget.border": "@{outline.hex}1a",
+    "editorSuggestWidget.foreground": "@{onSurface.hex}",
+    "editorSuggestWidget.selectedBackground": "@{primary.rgba24}",
+    "editorSuggestWidget.selectedForeground": "@{onSurface.hex}",
+    "editorSuggestWidget.highlightForeground": "@{primary.hex}",
+    "editorSuggestWidget.focusHighlightForeground": "@{primary.hex}",
+    
+    "editorHoverWidget.background": "@{surfaceContainerHighest.hex}",
+    "editorHoverWidget.foreground": "@{onSurface.hex}",
+    "editorHoverWidget.border": "@{outlineVariant.hex}",
+    "editorHoverWidget.statusBarBackground": "@{surfaceContainerHigh.hex}",
+    
+    "peekView.border": "@{primary.hex}",
+    "peekViewEditor.background": "@{surfaceContainerLow.hex}",
+    "peekViewEditorGutter.background": "@{surfaceContainerLow.hex}",
+    "peekViewEditor.matchHighlightBackground": "@{primaryContainer.rgba50}",
+    "peekViewEditor.matchHighlightBorder": "@{primary.hex}",
+    "peekViewResult.background": "@{surfaceContainer.hex}",
+    "peekViewResult.fileForeground": "@{onSurface.hex}",
+    "peekViewResult.lineForeground": "@{onSurfaceVariant.hex}",
+    "peekViewResult.matchHighlightBackground": "@{primaryContainer.rgba50}",
+    "peekViewResult.selectionBackground": "@{primary.rgba24}",
+    "peekViewResult.selectionForeground": "@{onPrimaryContainer.hex}",
+    "peekViewTitle.background": "@{surfaceContainerHighest.hex}",
+    "peekViewTitleDescription.foreground": "@{onSurfaceVariant.hex}",
+    "peekViewTitleLabel.foreground": "@{onSurface.hex}",
+    
+    "merge.currentHeaderBackground": "@{primaryContainer.rgba50}",
+    "merge.currentContentBackground": "@{primaryContainer.rgba50}",
+    "merge.incomingHeaderBackground": "@{tertiaryContainer.rgba50}",
+    "merge.incomingContentBackground": "@{tertiaryContainer.rgba50}",
+    "merge.border": "@{outlineVariant.hex}",
+    "merge.commonContentBackground": "@{surfaceContainer.hex}",
+    "merge.commonHeaderBackground": "@{surfaceContainer.hex}",
+    
+    "panel.background": "@{surfaceContainerLow.hex}",
+    "panel.border": "@{outline.hex}1a",
+    "panelTitle.activeBorder": "@{primary.hex}",
+    "panelTitle.activeForeground": "@{onSurface.hex}",
+    "panelTitle.inactiveForeground": "@{onSurfaceVariant.hex}",
+    "panelInput.border": "@{outlineVariant.hex}",
+    
+    "statusBar.background": "@{surfaceContainerLowest.hex}",
+    "statusBar.foreground": "@{onSurfaceVariant.hex}",
+    "statusBar.border": "@{outline.hex}1a",
+    "statusBar.debuggingBackground": "@{tertiaryContainer.hex}",
+    "statusBar.debuggingForeground": "@{onTertiaryContainer.hex}",
+    "statusBar.noFolderBackground": "@{surfaceContainerLowest.hex}",
+    "statusBar.noFolderForeground": "@{onSurfaceVariant.hex}",
+    "statusBarItem.activeBackground": "@{primaryContainer.hex}",
+    "statusBarItem.hoverBackground": "@{onSurfaceVariant.rgba50}",
+    "statusBarItem.prominentBackground": "@{primary.hex}",
+    "statusBarItem.prominentForeground": "@{onPrimary.hex}",
+    "statusBarItem.prominentHoverBackground": "@{primaryContainer.hex}",
+    "statusBarItem.remoteBackground": "@{primary.hex}",
+    "statusBarItem.remoteForeground": "@{onPrimary.hex}",
+    "statusBarItem.errorBackground": "@{error.hex}",
+    "statusBarItem.errorForeground": "@{onError.hex}",
+    "statusBarItem.warningBackground": "@{tertiaryContainer.hex}",
+    "statusBarItem.warningForeground": "@{onTertiaryContainer.hex}",
+    
+    "titleBar.activeBackground": "@{surfaceContainerLowest.hex}",
+    "titleBar.activeForeground": "@{onSurface.hex}",
+    "titleBar.inactiveBackground": "@{surfaceContainerLowest.hex}",
+    "titleBar.inactiveForeground": "@{onSurfaceVariant.hex}",
+    "titleBar.border": "@{outline.hex}1a",
+    
+    "menu.background": "@{surfaceContainerHighest.hex}",
+    "menu.foreground": "@{onSurface.hex}",
+    "menu.selectionBackground": "@{primary.rgba24}",
+    "menu.selectionForeground": "@{onSurface.hex}",
+    "menu.selectionBorder": "@{primary.hex}",
+    "menu.separatorBackground": "@{outline.hex}1a",
+    "menu.border": "@{outline.hex}1a",
+    "menubar.selectionBackground": "@{primary.rgba12}",
+    "menubar.selectionForeground": "@{onSurface.hex}",
+    "menubar.selectionBorder": "@{primary.hex}",
+    
+    "commandCenter.foreground": "@{onSurface.hex}",
+    "commandCenter.background": "@{surfaceContainerLow.hex}",
+    "commandCenter.border": "@{outline.hex}1a",
+    "commandCenter.activeBackground": "@{surfaceContainer.hex}",
+    "commandCenter.activeForeground": "@{onSurface.hex}",
+    "commandCenter.activeBorder": "@{primary.hex}",
+    
+    "notificationCenter.border": "@{outline.hex}1a",
+    "notificationCenterHeader.foreground": "@{onSurface.hex}",
+    "notificationCenterHeader.background": "@{surfaceContainerHigh.hex}",
+    "notificationToast.border": "@{outline.hex}1a",
+    "notifications.foreground": "@{onSurface.hex}",
+    "notifications.background": "@{surfaceContainerHighest.hex}",
+    "notifications.border": "@{outline.hex}1a",
+    "notificationLink.foreground": "@{primary.hex}",
+    "notificationsErrorIcon.foreground": "@{error.hex}",
+    "notificationsWarningIcon.foreground": "@{tertiary.hex}",
+    "notificationsInfoIcon.foreground": "@{primary.hex}",
+    
+    "quickInput.background": "@{surfaceContainerHigh.hex}",
+    "quickInput.foreground": "@{onSurface.hex}",
+    "quickInputTitle.background": "@{surfaceContainerHighest.hex}",
+    "quickInputList.focusBackground": "@{primary.rgba24}",
+    "quickInputList.focusForeground": "@{onSurface.hex}",
+    "quickInputList.focusIconForeground": "@{onSurface.hex}",
+    
+    "keybindingLabel.background": "@{surfaceContainerHighest.hex}",
+    "keybindingLabel.foreground": "@{onSurfaceVariant.hex}",
+    "keybindingLabel.border": "@{outline.hex}",
+    "keybindingLabel.bottomBorder": "@{outline.hex}",
+    
+    "terminal.foreground": "@{onSurface.hex}",
+    "terminal.background": "@{surfaceContainerLow.hex}",
+    "terminal.ansiBlack": "@{outline.hex}1a",
+    "terminal.ansiRed": "@{error.hex}",
+    "terminal.ansiGreen": "@{primary.hex}",
+    "terminal.ansiYellow": "#e4c54a",
+    "terminal.ansiBlue": "#aac7ff",
+    "terminal.ansiMagenta": "#ffafd0",
+    "terminal.ansiCyan": "@{tertiary.hex}",
+    "terminal.ansiWhite": "@{onSurface.hex}",
+    "terminal.ansiBrightBlack": "@{outline.hex}",
+    "terminal.ansiBrightRed": "@{errorContainer.hex}",
+    "terminal.ansiBrightGreen": "@{primaryContainer.hex}",
+    "terminal.ansiBrightYellow": "#635000",
+    "terminal.ansiBrightBlue": "#0061a4",
+    "terminal.ansiBrightMagenta": "#9a4057",
+    "terminal.ansiBrightCyan": "@{tertiaryContainer.hex}",
+    "terminal.ansiBrightWhite": "@{surface.hex}",
+    "terminal.selectionBackground": "@{primaryContainer.rgba50}",
+    "terminalCursor.foreground": "@{primary.hex}",
+    "terminalCursor.background": "@{surface.hex}",
+    
+    "debugToolBar.background": "@{surfaceContainerHighest.hex}",
+    "debugToolBar.border": "@{outline.hex}1a",
+    "debugConsole.infoForeground": "@{primary.hex}",
+    "debugConsole.warningForeground": "@{tertiary.hex}",
+    "debugConsole.errorForeground": "@{error.hex}",
+    "debugConsole.sourceForeground": "@{onSurfaceVariant.hex}",
+    "debugConsoleInputIcon.foreground": "@{primary.hex}",
+    
+    "gitDecoration.addedResourceForeground": "@{primary.hex}",
+    "gitDecoration.modifiedResourceForeground": "@{tertiary.hex}",
+    "gitDecoration.deletedResourceForeground": "@{error.hex}",
+    "gitDecoration.renamedResourceForeground": "@{tertiary.hex}",
+    "gitDecoration.stageModifiedResourceForeground": "@{tertiary.hex}",
+    "gitDecoration.stageDeletedResourceForeground": "@{error.hex}",
+    "gitDecoration.untrackedResourceForeground": "@{primary.hex}",
+    "gitDecoration.ignoredResourceForeground": "@{outline.hex}",
+    "gitDecoration.conflictingResourceForeground": "@{error.hex}",
+    "gitDecoration.submoduleResourceForeground": "@{secondary.hex}",
+    
+    "settings.headerForeground": "@{onSurface.hex}",
+    "settings.modifiedItemIndicator": "@{primary.hex}",
+    "settings.dropdownBackground": "@{surfaceContainerHigh.hex}",
+    "settings.dropdownForeground": "@{onSurface.hex}",
+    "settings.dropdownBorder": "@{outline.hex}1a",
+    "settings.dropdownListBorder": "@{outline.hex}1a",
+    "settings.checkboxBackground": "@{surfaceContainerHigh.hex}",
+    "settings.checkboxForeground": "@{primary.hex}",
+    "settings.checkboxBorder": "@{outline.hex}1a",
+    "settings.textInputBackground": "@{surfaceContainerHighest.hex}",
+    "settings.textInputForeground": "@{onSurface.hex}",
+    "settings.textInputBorder": "@{outline.hex}1a",
+    "settings.numberInputBackground": "@{surfaceContainerHighest.hex}",
+    "settings.numberInputForeground": "@{onSurface.hex}",
+    "settings.numberInputBorder": "@{outline.hex}1a",
+    "settings.focusedRowBackground": "@{surfaceContainer.hex}",
+    
+    "breadcrumb.foreground": "@{onSurfaceVariant.hex}",
+    "breadcrumb.background": "@{surface.hex}",
+    "breadcrumb.focusForeground": "@{onSurface.hex}",
+    "breadcrumb.activeSelectionForeground": "@{primary.hex}",
+    "breadcrumbPicker.background": "@{surfaceContainerHigh.hex}",
+    
+    "symbolIcon.arrayForeground": "@{tertiary.hex}",
+    "symbolIcon.booleanForeground": "@{primary.hex}",
+    "symbolIcon.classForeground": "@{primary.hex}",
+    "symbolIcon.colorForeground": "@{secondary.hex}",
+    "symbolIcon.constantForeground": "@{tertiary.hex}",
+    "symbolIcon.constructorForeground": "@{tertiary.hex}",
+    "symbolIcon.enumeratorForeground": "@{tertiary.hex}",
+    "symbolIcon.enumeratorMemberForeground": "@{primary.hex}",
+    "symbolIcon.eventForeground": "@{tertiary.hex}",
+    "symbolIcon.fieldForeground": "@{secondary.hex}",
+    "symbolIcon.fileForeground": "@{onSurfaceVariant.hex}",
+    "symbolIcon.folderForeground": "@{onSurfaceVariant.hex}",
+    "symbolIcon.functionForeground": "@{secondary.hex}",
+    "symbolIcon.interfaceForeground": "@{tertiary.hex}",
+    "symbolIcon.keyForeground": "@{primary.hex}",
+    "symbolIcon.keywordForeground": "@{primary.hex}",
+    "symbolIcon.methodForeground": "@{secondary.hex}",
+    "symbolIcon.moduleForeground": "@{onSurfaceVariant.hex}",
+    "symbolIcon.namespaceForeground": "@{onSurfaceVariant.hex}",
+    "symbolIcon.nullForeground": "@{error.hex}",
+    "symbolIcon.numberForeground": "@{primary.hex}",
+    "symbolIcon.objectForeground": "@{tertiary.hex}",
+    "symbolIcon.operatorForeground": "@{onSurfaceVariant.hex}",
+    "symbolIcon.packageForeground": "@{tertiary.hex}",
+    "symbolIcon.propertyForeground": "@{primary.hex}",
+    "symbolIcon.referenceForeground": "@{tertiary.hex}",
+    "symbolIcon.snippetForeground": "@{secondary.hex}",
+    "symbolIcon.stringForeground": "@{tertiary.hex}",
+    "symbolIcon.structForeground": "@{tertiary.hex}",
+    "symbolIcon.textForeground": "@{onSurface.hex}",
+    "symbolIcon.typeParameterForeground": "@{tertiary.hex}",
+    "symbolIcon.unitForeground": "@{primary.hex}",
+    "symbolIcon.variableForeground": "@{onSurface.hex}"
+  },
+  "tokenColors": [
+    {
+      "name": "Comment",
+      "scope": ["comment", "punctuation.definition.comment"],
+      "settings": {
+        "foreground": "@{outline.hex}",
+        "fontStyle": "italic"
+      }
+    },
+    {
+      "name": "String",
+      "scope": ["string", "string.quoted", "string.template", "punctuation.definition.string"],
+      "settings": {
+        "foreground": "@{secondary.hex}"
+      }
+    },
+    {
+      "name": "Number",
+      "scope": ["constant.numeric", "constant.language.boolean"],
+      "settings": {
+        "foreground": "@{tertiary.hex}"
+      }
+    },
+    {
+      "name": "Constant",
+      "scope": ["constant", "constant.language", "constant.character"],
+      "settings": {
+        "foreground": "@{error.hex}"
+      }
+    },
+    {
+      "name": "Keyword",
+      "scope": ["keyword", "keyword.control", "keyword.operator.new", "keyword.operator.expression", "keyword.operator.logical", "keyword.operator.delete", "storage.type", "storage.modifier"],
+      "settings": {
+        "foreground": "@{tertiary.hex}"
+      }
+    },
+    {
+      "name": "Operator",
+      "scope": ["keyword.operator", "punctuation.separator", "punctuation.accessor"],
+      "settings": {
+        "foreground": "@{onSurfaceVariant.hex}"
+      }
+    },
+    {
+      "name": "Function",
+      "scope": ["entity.name.function", "meta.function-call", "support.function"],
+      "settings": {
+        "foreground": "@{primary.hex}"
+      }
+    },
+    {
+      "name": "Method",
+      "scope": ["meta.method.declaration", "entity.name.method"],
+      "settings": {
+        "foreground": "@{primary.hex}"
+      }
+    },
+    {
+      "name": "Class",
+      "scope": ["entity.name.class", "entity.name.type.class", "support.class"],
+      "settings": {
+        "foreground": "@{secondary.hex}"
+      }
+    },
+    {
+      "name": "Type",
+      "scope": ["entity.name.type", "support.type", "storage.type.primitive"],
+      "settings": {
+        "foreground": "@{secondary.hex}"
+      }
+    },
+    {
+      "name": "Interface",
+      "scope": ["entity.name.type.interface"],
+      "settings": {
+        "foreground": "@{secondary.hex}",
+        "fontStyle": "italic"
+      }
+    },
+    {
+      "name": "Variable",
+      "scope": ["variable", "variable.other", "variable.language"],
+      "settings": {
+        "foreground": "@{onSurface.hex}"
+      }
+    },
+    {
+      "name": "Variable Constant",
+      "scope": ["variable.other.constant"],
+      "settings": {
+        "foreground": "@{error.hex}"
+      }
+    },
+    {
+      "name": "Variable Property",
+      "scope": ["variable.other.property", "variable.other.object.property"],
+      "settings": {
+        "foreground": "@{onSurface.hex}"
+      }
+    },
+    {
+      "name": "Parameter",
+      "scope": ["variable.parameter"],
+      "settings": {
+        "foreground": "@{tertiary.hex}",
+        "fontStyle": "italic"
+      }
+    },
+    {
+      "name": "Property",
+      "scope": ["support.type.property-name", "meta.object-literal.key"],
+      "settings": {
+        "foreground": "@{onSurface.hex}"
+      }
+    },
+    {
+      "name": "Tag",
+      "scope": ["entity.name.tag", "punctuation.definition.tag"],
+      "settings": {
+        "foreground": "@{tertiary.hex}"
+      }
+    },
+    {
+      "name": "Attribute",
+      "scope": ["entity.other.attribute-name"],
+      "settings": {
+        "foreground": "@{secondary.hex}",
+        "fontStyle": "italic"
+      }
+    },
+    {
+      "name": "Selector",
+      "scope": ["entity.other.attribute-name.class", "entity.other.attribute-name.id"],
+      "settings": {
+        "foreground": "@{primary.hex}"
+      }
+    },
+    {
+      "name": "CSS Property",
+      "scope": ["support.type.property-name.css", "support.type.vendored.property-name"],
+      "settings": {
+        "foreground": "@{onSurface.hex}"
+      }
+    },
+    {
+      "name": "CSS Value",
+      "scope": ["support.constant.property-value", "meta.property-value", "support.constant.font-name"],
+      "settings": {
+        "foreground": "@{tertiary.hex}"
+      }
+    },
+    {
+      "name": "CSS Unit",
+      "scope": ["keyword.other.unit"],
+      "settings": {
+        "foreground": "@{error.hex}"
+      }
+    },
+    {
+      "name": "Regex",
+      "scope": ["string.regexp"],
+      "settings": {
+        "foreground": "@{error.hex}"
+      }
+    },
+    {
+      "name": "Escape Character",
+      "scope": ["constant.character.escape"],
+      "settings": {
+        "foreground": "@{tertiary.hex}"
+      }
+    },
+    {
+      "name": "Punctuation",
+      "scope": ["punctuation.definition", "punctuation.section", "meta.brace"],
+      "settings": {
+        "foreground": "@{onSurfaceVariant.hex}"
+      }
+    },
+    {
+      "name": "Markdown Heading",
+      "scope": ["markup.heading", "entity.name.section.markdown"],
+      "settings": {
+        "foreground": "@{tertiary.hex}",
+        "fontStyle": "bold"
+      }
+    },
+    {
+      "name": "Markdown Bold",
+      "scope": ["markup.bold"],
+      "settings": {
+        "foreground": "@{primary.hex}",
+        "fontStyle": "bold"
+      }
+    },
+    {
+      "name": "Markdown Italic",
+      "scope": ["markup.italic"],
+      "settings": {
+        "foreground": "@{secondary.hex}",
+        "fontStyle": "italic"
+      }
+    },
+    {
+      "name": "Markdown Link",
+      "scope": ["markup.underline.link", "string.other.link"],
+      "settings": {
+        "foreground": "@{primary.hex}"
+      }
+    },
+    {
+      "name": "Markdown Code",
+      "scope": ["markup.inline.raw", "markup.fenced_code.block", "fenced_code.block.language"],
+      "settings": {
+        "foreground": "@{surfaceContainerHighest.hex}"
+      }
+    },
+    {
+      "name": "Markdown Quote",
+      "scope": ["markup.quote"],
+      "settings": {
+        "foreground": "@{outline.hex}",
+        "fontStyle": "italic"
+      }
+    },
+    {
+      "name": "Markdown List Punctuation",
+      "scope": ["punctuation.definition.list.begin.markdown"],
+      "settings": {
+        "foreground": "@{secondary.hex}"
+      }
+    },
+    {
+      "name": "Invalid",
+      "scope": ["invalid", "invalid.illegal"],
+      "settings": {
+        "foreground": "@{onError.hex}",
+        "background": "@{error.hex}"
+      }
+    },
+    {
+      "name": "Deprecated",
+      "scope": ["invalid.deprecated"],
+      "settings": {
+        "foreground": "@{onTertiaryContainer.hex}",
+        "background": "@{tertiaryContainer.hex}"
+      }
+    },
+    {
+      "name": "Inserted",
+      "scope": ["markup.inserted"],
+      "settings": {
+        "foreground": "@{primary.hex}"
+      }
+    },
+    {
+      "name": "Deleted",
+      "scope": ["markup.deleted"],
+      "settings": {
+        "foreground": "@{error.hex}"
+      }
+    },
+    {
+      "name": "Changed",
+      "scope": ["markup.changed"],
+      "settings": {
+        "foreground": "@{tertiary.hex}"
+      }
+    },
+    {
+      "name": "JSON Key",
+      "scope": ["support.type.property-name.json"],
+      "settings": {
+        "foreground": "@{onSurface.hex}"
+      }
+    },
+    {
+      "name": "JSON String Value",
+      "scope": ["string.quoted.double.json"],
+      "settings": {
+        "foreground": "@{secondary.hex}"
+      }
+    },
+    {
+      "name": "YAML Key",
+      "scope": ["entity.name.tag.yaml"],
+      "settings": {
+        "foreground": "@{onSurface.hex}"
+      }
+    },
+    {
+      "name": "INI Section",
+      "scope": ["entity.name.section.group-title.ini"],
+      "settings": {
+        "foreground": "@{tertiary.hex}",
+        "fontStyle": "bold"
+      }
+    },
+    {
+      "name": "INI Key",
+      "scope": ["keyword.other.definition.ini"],
+      "settings": {
+        "foreground": "@{onSurface.hex}"
+      }
+    },
+    {
+      "name": "Shell Variable",
+      "scope": ["variable.other.normal.shell", "variable.other.positional.shell", "variable.other.bracket.shell"],
+      "settings": {
+        "foreground": "@{onSurface.hex}"
+      }
+    },
+    {
+      "name": "Shell Command",
+      "scope": ["support.function.builtin.shell", "entity.name.command.shell"],
+      "settings": {
+        "foreground": "@{secondary.hex}"
+      }
+    }
+  ],
+  "semanticTokenColors": {
+    "namespace": "@{onSurfaceVariant.hex}",
+    "type": "@{secondary.hex}",
+    "class": "@{secondary.hex}",
+    "interface": { "foreground": "@{secondary.hex}", "fontStyle": "italic" },
+    "struct": "@{secondary.hex}",
+    "enum": "@{secondary.hex}",
+    "enumMember": "@{tertiary.hex}",
+    "typeParameter": "@{tertiary.hex}",
+    "function": "@{primary.hex}",
+    "method": "@{primary.hex}",
+    "decorator": "@{primary.hex}",
+    "macro": "@{primary.hex}",
+    "variable": "@{onSurface.hex}",
+    "variable.readonly": "@{tertiary.hex}",
+    "variable.defaultLibrary": "@{tertiary.hex}",
+    "parameter": { "foreground": "@{tertiary.hex}", "fontStyle": "italic" },
+    "property": "@{onSurface.hex}",
+    "property.readonly": "@{tertiary.hex}",
+    "label": "@{onSurfaceVariant.hex}",
+    "comment": { "foreground": "@{outline.hex}", "fontStyle": "italic" },
+    "string": "@{secondary.hex}",
+    "number": "@{tertiary.hex}",
+    "regexp": "@{error.hex}",
+    "operator": "@{onSurfaceVariant.hex}",
+    "keyword": "@{tertiary.hex}"
+  }
+}
