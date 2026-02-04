@@ -599,6 +599,7 @@ class ApplierDomain:
                 )
 
             # System components (Chrome/GTK4)
+            tasks.append(executor.submit(self._apply_cava_theme, scheme))
             if self._generation_options.chrome_gtk4_enabled:
                 for variant in ["dark", "light"]:
                     tasks.append(
@@ -1495,6 +1496,61 @@ class ApplierDomain:
             os.system(
                 "notify-send --app-name='MeowterialYou' -i preferences-desktop-theme 'Theme Applied 😼' 'Please restart your GNOME shell for fresher start 🐾'"
             )
+
+    def _apply_cava_theme(self, scheme: dict) -> None:
+        """Apply gradient theme to Cava config if installed and terminal theming is enabled."""
+        import shutil
+        import configparser
+        from src.util import log
+        from src.transformers import ColorTransformer
+
+        # Check if Cava is installed
+        if not shutil.which("cava"):
+            return
+
+        # Check preference for terminal theming (Cava is terminal-adjacent)
+        prefs = Config.load_prefs()
+        if not prefs.get("THEME_GNOME_TERMINAL", True):
+            log.info("Skipping Cava theming (terminal theming disabled)")
+            return
+
+        cava_config_path = os.path.expanduser("~/.config/cava/config")
+
+        try:
+            # Generate gradient
+            # Interpolate 8 colors from Primary to Tertiary
+            primary = scheme["primary"]
+            tertiary = scheme["tertiary"]
+            gradient_colors = ColorTransformer.interpolate_colors(primary, tertiary, 8)
+
+            # Read existing config or create new
+            config = configparser.ConfigParser(strict=False)
+            # Preserve case sensitivity if needed, but Cava is case insensitive usually.
+            # strict=False allows duplicate keys, which might exist in dirty configs.
+
+            # Ensure directory exists
+            os.makedirs(os.path.dirname(cava_config_path), exist_ok=True)
+
+            if os.path.exists(cava_config_path):
+                config.read(cava_config_path)
+
+            if "color" not in config:
+                config["color"] = {}
+
+            # Set gradient settings
+            config["color"]["gradient"] = "1"
+            config["color"]["gradient_count"] = "8"
+
+            for i, color in enumerate(gradient_colors, 1):
+                config["color"][f"gradient_color_{i}"] = f"'{color}'"
+
+            with open(cava_config_path, "w") as f:
+                config.write(f)
+
+            log.info("Applied Cava gradient theme (Primary -> Tertiary)")
+
+        except Exception as e:
+            log.warning(f"Failed to apply Cava theme: {e}")
 
     def _get_all_schemes(self, color: str | None = None) -> dict[str, MaterialColors]:
         if not color:

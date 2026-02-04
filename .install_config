@@ -54,7 +54,7 @@ THEMED_FOLDER_ICONS="true"
 # ─────────────────────────────────────────────────────────────────────────────
 # App Theming
 # ─────────────────────────────────────────────────────────────────────────────
-THEME_GNOME_TERMINAL=false
+THEME_GNOME_TERMINAL=true
 THEME_SPOTIFY=false
 THEME_DISCORD=false
 THEME_VSCODE=true
