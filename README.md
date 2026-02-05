@@ -134,6 +134,19 @@ Use [GNOME Routines](https://github.com/supSugam/gnome-routines) to automaticall
 
 ---
 
+## Recommended Ricing Guide
+
+### High Quality Media Thumbnails
+If you're using the media widget with Chromium-based browsers, you might notice that the album art looks blurry or low quality. This is because Chromium sends very low-resolution thumbnails via MPRIS by default.
+
+To fix this and get high-quality artwork:
+1. Install `plasma-browser-integration-host` from your package manager.
+2. Install the [Plasma Integration](https://chromewebstore.google.com/detail/plasma-integration/cimiefiiaegbelhefglklhhakcgmhkai?hl=en) Chrome extension.
+
+This integration provides the media widget with high-quality metadata and thumbnails, significantly improving the look of your desktop.
+
+---
+
 ## Uninstall
 
 ```bash
