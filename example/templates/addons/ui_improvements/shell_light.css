@@ -43,4 +43,16 @@
     margin: 0 !important;
     icon-size: 16px !important;
 }
+
+/* Reset dock icon backgrounds - nothing should affect dock icons */
+.dash-item-container .overview-tile,
+.dash-item-container .overview-tile:hover,
+.dash-item-container .overview-tile:focus,
+.dash-item-container .overview-tile:selected,
+.dash-item-container .overview-tile:checked,
+.dash-item-container .overview-tile:active {
+    background-color: transparent !important;
+    box-shadow: none !important;
+    border: none !important;
+}
 /* Yaru theme's notification popup TEST if this fixes the blank notification issue in our theme */
