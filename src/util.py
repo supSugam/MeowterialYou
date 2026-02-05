@@ -129,6 +129,12 @@ def parse_arguments():
     )
 
     parser.add_argument(
+        "--vicinae",
+        help="enable Vicinae launcher theming",
+        action="store_true",
+    )
+
+    parser.add_argument(
         "--convert-theme",
         help="convert wallpaper to specific color scheme (e.g. Catppuccin, Gruvbox, randomize, or comma-separated list)",
         type=str,
@@ -572,7 +578,7 @@ def reload_apps(lightmode_enabled: bool, scheme: MaterialColors, wallpaper_path:
 
     # Set Tiling Assistant extension accent color to match theme
     try:
-        primary_hex = scheme.primary.hex
+        primary_hex = scheme["primary"]
         # Convert hex to rgb format that Tiling Assistant expects
         r = int(primary_hex[1:3], 16)
         g = int(primary_hex[3:5], 16)

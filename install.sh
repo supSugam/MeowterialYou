@@ -67,6 +67,7 @@ THEME_DISCORD=false
 THEME_VSCODE=false
 THEME_OBSIDIAN=false
 THEME_VIVALDI=false
+THEME_VICINAE=false
 CONVERT_THEME="false"
 
 
@@ -551,6 +552,17 @@ run_interactive() {
             fi
         fi
         
+        # Vicinae
+        if command -v vicinae &> /dev/null; then
+            if gum confirm --affirmative="Yes" --negative="No" --default=false \
+                "     Theme Vicinae Launcher?"; then
+                THEME_VICINAE=true
+                echo -e "     ${CHECK} Vicinae: ${GREEN}yes${NC}"
+            else
+                echo -e "     ${CHECK} Vicinae: ${DIM}no${NC}"
+            fi
+        fi
+        
     else
         # Fallback without gum
         echo -e "  ${BOLD}Action:${NC} [Install/Uninstall]"
@@ -610,6 +622,11 @@ run_interactive() {
         read -rp "     ▸ " input
         [[ "$input" =~ ^[Yy]$ ]] && THEME_OBSIDIAN=true
         echo ""
+
+        echo -e "  ${BOLD}Theme Vicinae?${NC} [y/N]"
+        read -rp "     ▸ " input
+        [[ "$input" =~ ^[Yy]$ ]] && THEME_VICINAE=true
+        echo ""
         
         echo -e "  ${BOLD}Wallpaper Path${NC} (Enter for current)"
         read -rp "     ▸ " WALLPAPER
@@ -638,6 +655,8 @@ run_interactive() {
     [ "$THEME_SPOTIFY" = true ] && apps_enabled+="Spotify "
     [ "$THEME_DISCORD" = true ] && apps_enabled+="Discord "
     [ "$THEME_VIVALDI" = true ] && apps_enabled+="Vivaldi "
+    [ "$THEME_OBSIDIAN" = true ] && apps_enabled+="Obsidian "
+    [ "$THEME_VICINAE" = true ] && apps_enabled+="Vicinae "
     if [ -n "$apps_enabled" ]; then
         echo -e "  ${DOT} Extra Apps:     ${BOLD}$apps_enabled${NC}"
     fi
@@ -811,6 +830,7 @@ THEME_DISCORD=$THEME_DISCORD
 THEME_VSCODE=$THEME_VSCODE
 THEME_OBSIDIAN=$THEME_OBSIDIAN
 THEME_VIVALDI=$THEME_VIVALDI
+THEME_VICINAE=$THEME_VICINAE
 EOF
     echo ""
     # User preferences saved
@@ -921,25 +941,29 @@ NoDisplay=false
 X-GNOME-Autostart-enabled=true
 EOF
             print_success "Widget autostart configured"
-            
-            # RESTART LOGIC:
-            # 1. If we rebuilt binaries, we MUST restart (already done in build block via pkill)
-            # 2. If we just updated config, we DO NOT restart (manager hot-reloads)
-            # 3. If manager is NOT running, we MUST start it.
-            
-            if ! pgrep -f "meowterialyou-widget-manager" > /dev/null; then
-                 (cd "$SCRIPT_DIR" && nohup "$BIN_DIR/meowterialyou-widget-manager" >/dev/null 2>&1 &)
-                 print_info "Started widget manager"
-            elif [ "$REBUILD_WIDGETS" = true ]; then
-                 # Binaries were killed above, restart them
-                 (cd "$SCRIPT_DIR" && nohup "$BIN_DIR/meowterialyou-widget-manager" >/dev/null 2>&1 &)
-                 print_info "Restarted widget manager"
-            else
-                 print_info "Widgets updated (hot-reload active)"
-            fi
-        else
-            print_info "Widgets are already running and up to date. Skipping restart."
         fi
+
+        # Start/Restart Logic
+        if [ "$MUST_INSTALL" = true ]; then
+             # If we rebuilt or it's a first install, ensure we start/restart.
+             if pgrep -f "meowterialyou-widget-manager" > /dev/null; then
+                 print_info "Restarting widget manager for updated configuration..."
+                 pkill -f "meowterialyou-widget-manager" || true
+                 pkill -f "media_widget" || true
+                 pkill -f "weather_widget" || true
+             fi
+             (cd "$SCRIPT_DIR" && nohup "$BIN_DIR/meowterialyou-widget-manager" >/dev/null 2>&1 &)
+             print_success "Started widget manager"
+        elif ! pgrep -f "meowterialyou-widget-manager" > /dev/null; then
+             # Case: Not a first install or config change, but manager is not running
+             (cd "$SCRIPT_DIR" && nohup "$BIN_DIR/meowterialyou-widget-manager" >/dev/null 2>&1 &)
+             print_success "Started widget manager"
+        else
+             # Already running and no binary/config changes: leave it alone.
+             # Widgets watch ~/.config/meowterialyou-widgets/theme.css for color changes.
+             print_info "Widget manager is already running, theme will update via file watch"
+        fi
+        
         cd "$SCRIPT_DIR" || exit
     else
         # Disabled - Cleanup if previously installed
@@ -982,6 +1006,7 @@ apply_theme() {
     [ "$TRANSPARENT_PANEL" = true ] && args="$args --transparent-panel"
     [ "$THEMED_FOLDER_ICONS" = true ] && args="$args --themed-folder-icons"
     [ "$THEME_OBSIDIAN" = true ] && args="$args --obsidian"
+    [ "$THEME_VICINAE" = true ] && args="$args --vicinae"
     [ -n "$CONVERT_THEME" ] && [ "$CONVERT_THEME" != "false" ] && args="$args --convert-theme \"$CONVERT_THEME\""
 
     { [ "$DO_REAPPLY" = true ] || [ "$SILENT" = true ]; } && args="$args --silent"
@@ -1105,6 +1130,7 @@ THEME_DISCORD=$THEME_DISCORD
 THEME_VSCODE=$THEME_VSCODE
 THEME_OBSIDIAN=$THEME_OBSIDIAN
 THEME_VIVALDI=$THEME_VIVALDI
+THEME_VICINAE=$THEME_VICINAE
 EOF
 }
 
@@ -1142,7 +1168,8 @@ main() {
             --defaults)    DO_DEFAULTS=true; SKIP_INTERACTIVE=true; shift ;;
             --reapply)     DO_REAPPLY=true; SKIP_INTERACTIVE=true; shift ;;
             --rebuild-widgets) CLI_REBUILD_WIDGETS=true; shift ;;
-            --obsidian)    CLI_THEME_OBSIDIAN=true; shift ;;
+            --obsidian)    THEME_OBSIDIAN=true; shift ;;
+            --vicinae)     THEME_VICINAE=true; shift ;;
             --silent)      SILENT=true; shift ;;
             --help|-h)
                 echo "Usage: meowterialyou [OPTIONS]"
@@ -1163,6 +1190,7 @@ main() {
                 echo "  --desktop-widget       Enable desktop widget (clock + weather)"
                 echo "  --transparent-panel    Enable transparent panel addon"
                 echo "  --themed-folder-icons  Enable themed folder icons"
+                echo "  --vicinae              Enable Vicinae launcher theming"
                 echo "  --rebuild-widgets      Force rebuild of Rust desktop widgets"
                 echo "  --silent               Disable desktop notifications"
                 echo "  --uninstall            Uninstall MeowterialYou"

@@ -54,6 +54,7 @@ def main():  # sourcery skip: raise-specific-error
             ),
             themed_app_icons_enabled=getattr(arguments, "themed_app_icons", False),
             obsidian_enabled=getattr(arguments, "obsidian", False),
+            vicinae_enabled=getattr(arguments, "vicinae", False),
             scheme_variant=getattr(arguments, "scheme", "tonal_spot"),
             wallpaper_path=arguments.wallpaper
             or ApplierDomain.get_current_system_wallpaper_path(),
