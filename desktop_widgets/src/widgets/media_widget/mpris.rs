@@ -109,6 +109,46 @@ pub async fn init(
                          }
                      }
                      
+                     
+                     // DE-DUPLICATION:
+                     // If we detect "plasma-browser-integration", it means we have high-quality wrappers 
+                     // for the browser media. We should HIDE the native "chrome"/"firefox" players 
+                     // to avoid showing the same content twice (once with good art, once with bad art).
+                     let has_plasma = valid_players.iter().any(|p| p.to_lowercase().contains("plasma-browser-integration"));
+                     if has_plasma {
+                         valid_players.retain(|p| {
+                             let lower = p.to_lowercase();
+                             let is_generic_browser = lower.contains("chrome") || 
+                                                      lower.contains("chromium") || 
+                                                      lower.contains("firefox") ||
+                                                      lower.contains("edge") ||
+                                                      lower.contains("browser");
+                             
+                             // If it's the Plasma player itself, keep it.
+                             if lower.contains("plasma-browser-integration") {
+                                 return true;
+                             }
+                             
+                             // If it's a generic browser player, DROP IT (since Plasma covers it).
+                             if is_generic_browser {
+                                 return false;
+                             }
+                             
+                             // Keep everything else (Spotify, VLC, etc.)
+                             true
+                         });
+                     }
+
+                     // SORT PLAYERS BY PRIORITY
+                     // 1. Plasma Integration (High Quality Metadata)
+                     // 2. Dedicated Apps (Spotify, VLC)
+                     // 3. Native Browsers (Low Quality/Duplicate)
+                     valid_players.sort_by(|a, b| {
+                         let score_a = get_player_priority(a);
+                         let score_b = get_player_priority(b);
+                         score_b.cmp(&score_a) // Descending (High score first)
+                     });
+                     
                      // Update available players in state
                      {
                         let mut state = STATE.write().unwrap();
@@ -639,4 +679,20 @@ fn sanitize_app_name(name: &str) -> String {
     
     // Default: clean existing
     lower.replace(" ", "-")
+}
+
+fn get_player_priority(name: &str) -> i32 {
+    let lower = name.to_lowercase();
+    
+    if lower.contains("plasma-browser-integration") {
+        return 100; // HIGHEST: This provides the best metadata for web media
+    }
+    
+    if lower.contains("chrome") || lower.contains("chromium") || 
+       lower.contains("firefox") || lower.contains("edge") || lower.contains("browser") {
+        return 0; // LOWEST: Native browser interfaces usually lack art/thumbnails
+    }
+    
+    // Dedicated desktop apps (Spotify, VLC, Rhythmbox, mpv, etc.)
+    50 // MEDIUM
 }
