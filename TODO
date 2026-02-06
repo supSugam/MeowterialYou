@@ -42,3 +42,11 @@ Now setting wallpaper to converted image triggers reapply again probably.
 -> Get current wallpaper (which is likely converted) from .config/background
 -> Hash and compare with previous hash of converted
 -> If they match, skip the rest of the process
+
+
+
+chrome has one media playing only but it is duplicated, one has all proper metdadata with image , another has title only and unknown artist and no image
+
+idk if it's after our theming stuff done to vscode or to terminal stuff but whenever i open the vscode's built in terminal, it has this text: ctrlcat@LitterBox:~/Repositories/Personal/MeowterialYou (main)$ 371;702t
+
+and other issues like whatever i type does not show up in terminal sometimes after first command, and so many misalignment misconfiguration characters idk

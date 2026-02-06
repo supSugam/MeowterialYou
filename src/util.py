@@ -1157,6 +1157,48 @@ class Config:
         # Load user preferences for optional apps
         prefs = cls.load_prefs()
 
+        # Fetch system monospace font for terminal templates
+        try:
+            cmd = [
+                "gsettings",
+                "get",
+                "org.gnome.desktop.interface",
+                "monospace-font-name",
+            ]
+            font_str = subprocess.check_output(cmd).decode("utf-8").strip().strip("'")
+            # Split by last space to get size if it exists
+            parts = font_str.rsplit(" ", 1)
+            if len(parts) == 2:
+                # Check if the second part is a number (size)
+                try:
+                    float(parts[1])
+                    font_family, font_size = parts[0], parts[1]
+                except ValueError:
+                    font_family, font_size = font_str, "11"
+            else:
+                font_family, font_size = font_str, "11"
+
+            # Kitty font_family should be the base family name.
+            # GNOME often returns "Family Weight Size", e.g., "Iosevka Nerd Font Mono Medium 13".
+            # We want to remove weights like "Medium", "Bold", etc from the family part.
+            weights = [
+                "Thin",
+                "ExtraLight",
+                "Light",
+                "Regular",
+                "Medium",
+                "SemiBold",
+                "Bold",
+                "ExtraBold",
+                "Black",
+            ]
+            for weight in weights:
+                if font_family.endswith(f" {weight}"):
+                    font_family = font_family[: -(len(weight) + 1)]
+                    break
+        except Exception:
+            font_family, font_size = "monospace", "11"
+
         for item in config.sections():
             num = 0
             template_name = config[item].name
@@ -1202,6 +1244,81 @@ class Config:
                 continue
 
             output_data = input_data
+
+            # Calculate adaptive transparency/opacity for terminal templates
+            transparency_val = 0  # Default: 0% transparent (fully opaque)
+            is_terminal = any(
+                x in template_name.upper() for x in ["TERMINAL", "KITTY", "GHOSTTY"]
+            )
+            if is_terminal and wallpaper:
+                surface_color = scheme.get("surface")
+                transparency_val = _calculate_terminal_transparency(
+                    wallpaper,
+                    cls._is_dark_theme(template_name),
+                    surface_color=surface_color,
+                )
+
+            opacity_val = (100 - transparency_val) / 100.0
+            output_data = re.sub(
+                r"@\{transparency\}", f"{transparency_val / 100.0:.2f}", output_data
+            )
+            output_data = re.sub(r"@\{opacity\}", f"{opacity_val:.2f}", output_data)
+            output_data = re.sub(
+                r"@\{transparency_percent\}", str(transparency_val), output_data
+            )
+            output_data = re.sub(
+                r"@\{system_monospace_font\}", font_family, output_data
+            )
+            output_data = re.sub(
+                r"@\{system_monospace_font_size\}", font_size, output_data
+            )
+
+            # Terminal Adaptive 16-color palette (for ANSI colors)
+            if is_terminal:
+                is_dark = cls._is_dark_theme(template_name)
+                if is_dark:
+                    term_colors = {
+                        "term_black": scheme.get("outlineVariant"),
+                        "term_red": scheme.get("error"),
+                        "term_green": scheme.get("primary"),
+                        "term_yellow": "#e4c54a",
+                        "term_blue": "#aac7ff",
+                        "term_magenta": "#ffafd0",
+                        "term_cyan": scheme.get("tertiary"),
+                        "term_white": scheme.get("onSurface"),
+                        "term_bright_black": scheme.get("outline"),
+                        "term_bright_red": scheme.get("errorContainer"),
+                        "term_bright_green": scheme.get("primaryContainer"),
+                        "term_bright_yellow": "#635000",
+                        "term_bright_blue": "#0061a4",
+                        "term_bright_magenta": "#9a4057",
+                        "term_bright_cyan": scheme.get("tertiaryContainer"),
+                        "term_bright_white": scheme.get("surface"),
+                    }
+                else:
+                    term_colors = {
+                        "term_black": scheme.get("outline"),
+                        "term_red": scheme.get("error"),
+                        "term_green": scheme.get("primary"),
+                        "term_yellow": "#7c6f00",
+                        "term_blue": "#0061a4",
+                        "term_magenta": "#9a4057",
+                        "term_cyan": scheme.get("tertiary"),
+                        "term_white": scheme.get("onSurface"),
+                        "term_bright_black": scheme.get("outlineVariant"),
+                        "term_bright_red": scheme.get("errorContainer"),
+                        "term_bright_green": scheme.get("primaryContainer"),
+                        "term_bright_yellow": "#fff0c3",
+                        "term_bright_blue": "#d1e4ff",
+                        "term_bright_magenta": "#ffd8e4",
+                        "term_bright_cyan": scheme.get("tertiaryContainer"),
+                        "term_bright_white": scheme.get("surface"),
+                    }
+                for k, v in term_colors.items():
+                    # Ensure we have a hex string with #
+                    val = v if v.startswith("#") else f"#{v}"
+                    output_data = re.sub(f"@{{{k}}}", val, output_data)
+                    output_data = re.sub(f"@{{{k}.hex}}", val, output_data)
 
             for key, value in scheme.items():
                 pattern = f"@{{{key}}}"
