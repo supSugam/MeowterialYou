@@ -22,10 +22,20 @@
 
 /* --- Liked Songs Surgical Fix --- */
 /* Target the specific placeholder SVG and swap it for the image */
-.x-entityImage-imagePlaceholder[aria-label="Liked Songs"] svg {
+[aria-label="Liked Songs"].x-entityImage-imagePlaceholder svg,
+[aria-label="Liked Songs"] .x-entityImage-imagePlaceholder svg {
     display: none !important;
 }
-.x-entityImage-imagePlaceholder[aria-label="Liked Songs"] {
+
+[aria-label="Liked Songs"].x-entityImage-imagePlaceholder,
+[aria-label="Liked Songs"] .x-entityImage-imagePlaceholder {
     background-image: url("liked_songs.png") !important;
-    background-size: cover;
+    background-size: cover !important;
+    background-position: center !important;
+}
+
+/* Secondary Selector for when Spotify uses a normal img but we want the cat art */
+img[src*="liked-songs"],
+img[alt*="Liked Songs"] {
+    content: url("liked_songs.png") !important;
 }
