@@ -1236,10 +1236,19 @@ class Config:
                 continue
 
             try:
-                with open(template_path, "r") as input:  # Template file
-                    input_data = input.read()
+                input_bytes = Path(template_path).read_bytes()
+                try:
+                    input_data = input_bytes.decode("utf-8")
+                except UnicodeDecodeError:
+                    # It's likely a binary file (e.g. PNG), just copy it as-is
+                    logging.debug(
+                        f"Detected binary file {template_path}, copying without templating."
+                    )
+                    os.makedirs(os.path.dirname(output_path), exist_ok=True)
+                    Path(output_path).write_bytes(input_bytes)
+                    continue
             except OSError as err:
-                logging.exception(f"Could not open {err.filename}, skipping...")
+                logging.exception(f"Could not read {template_path}, skipping...")
                 num += 1
                 continue
 

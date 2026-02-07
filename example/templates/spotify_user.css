@@ -1,0 +1,31 @@
+/* --- Progress Bar --- */
+.progress-bar__slider {
+    transform: translate(-50%, -50%) !important;
+    background-color: transparent !important;
+    background-image: url("https://www.nyan.cat/cats/original.gif");
+    background-size: cover;
+    height: 20px;
+    width: 32px;
+    box-shadow: none;
+    display: flex;
+}
+
+.x-progressBar-fillColor {
+    background-color: transparent !important;
+    background-image: linear-gradient(90deg,
+            @{primary.hex} 0%,
+            @{secondary.hex} 25%,
+            @{tertiary.hex} 50%,
+            @{secondary.hex} 75%,
+            @{primary.hex} 100%) !important;
+}
+
+/* --- Liked Songs Surgical Fix --- */
+/* Target the specific placeholder SVG and swap it for the image */
+.x-entityImage-imagePlaceholder[aria-label="Liked Songs"] svg {
+    display: none !important;
+}
+.x-entityImage-imagePlaceholder[aria-label="Liked Songs"] {
+    background-image: url("liked_songs.png") !important;
+    background-size: cover;
+}

@@ -694,8 +694,8 @@ class ApplierDomain:
 
                 if shutil.which("spicetify"):
                     print("Setting up spotify theme")
-                    os.system("spicetify config current_theme Matte")
-                    os.system("spicetify config color_scheme meowterialyou")
+                    os.system("spicetify config current_theme MeowterialYou")
+                    os.system("spicetify config color_scheme MaterialYou")
                     os.system("spicetify apply")
                 else:
                     print("Spicetify not found. Skipping Spotify theme application.")
