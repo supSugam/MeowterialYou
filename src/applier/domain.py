@@ -696,6 +696,24 @@ class ApplierDomain:
                     print("Setting up spotify theme")
                     os.system("spicetify config current_theme MeowterialYou")
                     os.system("spicetify config color_scheme MaterialYou")
+
+                    # Copy Liked Songs asset
+                    try:
+                        parent_dir = self._generation_options.parent_dir
+                        source_img = os.path.join(
+                            parent_dir, "SpicetifyCat/assets/Purple/liked_songs.png"
+                        )
+                        dest_img = os.path.expanduser(
+                            "~/.config/spicetify/Themes/MeowterialYou/liked_songs.png"
+                        )
+                        if os.path.exists(source_img):
+                            shutil.copy2(source_img, dest_img)
+                            print(f"Copied liked_songs.png to {dest_img}")
+                        else:
+                            print(f"Warning: liked_songs.png not found at {source_img}")
+                    except Exception as e:
+                        print(f"Failed to copy Liked Songs asset: {e}")
+
                     os.system("spicetify apply")
                 else:
                     print("Spicetify not found. Skipping Spotify theme application.")
