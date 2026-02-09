@@ -52,3 +52,82 @@ img[alt*="Liked Songs"] {
 }
 
 
+
+/* --- Equalizer / Playing Icon Fix --- */
+/* Force the playing icon to use the 'equalizer' color defined in color.ini */
+
+/* Target the SVG icon often used in the tracklist */
+.main-trackList-playingIcon,
+.main-trackList-row.main-trackList-active .main-trackList-icon,
+.main-trackList-row.main-trackList-active .main-trackList-rowTitle,
+.x-settings-equalizerPanel {
+    color: var(--spice-equalizer) !important;
+    fill: var(--spice-equalizer) !important;
+}
+
+/* Ensure SVGs inside these containers also inherit the fill */
+.main-trackList-playingIcon svg,
+.main-trackList-row.main-trackList-active .main-trackList-icon svg {
+    fill: var(--spice-equalizer) !important;
+}
+
+/* If using an image/gif (legacy behavior or specific extensions), apply a filter */
+img[src*="equaliser"] {
+    filter: sepia(100%) saturate(500%) hue-rotate(-50deg) !important; /* Approximate shift from green */
+}
+
+/* --- Equalizer Theming Fix --- */
+.main-trackList-playingIcon {
+    background-color: var(--spice-equalizer) !important;
+    -webkit-mask-image: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHJlY3QgeD0iNCIgeT0iNCIgd2lkdGg9IjQiIGhlaWdodD0iMTYiIGZpbGw9ImJsYWNrIj48YW5pbWF0ZSBhdHRyaWJ1dGVOYW1lPSJoZWlnaHQiIHZhbHVlcz0iNDsxNjs0IiBkdXI9IjAuOHMiIHJlcGVhdENvdW50PSJpbmRlZmluaXRlIiAvPjxhbmltYXRlIGF0dHJpYnV0ZU5hbWU9InkiIHZhbHVlcz0iMTY7NDsxNiIgZHVyPSIwLjhzIiByZXBlYXRDb3VudD0iaW5kZWZpbml0ZSIgLz48L3JlY3Q+PHJlY3QgeD0iMTAiIHk9IjQiIHdpZHRoPSI0IiBoZWlnaHQ9IjE2IiBmaWxsPSJibGFjayI+PGFuaW1hdGUgYXR0cmlidXRlTmFtZT0iaGVpZ2h0IiB2YWx1ZXM9IjE2OzQ7MTYiIGR1cj0iMC45NXMiIHJlcGVhdENvdW50PSJpbmRlZmluaXRlIiAvPjxhbmltYXRlIGF0dHJpYnV0ZU5hbWU9InkiIHZhbHVlcz0iNDsxNjs0IiBkdXI9IjAuOTVzIiByZXBlYXRDb3VudD0iaW5kZWZpbml0ZSIgLz48L3JlY3Q+PHJlY3QgeD0iMTYiIHk9IjQiIHdpZHRoPSI0IiBoZWlnaHQ9IjE2IiBmaWxsPSJibGFjayI+PGFuaW1hdGUgYXR0cmlidXRlTmFtZT0iaGVpZ2h0IiB2YWx1ZXM9Ijg7MTY7ODs0OzgiIGR1cj0iMC43NXMiIHJlcGVhdENvdW50PSJpbmRlZmluaXRlIiAvPjxhbmltYXRlIGF0dHJpYnV0ZU5hbWU9InkiIHZhbHVlcz0iMTI7NDsxMjsxNjsxMiIgZHVyPSIwLjc1cyIgcmVwZWF0Q291bnQ9ImluZGVmaW5pdGUiIC8+PC9yZWN0Pjwvc3ZnPgo=') !important;
+    mask-image: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHJlY3QgeD0iNCIgeT0iNCIgd2lkdGg9IjQiIGhlaWdodD0iMTYiIGZpbGw9ImJsYWNrIj48YW5pbWF0ZSBhdHRyaWJ1dGVOYW1lPSJoZWlnaHQiIHZhbHVlcz0iNDsxNjs0IiBkdXI9IjAuOHMiIHJlcGVhdENvdW50PSJpbmRlZmluaXRlIiAvPjxhbmltYXRlIGF0dHJpYnV0ZU5hbWU9InkiIHZhbHVlcz0iMTY7NDsxNiIgZHVyPSIwLjhzIiByZXBlYXRDb3VudD0iaW5kZWZpbml0ZSIgLz48L3JlY3Q+PHJlY3QgeD0iMTAiIHk9IjQiIHdpZHRoPSI0IiBoZWlnaHQ9IjE2IiBmaWxsPSJibGFjayI+PGFuaW1hdGUgYXR0cmlidXRlTmFtZT0iaGVpZ2h0IiB2YWx1ZXM9IjE2OzQ7MTYiIGR1cj0iMC45NXMiIHJlcGVhdENvdW50PSJpbmRlZmluaXRlIiAvPjxhbmltYXRlIGF0dHJpYnV0ZU5hbWU9InkiIHZhbHVlcz0iNDsxNjs0IiBkdXI9IjAuOTVzIiByZXBlYXRDb3VudD0iaW5kZWZpbml0ZSIgLz48L3JlY3Q+PHJlY3QgeD0iMTYiIHk9IjQiIHdpZHRoPSI0IiBoZWlnaHQ9IjE2IiBmaWxsPSJibGFjayI+PGFuaW1hdGUgYXR0cmlidXRlTmFtZT0iaGVpZ2h0IiB2YWx1ZXM9Ijg7MTY7ODs0OzgiIGR1cj0iMC43NXMiIHJlcGVhdENvdW50PSJpbmRlZmluaXRlIiAvPjxhbmltYXRlIGF0dHJpYnV0ZU5hbWU9InkiIHZhbHVlcz0iMTI7NDsxMjsxNjsxMiIgZHVyPSIwLjc1cyIgcmVwZWF0Q291bnQ9ImluZGVmaW5pdGUiIC8+PC9yZWN0Pjwvc3ZnPgo=') !important;
+    -webkit-mask-size: contain !important;
+    mask-size: contain !important;
+    -webkit-mask-repeat: no-repeat !important;
+    mask-repeat: no-repeat !important;
+    -webkit-mask-position: center !important;
+    mask-position: center !important;
+    background-image: none !important;
+    border-radius: 0 !important;
+}
+
+.main-trackList-playingIcon > svg,
+.main-trackList-playingIcon > img {
+    visibility: hidden !important;
+    opacity: 0 !important;
+}
+
+/* --- Settings Equalizer Graph Fix --- */
+/* Use "Shadow Cast" technique to recolor the canvas */
+.GenericModal canvas {
+    /* Create a shadow of the desired color that is offset by a large amount */
+    filter: drop-shadow(0 -1000px 0 var(--spice-equalizer)) !important;
+    /* Move the element down by the same amount so only the shadow is visible in the original position */
+    transform: translateY(1000px) !important;
+    /* Ensure the container clips the original element if needed, though usually not necessary for valid flow */
+}
+
+/* --- Settings Equalizer Theming Fix --- */
+/* Target the wrapper around the canvas and controls */
+.x-settings-equalizerPanelWrapper {
+    position: relative !important;
+}
+
+/* Create an overlay to tint the content (green lines) to the theme color */
+.x-settings-equalizerPanelWrapper::after {
+    content: '' !important;
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    /* Use the main accent color */
+    background-color: var(--spice-button) !important;
+    /* Blend mode 'color' preserves luma but forces hue/saturation */
+    mix-blend-mode: color !important;
+    /* Ensure clicks pass through to the sliders */
+    pointer-events: none !important;
+    z-index: 10 !important;
+    /* Optional: slightly reduce opacity if the effect is too strong */
+    /* opacity: 0.8 !important; */
+}
