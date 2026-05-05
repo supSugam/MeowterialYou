@@ -652,7 +652,7 @@ stage {
 .quick-toggle,
 .quick-menu-toggle .quick-toggle {
   color: @{onSurface.hex};
-  border-radius: 15px;
+  /* border-radius: 15px; */
   background-color: @{surfaceVariant.hex};
   transition-duration: 100ms;
 }
@@ -691,19 +691,41 @@ stage {
 
 .quick-toggle:checked,
 .quick-menu-toggle .quick-toggle:checked,
-.quick-menu-toggle .quick-toggle-arrow:checked {
+.quick-toggle-has-menu .quick-toggle:checked {
   color: @{onPrimary.hex};
   background-color: @{primary.hex};
+  background-image: none;
+  box-shadow: none !important;
 }
+
+.quick-menu-toggle .quick-toggle-arrow:checked,
+.quick-toggle-has-menu .quick-toggle-menu-button:checked,
+.quick-toggle-menu-button:checked {
+  color: @{onPrimary.hex};
+  background-color: st-mix(@{primary.hex}, @{onPrimary.hex}, 85%);
+  background-image: none;
+  box-shadow: none !important;
+}
+
+/* removed manual overlay code */
 
 .quick-toggle:checked:hover,
 .quick-menu-toggle .quick-toggle:checked:hover,
-.quick-menu-toggle .quick-toggle-arrow:checked:hover {
+.quick-toggle-has-menu .quick-toggle:checked:hover {
   background-color: @{primary.hex};
   color: @{onPrimary.hex};
-  /* box-shadow: inset 0 0 0 100px rgba(0, 0, 0, 0.15); USE BLACK OVERLAY FOR CHECKED/LIGHT MODE */
   box-shadow: inset 0 0 0 100px rgba(0, 0, 0, 0.15) !important;
 }
+
+.quick-menu-toggle .quick-toggle-arrow:checked:hover,
+.quick-toggle-has-menu .quick-toggle-menu-button:checked:hover,
+.quick-toggle-menu-button:checked:hover {
+  background-color: st-mix(@{primary.hex}, @{onPrimary.hex}, 85%);
+  color: @{onPrimary.hex};
+  box-shadow: inset 0 0 0 100px rgba(0, 0, 0, 0.15) !important;
+}
+
+/* removed manual overlay hover code */
 
 .quick-menu-toggle .quick-toggle-arrow:ltr {
   margin-left: 1px;
@@ -808,6 +830,7 @@ stage {
   color: @{onSurface.hex};
   background-color: @{surfaceVariant.hex};
   margin: 4px;
+  padding: 6px;
   border-radius: 14px;
   box-shadow: 0 2px 4px 0 rgba(0, 0, 0, 0.2), inset 0 0 0 1px rgba(255, 255, 255, 0.05);
   overflow: hidden;
@@ -1769,4 +1792,14 @@ StEntry:focus {
 
 #panelActivities.panel-button .workspace-dot {
     background-color: @{primary.hex};
+}
+
+.quick-toggle-has-menu:checked .quick-toggle-separator,
+.quick-menu-toggle:checked .quick-toggle-separator {
+  background-color: st-mix(@{onPrimary.hex}, @{primary.hex}, 30%) !important;
+}
+
+.quick-toggle-title,
+.panel-button {
+  font-weight: 500 !important;
 }

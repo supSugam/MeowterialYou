@@ -277,10 +277,11 @@ async fn main() -> Result<()> {
             for alias in enabled_list {
                 enabled_widgets_names.push(resolve_widget_alias(alias));
             }
-        } else {
-             enabled_widgets_names = all_widgets.iter().map(|s| s.to_string()).collect(); 
         }
+        // If gc exists but enabled is None, we do NOTHING (empty list), 
+        // effectively disabling all widgets as requested by the user's config.
     } else {
+        // Only fallback to all widgets if NO config file was found at all.
         enabled_widgets_names = all_widgets.iter().map(|s| s.to_string()).collect();
     }
 

@@ -1,0 +1,96 @@
+/**
+ * @name MeowterialYou
+ * @version 1.2.2
+ * @description Dynamic color wrapper for Material-Discord, powered by the MeowterialYou engine.
+ * @author MeowterialYou
+ */
+
+@import url(https://capnkitten.github.io/BetterDiscord/Themes/Material-Discord/css/source.css);
+@import url(https://capnkitten.github.io/BetterDiscord/Themes/Material-Discord/css/addons/material-you/source.css);
+
+:root {
+    /* 
+     * Core HSL Seeds
+     * We provide seeds for multiple color roles to give the theme more depth 
+     * and variety beyond a single monochromatic accent.
+     */
+    
+    /* Primary / Accent */
+    --accent-hue: @{primary.hue};
+    --accent-saturation: @{primary.sat}%;
+    --accent-lightness: @{primary.light}%;
+
+    /* Alert / Error */
+    --alert-hue: @{error.hue};
+    --alert-saturation: @{error.sat}%;
+    --alert-lightness: @{error.light}%;
+
+    /* Success */
+    --success-hue: @{primary.hue}; /* Often overlaps with primary in M3, but could use a distinct green if we had one */
+    --success-saturation: @{primary.sat}%;
+    --success-lightness: @{primary.light}%;
+
+    /* 
+     * Component Overrides
+     * Using M3 roles (Secondary, Tertiary) for specific UI elements 
+     * to avoid a "flat" or overly uniform look.
+     */
+
+    /* Brand & Primary interactive elements */
+    --brand-experiment: #@{primary};
+    --brand-experiment-560: #@{primary};
+    --brand-experiment-rgb: @{primary.rgb};
+    --primary-color: #@{primary};
+    --accent-color: #@{primary};
+
+    /* Secondary elements (Buttons, toggles) */
+    --accent-secondary-color: #@{secondary};
+    --accent-secondary-text-color: #@{onSecondary};
+    --button-secondary-background: #@{secondaryContainer};
+    --button-secondary-background-hover: #@{secondaryContainer};
+    --button-secondary-background-active: #@{secondaryContainer};
+
+    /* Tertiary / Special accents (Mentions, notifications) */
+    --mention-foreground: #@{tertiary};
+    --mention-background: rgba(@{tertiary.rgb}, 0.15);
+    --text-link: #@{tertiary};
+    
+    /* 
+     * Surface & Contrast Balance
+     * We map Discord's surface layers to M3 Container levels for better visual hierarchy.
+     */
+    --background-primary: #@{surface};
+    --background-secondary: #@{surfaceContainerLow};
+    --background-secondary-alt: #@{surfaceContainer};
+    --background-tertiary: #@{surfaceContainerHigh};
+    --background-floating: #@{surfaceContainerHighest};
+    
+    /* Text & Readability */
+    --text-normal: #@{onSurface};
+    --text-muted: #@{onSurfaceVariant};
+    --header-primary: #@{onSurface};
+    --header-secondary: #@{onSurfaceVariant};
+    --interactive-normal: #@{onSurfaceVariant};
+    --interactive-hover: #@{onSurface};
+    --interactive-active: #@{primary};
+
+    /* 
+     * Hover Effect Tuning
+     * Reducing the "flashiness" by using more subtle alpha values 
+     * for background modifiers.
+     */
+    --background-modifier-hover: rgba(@{onSurface.rgb}, 0.05);
+    --background-modifier-active: rgba(@{onSurface.rgb}, 0.10);
+    --background-modifier-selected: rgba(@{primary.rgb}, 0.15);
+    --background-modifier-accent: rgba(@{onSurface.rgb}, 0.08);
+}
+
+.theme-dark {
+    --saturation-factor: 0.85; /* Slightly desaturated for better dark mode comfort */
+    --ui-darkness-modifier: 0.9; /* Deeper backgrounds */
+}
+
+.theme-light {
+    --saturation-factor: 0.95;
+    --lightness-modifier: 1.05; /* Balanced brightness */
+}

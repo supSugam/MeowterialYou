@@ -135,6 +135,18 @@ def parse_arguments():
     )
 
     parser.add_argument(
+        "--discord",
+        help="enable BetterDiscord theming",
+        action="store_true",
+    )
+
+    parser.add_argument(
+        "--spotify",
+        help="enable Spotify (Spicetify) theming",
+        action="store_true",
+    )
+
+    parser.add_argument(
         "--convert-theme",
         help="convert wallpaper to specific color scheme (e.g. Catppuccin, Gruvbox, randomize, or comma-separated list)",
         type=str,
@@ -569,6 +581,16 @@ def reload_apps(lightmode_enabled: bool, scheme: MaterialColors, wallpaper_path:
                 log.info(f"Symlinked assets to {config_assets_4}")
             except Exception as e:
                 log.error(f"Failed to symlink GTK4 assets: {e}")
+
+    # Ensure User Themes extension is enabled (required for custom shell themes)
+    try:
+        ext_id = "user-theme@gnome-shell-extensions.gcampax.github.com"
+        res = subprocess.run(["gnome-extensions", "info", ext_id], capture_output=True, text=True)
+        if "Enabled: No" in res.stdout:
+            log.info("Enabling 'User Themes' extension...")
+            subprocess.run(["gnome-extensions", "enable", ext_id])
+    except Exception:
+        pass
 
     log.info("Restarting Gnome Shell theme")
     os.system(

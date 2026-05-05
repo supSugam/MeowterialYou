@@ -3352,7 +3352,7 @@ phosh-notification-frame .header-area { padding: 12px 12px 0 12px; color: @phosh
 
 phosh-notification-frame .header-area image { -gtk-icon-style: symbolic; }
 
-phosh-notification-frame .notification-container { border-radius: 12px; border: none; background-color: @phosh_notification_bg_color; margin: 6px; margin-bottom: 0; }
+phosh-notification-frame .notification-container { border-radius: 12px; border: none; background-color: @phosh_notification_bg_color; padding: 6px; margin: 6px; margin-bottom: 0; }
 
 phosh-notification-banner { background: none; border: none; padding: 6px; }
 

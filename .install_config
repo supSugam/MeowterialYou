@@ -56,7 +56,7 @@ THEMED_FOLDER_ICONS="true"
 # ─────────────────────────────────────────────────────────────────────────────
 THEME_GNOME_TERMINAL=true
 THEME_SPOTIFY=true
-THEME_DISCORD=false
+THEME_DISCORD=true
 THEME_VSCODE=true
 THEME_OBSIDIAN=true
 THEME_VIVALDI=false

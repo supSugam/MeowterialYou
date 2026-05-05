@@ -391,7 +391,7 @@ pub fn load_theme_colors(widget_name: Option<&str>) -> String {
     }
     paths.push(format!("{}/.config/meowterialyou-widgets/theme.css", home));
     paths.push("theme.css".to_string());
-    paths.push("MaterialYouColors.theme.css".to_string());
+    paths.push("MeowterialYou.theme.css".to_string());
     
     for path_str in paths {
         let path = Path::new(&path_str);

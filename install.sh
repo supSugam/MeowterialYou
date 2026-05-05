@@ -76,7 +76,7 @@ CONVERT_THEME="false"
 # ─────────────────────────────────────────────────────────────────────────────
 
 print_banner() {
-    clear
+    clear 2>/dev/null || true
     echo ""
     echo -e "${MAGENTA}"
     cat << 'EOF'
@@ -623,6 +623,11 @@ run_interactive() {
         [[ "$input" =~ ^[Yy]$ ]] && THEME_OBSIDIAN=true
         echo ""
 
+        echo -e "  ${BOLD}Theme Discord (BetterDiscord)?${NC} [y/N]"
+        read -rp "     ▸ " input
+        [[ "$input" =~ ^[Yy]$ ]] && THEME_DISCORD=true
+        echo ""
+
         echo -e "  ${BOLD}Theme Vicinae?${NC} [y/N]"
         read -rp "     ▸ " input
         [[ "$input" =~ ^[Yy]$ ]] && THEME_VICINAE=true
@@ -900,6 +905,14 @@ EOF
             local CONFIG_DEST="$HOME/.config/meowterialyou-widgets"
             
             if [ -d "$CONFIG_SRC" ]; then
+                # Install global widgets.yaml if missing
+                if [ ! -f "$CONFIG_DEST/widgets.yaml" ]; then
+                    if [ -f "$CONFIG_SRC/widgets.yaml" ]; then
+                        cp "$CONFIG_SRC/widgets.yaml" "$CONFIG_DEST/widgets.yaml"
+                        print_info "Installed global widgets.yaml"
+                    fi
+                fi
+
                 for widget_dir in "$CONFIG_SRC"/*; do
                     if [ -d "$widget_dir" ]; then
                         local widget_name
@@ -1007,6 +1020,8 @@ apply_theme() {
     [ "$THEMED_FOLDER_ICONS" = true ] && args="$args --themed-folder-icons"
     [ "$THEME_OBSIDIAN" = true ] && args="$args --obsidian"
     [ "$THEME_VICINAE" = true ] && args="$args --vicinae"
+    [ "$THEME_DISCORD" = true ] && args="$args --discord"
+    [ "$THEME_SPOTIFY" = true ] && args="$args --spotify"
     [ -n "$CONVERT_THEME" ] && [ "$CONVERT_THEME" != "false" ] && args="$args --convert-theme \"$CONVERT_THEME\""
 
     { [ "$DO_REAPPLY" = true ] || [ "$SILENT" = true ]; } && args="$args --silent"
@@ -1168,8 +1183,10 @@ main() {
             --defaults)    DO_DEFAULTS=true; SKIP_INTERACTIVE=true; shift ;;
             --reapply)     DO_REAPPLY=true; SKIP_INTERACTIVE=true; shift ;;
             --rebuild-widgets) CLI_REBUILD_WIDGETS=true; shift ;;
-            --obsidian)    THEME_OBSIDIAN=true; shift ;;
-            --vicinae)     THEME_VICINAE=true; shift ;;
+            --obsidian)    CLI_THEME_OBSIDIAN=true; shift ;;
+            --vicinae)     CLI_THEME_VICINAE=true; shift ;;
+            --discord)     CLI_THEME_DISCORD=true; shift ;;
+            --spotify)     CLI_THEME_SPOTIFY=true; shift ;;
             --silent)      SILENT=true; shift ;;
             --help|-h)
                 echo "Usage: meowterialyou [OPTIONS]"
@@ -1179,6 +1196,8 @@ main() {
                 echo "  --defaults             Install with default settings (dark, native buttons)"
                 echo "  --reapply              Reinstall using last saved configuration"
                 echo "  --obsidian             Enable theme for Obsidian"
+                echo "  --discord              Enable theme for BetterDiscord"
+                echo "  --spotify              Enable theme for Spotify (Spicetify)"
                 echo ""
                 echo "Options:"
                 echo "  --wallpaper PATH       Path to wallpaper image"
@@ -1217,6 +1236,15 @@ main() {
     fi
     if [ "$CLI_THEME_OBSIDIAN" = true ]; then
         THEME_OBSIDIAN=true
+    fi
+    if [ "$CLI_THEME_VICINAE" = true ]; then
+        THEME_VICINAE=true
+    fi
+    if [ "$CLI_THEME_DISCORD" = true ]; then
+        THEME_DISCORD=true
+    fi
+    if [ "$CLI_THEME_SPOTIFY" = true ]; then
+        THEME_SPOTIFY=true
     fi
     
     print_banner

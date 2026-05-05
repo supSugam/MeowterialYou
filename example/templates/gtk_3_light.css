@@ -13330,6 +13330,7 @@ phosh-notification-frame .notification-container {
   border-radius: 12px;
   border: none;
   background-color: @phosh_notification_bg_color;
+  padding: 6px;
   margin: 6px;
   margin-bottom: 0;
 }

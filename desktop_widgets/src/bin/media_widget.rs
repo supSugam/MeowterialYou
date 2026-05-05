@@ -66,7 +66,7 @@ fn build_ui(app: &Application) {
         .decorated(false)
         .focusable(false)
         .can_focus(false)
-        .opacity(0.0) // Start invisible
+        .opacity(1.0)
         .build();
     
 use meowterialyou_widgets::widgets::media_widget::pulse::PulseController; // Add import
@@ -281,7 +281,7 @@ use std::rc::Rc; // Ensure Rc is available
                     let widget_name_loop = widget_name.clone();
                     let spacing = std::env::var("MEOW_WIDGET_SPACING").ok().and_then(|s| s.parse::<i32>().ok()).unwrap_or(24);
                     
-                    glib::timeout_add_local(std::time::Duration::from_millis(1000), move || {
+                    glib::timeout_add_local(std::time::Duration::from_millis(500), move || {
                         // 1. Re-measure natural dimensions
                         let (_, nat_width, _, _) = window_loop.measure(gtk4::Orientation::Horizontal, -1);
                         let (_, nat_height, _, _) = window_loop.measure(gtk4::Orientation::Vertical, nat_width);
@@ -312,11 +312,10 @@ use std::rc::Rc; // Ensure Rc is available
                         let _ = x11_hints::set_wm_normal_hints(xid, new_x, new_y, new_w_phys, new_h_phys);
                         let _ = x11_hints::move_window(xid, new_x, new_y);
                         
-                        // 6. Enforce widget state (sticky, skip_taskbar, below)
+                        // 6. Enforce widget state (sticky, skip_taskbar)
                         let _ = x11_hints::set_widget_state_via_message(xid);
-                        let _ = x11_hints::lower_window(xid);
                         
-                        glib::ControlFlow::Continue
+                        glib::ControlFlow::Break // Only run once
                     });
                 }
             }

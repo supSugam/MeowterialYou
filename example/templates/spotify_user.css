@@ -131,3 +131,87 @@ img[src*="equaliser"] {
     /* Optional: slightly reduce opacity if the effect is too strong */
     /* opacity: 0.8 !important; */
 }
+
+
+
+/* --- Fix Dimmed Text / Transparency Issues --- */
+/* Target common subtitle and secondary text classes to force opaque color */
+
+/* --- Fix Dimmed Text / Transparency Issues --- */
+/* Target specific child elements (links/spans) within subtitle containers */
+/* effectively overriding 'color: rgba(var(--spice-rgb-selected-row), 0.7)' */
+.main-trackInfo-artists a,
+.main-trackInfo-artists span,
+.main-trackList-rowSubTitle a,
+.main-trackList-rowSubTitle span,
+.main-cardSubHeader-root a,
+.main-cardSubHeader-root span,
+.main-entityHeader-subtitle a,
+.main-entityHeader-subtitle span,
+.main-entityHeader-metaDataText a,
+.main-entityHeader-metaDataText span,
+.artist-artistOverview-artistBiography a,
+.artist-artistOverview-artistBiography span,
+.main-type-mesto,
+.main-type-ballad,
+.main-shelf-subHeader,
+.main-rootlist-rootlistItemLink,
+.main-navBar-navBarLink,
+.x-settings-title,
+.x-settings-aboutRow,
+.main-yourEpisodes-episodeDescription,
+.main-buddyFeed-activityMetadata,
+.encore-text-body-small-secondary,
+.encore-text-body-medium-secondary,
+.x-filterBox-filterInput,
+.e-91000-text,
+.encore-text-body-small,
+.vTU2PptR6eTimpZUN2YC,
+.main-genericButton-button,
+.x-filterBox-expandButton,
+[data-encore-id="buttonTertiary"],
+.encore-text-body-small-bold,
+.encore-internal-color-text-subdued,
+.encore-internal-color-text-subdued a,
+[data-encore-id="listRowSubtitle"] a {
+    color: var(--spice-text-subdued) !important;
+    opacity: 1 !important;
+}
+
+/* --- Enhance Hover States --- */
+/* Add smooth transitions to common interactive elements */
+.main-trackList-trackListRow,
+.main-card-card,
+.main-navBar-navBarLink,
+.main-rootlist-rootlistItemLink,
+.x-settings-aboutRow,
+.main-buddyFeed-friendActivity,
+.main-contextMenu-menuItem,
+.main-yourEpisodes-episodeCard {
+    transition: background-color 0.2s ease-in-out, transform 0.1s ease !important;
+}
+
+/* Make hover background more prominent using 'selected-row' color */
+.main-trackList-trackListRow:hover,
+.main-navBar-navBarLink:hover,
+.main-rootlist-rootlistItemLink:hover,
+.x-settings-aboutRow:hover,
+.main-contextMenu-menuItem:hover {
+    background-color: rgba(var(--spice-rgb-selected-row), 0.3) !important;
+}
+
+/* Cards usually have a different hover effect (sometimes lift) */
+.main-card-card:hover,
+.main-yourEpisodes-episodeCard:hover {
+    background-color: rgba(var(--spice-rgb-selected-row), 0.2) !important;
+}
+
+/* Force specific Spicetify variables to be opaque */
+:root {
+    --spice-rgb-text-subdued: 213, 195, 182 !important;
+}
+
+/* Override any inline opacity styles */
+[style*="opacity"] {
+    opacity: 1 !important;
+}

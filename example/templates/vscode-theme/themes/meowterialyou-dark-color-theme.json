@@ -617,7 +617,7 @@
       "name": "Markdown Code",
       "scope": ["markup.inline.raw", "markup.fenced_code.block", "fenced_code.block.language"],
       "settings": {
-        "foreground": "@{surfaceContainerHighest.hex}"
+        "foreground": "@{primary.hex}"
       }
     },
     {

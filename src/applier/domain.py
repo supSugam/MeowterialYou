@@ -40,6 +40,8 @@ class GenerationOptions(BaseModel):
     themed_folder_icons_enabled: bool = True  # Themed folder icons (default: enabled)
     obsidian_enabled: bool = False
     vicinae_enabled: bool = False
+    discord_enabled: bool = False
+    spotify_enabled: bool = False
 
     silent: bool = False
     scheme: MaterialColors | None = None
@@ -628,9 +630,16 @@ class ApplierDomain:
             if self._generation_options.obsidian_enabled:
                 tasks.append(executor.submit(self._apply_obsidian_theme, scheme))
 
+            # Discord theming
+            if self._generation_options.discord_enabled:
+                tasks.append(executor.submit(self._apply_discord_theme, scheme))
+
             # Vicinae theming
             if self._generation_options.vicinae_enabled:
                 tasks.append(executor.submit(self._apply_vicinae_theme, scheme))
+
+            # Spotify theming
+            tasks.append(executor.submit(self._apply_spotify_theme))
 
             # This task is quick but safe to run in parallel
             primary_color = scheme["primary"]
@@ -683,45 +692,56 @@ class ApplierDomain:
         os.system("export PWD=$HOME")
         os.system(f"papirus-folders -C {folder_color} >/dev/null 2>&1 || true")
 
-        # get a key from the config that contains SPOTIFY in it
+    def _apply_spotify_theme(self) -> None:
+        """Apply Material You theme to Spotify via Spicetify."""
+        import shutil
+        from src.util import log, Config
 
         lightmode_enabled = self._generation_options.lightmode_enabled
+        
+        # Check if Spotify theme is enabled in preferences OR via CLI flag
+        prefs = Config.load_prefs()
+        spotify_enabled = self._generation_options.spotify_enabled or prefs.get("THEME_SPOTIFY", False)
+        
+        if not spotify_enabled:
+            log.info("Skipping Spotify theme (disabled)")
+            return
 
-        if self._has_config_key("SPOTIFY" if lightmode_enabled else "SPOTIFY-DARK"):
-            prefs = Config.load_prefs()
-            if prefs.get("THEME_SPOTIFY", False):
-                import shutil
+        if not self._has_config_key("SPOTIFY" if lightmode_enabled else "SPOTIFY-DARK"):
+            log.warning("Spotify configuration sections not found in config.ini")
+            return
 
-                if shutil.which("spicetify"):
-                    print("Setting up spotify theme")
-                    os.system("spicetify config current_theme MeowterialYou")
-                    os.system("spicetify config color_scheme MaterialYou")
+        if shutil.which("spicetify"):
+            log.info("Applying Spotify theme via Spicetify...")
+            
+            # 1. Configure Spicetify to use our theme
+            os.system("spicetify config current_theme MeowterialYou")
+            os.system("spicetify config color_scheme MaterialYou")
 
-                    # Copy Liked Songs asset
-                    try:
-                        parent_dir = self._generation_options.parent_dir
-                        source_img = os.path.join(
-                            parent_dir, "SpicetifyCat/assets/Purple/liked_songs.png"
-                        )
-                        dest_img = os.path.expanduser(
-                            "~/.config/spicetify/Themes/MeowterialYou/liked_songs.png"
-                        )
-                        if os.path.exists(source_img):
-                            shutil.copy2(source_img, dest_img)
-                            print(f"Copied liked_songs.png to {dest_img}")
-                        else:
-                            print(f"Warning: liked_songs.png not found at {source_img}")
-                    except Exception as e:
-                        print(f"Failed to copy Liked Songs asset: {e}")
-
-                    os.system("spicetify apply")
+            # 2. Copy Liked Songs asset
+            try:
+                parent_dir = self._generation_options.parent_dir
+                source_img = os.path.join(
+                    parent_dir, "SpicetifyCat/assets/Purple/liked_songs.png"
+                )
+                dest_img = os.path.expanduser(
+                    "~/.config/spicetify/Themes/MeowterialYou/liked_songs.png"
+                )
+                if os.path.exists(source_img):
+                    # Ensure directory exists
+                    os.makedirs(os.path.dirname(dest_img), exist_ok=True)
+                    shutil.copy2(source_img, dest_img)
+                    log.info(f"Copied liked_songs.png to {dest_img}")
                 else:
-                    print("Spicetify not found. Skipping Spotify theme application.")
-            else:
-                print("Skipping Spotify theme (disabled in preferences)")
+                    log.warning(f"Liked songs asset not found at {source_img}")
+            except Exception as e:
+                log.error(f"Failed to copy Spotify assets: {e}")
 
-        # Icon theme is now set by _generate_material_you_icons()
-        # which sets it to MeowterialYou (inherits from Papirus/Papirus-Dark)
+            # 3. Apply changes (uses 'apply' instead of 'backup apply' for robustness)
+            # 'apply' will automatically backup if needed, and update if backup exists.
+            os.system("spicetify apply -n")
+        else:
+            log.warning("Spicetify CLI not found in PATH. Skipping Spotify theme.")
 
     def _apply_macbuttons_addon(self, dest_theme: str, postfix: str) -> None:
         """Apply macOS-style window buttons addon CSS to generated theme files."""
@@ -1498,6 +1518,104 @@ class ApplierDomain:
                 log.info(f"Applied MeowterialYou theme to Obsidian vault: {vault}")
             except Exception as e:
                 log.warning(f"Failed to theme vault {vault}: {e}")
+
+    def _apply_discord_theme(self, scheme: MaterialColors):
+        """Apply high-fidelity Material You theme to BetterDiscord."""
+        import shutil
+        from src.util import log, Theme, Scheme
+
+        home = os.path.expanduser("~")
+        discord_theme_dir = os.path.join(home, ".config/BetterDiscord/themes")
+        
+        # Check flatpak location too
+        flatpak_dir = os.path.join(home, ".var/app/com.discordapp.Discord/config/BetterDiscord/themes")
+        
+        target_dirs = []
+        if os.path.exists(discord_theme_dir):
+            target_dirs.append(discord_theme_dir)
+        if os.path.exists(flatpak_dir):
+            target_dirs.append(flatpak_dir)
+            
+        if not target_dirs:
+            log.warning("BetterDiscord theme directory not found. Please ensure BetterDiscord is installed.")
+            return
+
+        # Verification: Check if BD is actually injected
+        # Usually check if ~/.config/discord/X.X.XX/modules/discord_desktop_core/index.js contains BetterDiscord
+        bd_injected = False
+        discord_config_base = os.path.join(home, ".config/discord")
+        if os.path.exists(discord_config_base):
+            try:
+                # Find the latest version directory
+                versions = [d for d in os.listdir(discord_config_base) if os.path.isdir(os.path.join(discord_config_base, d)) and d[0].isdigit()]
+                if versions:
+                    versions.sort(reverse=True)
+                    latest = versions[0]
+                    core_path = os.path.join(discord_config_base, latest, "modules/discord_desktop_core/index.js")
+                    if os.path.exists(core_path):
+                        with open(core_path, "r") as f:
+                            if "betterdiscord" in f.read().lower():
+                                bd_injected = True
+            except Exception:
+                pass
+        
+        if not bd_injected and not any("com.discordapp.Discord" in d for d in target_dirs):
+            log.warning("BetterDiscord injection not detected. If Discord settings don't show BetterDiscord, you may need to re-run your BetterDiscord installer/injector.")
+
+        parent_dir = self._generation_options.parent_dir
+        template_path = os.path.join(parent_dir, "example/templates/MeowterialYou.theme.css")
+        
+        if not os.path.exists(template_path):
+            log.warning(f"Discord theme template not found at {template_path}")
+            return
+
+        # Check for base Material Discord theme
+        for target_dir in target_dirs:
+            # Look for any file that might be the base theme
+            has_base = any("Material-Discord" in f for f in os.listdir(target_dir))
+            if not has_base:
+                log.info(f"Tip: This theme works best as an addon. Download 'Material-Discord' to {target_dir} for full effect.")
+
+        try:
+            with open(template_path, "r") as f:
+                css_data = f.read()
+
+            # The current template only uses primary.hue, but we can make it better
+            # if the template is updated to use more variables.
+            # For now, we'll just process it with the standard substitute logic
+            # to remain compatible with the current template.
+            
+            # Get current scheme info
+            is_light = self._generation_options.lightmode_enabled
+            
+            # Substitutions
+            for key, value in scheme.items():
+                hex_stripped = value[1:] if value.startswith("#") else value
+                
+                # Get HSL and RGB for tokens
+                r, g, b = ColorTransformer.hex_to_rgb(hex_stripped)
+                import colorsys
+                h, l, s = colorsys.rgb_to_hls(r/255.0, g/255.0, b/255.0)
+                
+                rgb_str = f"{r}, {g}, {b}"
+                
+                # Perform all replacements on the same data string
+                css_data = css_data.replace(f"@{{{key}.hex}}", value)
+                css_data = css_data.replace(f"@{{{key}.rgb}}", rgb_str)
+                css_data = css_data.replace(f"@{{{key}.hue}}", str(int(h * 360)))
+                css_data = css_data.replace(f"@{{{key}.sat}}", str(int(s * 100)))
+                css_data = css_data.replace(f"@{{{key}.light}}", str(int(l * 100)))
+                css_data = css_data.replace(f"@{{{key}}}", hex_stripped)
+
+            for target_dir in target_dirs:
+                os.makedirs(target_dir, exist_ok=True)
+                theme_file = os.path.join(target_dir, "MeowterialYou.theme.css")
+                with open(theme_file, "w") as f:
+                    f.write(css_data)
+                log.info(f"Applied BetterDiscord theme to {theme_file}")
+                
+        except Exception as e:
+            log.error(f"Failed to apply Discord theme: {e}")
 
     def _apply_vicinae_theme(self, scheme: MaterialColors):
         """Apply high-fidelity Material You theme to Vicinae Launcher."""
