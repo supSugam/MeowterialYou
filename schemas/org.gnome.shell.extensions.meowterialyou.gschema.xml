@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schemalist gettext-domain="meowterialyou">
+  <enum id="org.gnome.shell.extensions.meowterialyou.ThemeMode">
+    <value value="0" nick="system" />
+    <value value="1" nick="dark" />
+    <value value="2" nick="light" />
+  </enum>
+
+  <enum id="org.gnome.shell.extensions.meowterialyou.SchemeVariant">
+    <value value="0" nick="tonal-spot" />
+    <value value="1" nick="neutral" />
+    <value value="2" nick="vibrant" />
+    <value value="3" nick="expressive" />
+    <value value="4" nick="rainbow" />
+    <value value="5" nick="fruit-salad" />
+    <value value="6" nick="content" />
+    <value value="7" nick="monochrome" />
+    <value value="8" nick="fidelity" />
+  </enum>
+
+  <enum id="org.gnome.shell.extensions.meowterialyou.WindowButtonStyle">
+    <value value="0" nick="native" />
+    <value value="1" nick="mac" />
+  </enum>
+
+  <enum id="org.gnome.shell.extensions.meowterialyou.WindowButtonPosition">
+    <value value="0" nick="right" />
+    <value value="1" nick="left" />
+  </enum>
+
+  <schema id="org.gnome.shell.extensions.meowterialyou" path="/org/gnome/shell/extensions/meowterialyou/">
+    <key name="theme-mode" enum="org.gnome.shell.extensions.meowterialyou.ThemeMode">
+      <default>'system'</default>
+      <summary>Theme mode</summary>
+      <description>Follow system light/dark setting, or force dark/light mode.</description>
+    </key>
+
+    <key name="scheme-variant" enum="org.gnome.shell.extensions.meowterialyou.SchemeVariant">
+      <default>'tonal-spot'</default>
+      <summary>Material You scheme variant</summary>
+      <description>The dynamic color scheme variant to derive from the wallpaper.</description>
+    </key>
+
+    <key name="transparent-panel" type="b">
+      <default>false</default>
+      <summary>Transparent top bar panel</summary>
+      <description>Make GNOME Shell top panel transparent.</description>
+    </key>
+
+    <key name="wallpaper-cycle-enabled" type="b">
+      <default>false</default>
+      <summary>Enable wallpaper cycling</summary>
+      <description>Periodically cycle wallpapers from a specified folder.</description>
+    </key>
+
+    <key name="wallpaper-cycle-directory" type="s">
+      <default>''</default>
+      <summary>Wallpaper directory</summary>
+      <description>Directory containing wallpaper images to cycle.</description>
+    </key>
+
+    <key name="wallpaper-cycle-interval" type="i">
+      <default>30</default>
+      <summary>Wallpaper cycle interval</summary>
+      <description>Interval in minutes between wallpaper changes.</description>
+    </key>
+
+    <key name="wallpaper-cycle-shuffle" type="b">
+      <default>true</default>
+      <summary>Shuffle wallpapers</summary>
+      <description>Shuffle wallpapers without repetition until all have been displayed.</description>
+    </key>
+
+    <key name="window-button-style" enum="org.gnome.shell.extensions.meowterialyou.WindowButtonStyle">
+      <default>'native'</default>
+      <summary>Window button style</summary>
+      <description>Use native or macOS-style circular window control buttons.</description>
+    </key>
+
+    <key name="window-button-position" enum="org.gnome.shell.extensions.meowterialyou.WindowButtonPosition">
+      <default>'right'</default>
+      <summary>Window button position</summary>
+      <description>Position window control buttons on the left or right side.</description>
+    </key>
+
+    <key name="themed-icons-enabled" type="b">
+      <default>true</default>
+      <summary>Themed folder icons</summary>
+      <description>Recolor folder icons dynamically using the primary accent color.</description>
+    </key>
+
+    <key name="base-icon-theme" type="s">
+      <default>'Adwaita'</default>
+      <summary>Base icon theme</summary>
+      <description>Base icon theme that the custom dynamic icon theme inherits from.</description>
+    </key>
+
+    <key name="gtk3-enabled" type="b">
+      <default>true</default>
+      <summary>GTK3 theming enabled</summary>
+      <description>Generate and apply GTK3 stylesheet.</description>
+    </key>
+
+    <key name="gtk4-enabled" type="b">
+      <default>true</default>
+      <summary>GTK4 theming enabled</summary>
+      <description>Generate and apply GTK4 stylesheet.</description>
+    </key>
+
+    <key name="shell-theme-enabled" type="b">
+      <default>true</default>
+      <summary>GNOME Shell theming enabled</summary>
+      <description>Generate and apply GNOME Shell stylesheet.</description>
+    </key>
+
+    <key name="paused" type="b">
+      <default>false</default>
+      <summary>Pause auto-theming</summary>
+      <description>Temporarily pause automatic theme updates when wallpaper changes.</description>
+    </key>
+  </schema>
+</schemalist>

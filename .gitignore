@@ -169,3 +169,9 @@ node_modules
 layout_sync.json
 desktop_widgets/configs/**/theme.css
 TODO
+# Node / TypeScript
+node_modules/
+dist/
+*.shell-extension.zip
+schemas/gschemas.compiled
+
