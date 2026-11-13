@@ -1,6 +1,0 @@
-{
-    "name": "MeowterialYou",
-    "usercss": "user.css",
-    "schemes": "color.ini",
-    "include": ["theme.js"]
-}
