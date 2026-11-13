@@ -2,9 +2,15 @@ UUID = meowterialyou@supsugam.github.com
 EXT_DIR = $(HOME)/.local/share/gnome-shell/extensions/$(UUID)
 DIST_DIR = $(shell pwd)/dist
 
-.PHONY: all build typecheck schemas install uninstall pack clean
+.PHONY: all build typecheck schemas install uninstall pack clean nested prefs
 
 all: build
+
+nested:
+	@./run-nested.sh
+
+prefs:
+	@./open-prefs.sh
 
 build: schemas
 	@PATH="/home/ctrlcat/.local/share/pnpm:/home/ctrlcat/.nvm/versions/node/v25.2.1/bin:$(PATH)" pnpm build
