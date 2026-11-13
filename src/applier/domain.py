@@ -189,7 +189,7 @@ class ApplierDomain:
         for path in system_paths:
             if os.path.exists(path):
                 result = subprocess.run(
-                    ["sudo", "rm", "-rf", path],
+                    ["sudo", "-n", "rm", "-rf", path],
                     capture_output=True,
                     text=True,
                 )
@@ -509,7 +509,7 @@ class ApplierDomain:
             if self._generation_options.system_install:
                 print(f"Installing system-wide theme to {system_theme} (requires sudo)")
                 result = subprocess.run(
-                    ["sudo", "cp", "-r", source_asset, system_theme],
+                    ["sudo", "-n", "cp", "-r", source_asset, system_theme],
                     capture_output=True,
                     text=True,
                 )
@@ -522,7 +522,7 @@ class ApplierDomain:
                 if os.path.exists(system_theme):
                     print(f"Deleting old system-wide theme (uses sudo)")
                     result = subprocess.run(
-                        ["sudo", "rm", "-rf", system_theme],
+                        ["sudo", "-n", "rm", "-rf", system_theme],
                         capture_output=True,
                         text=True,
                     )
@@ -641,12 +641,7 @@ class ApplierDomain:
             # Spotify theming
             tasks.append(executor.submit(self._apply_spotify_theme))
 
-            # This task is quick but safe to run in parallel
-            primary_color = scheme["primary"]
-            folder_color = self._closest_folder_color_domain.get_closest_color(
-                primary_color
-            )
-            tasks.append(executor.submit(self._set_papirus_folder_color, folder_color))
+            # Removed papirus-folders fallback as we now generate Meowaita icons
 
             # VSCode CSS injection and Extension Sync
             if self._has_config_key("VSCODE") or self._has_config_key("VSCODE-THEME"):
@@ -656,8 +651,21 @@ class ApplierDomain:
             # Wait for all parallel tasks to finish before reloading
             concurrent.futures.wait(tasks)
 
+        # Sync gnome-shell.css from ~/.themes/ into ~/.local/share/themes/.
+        #
+        # GNOME Shell's user-theme extension searches ~/.local/share/themes/ before
+        # ~/.themes/ on modern GNOME (45+). The CSS templates write to ~/.themes/,
+        # but install_files() seeds ~/.local/share/themes/ from the static assets
+        # directory, leaving a stale gnome-shell.css there that shadows every
+        # freshly generated file. Without this sync the quick-settings panel and
+        # the rest of the Shell UI stay stuck on old wallpaper colors even though
+        # the toggle fires correctly.
+        self._sync_gnome_shell_css()
+
         self._reload_apps()
-        on_theme_applied()
+        
+        expected_icon = "Meowaita" if self._generation_options.themed_folder_icons_enabled else None
+        on_theme_applied(expected_icon)
 
     def _generate_material_you_icons(self, scheme: MaterialColors) -> None:
         """Generate custom Material You icon theme from the color scheme."""
@@ -684,13 +692,7 @@ class ApplierDomain:
             print(f"Generated Material You icon theme at: {theme_path}")
         except Exception as e:
             print(f"Warning: Failed to generate icon theme: {e}")
-            print("Falling back to Papirus...")
-
-    def _set_papirus_folder_color(self, folder_color: str) -> None:
-        """Set Papirus folder color as fallback."""
-        print(f"Setting Papirus folder accent: {folder_color}")
-        os.system("export PWD=$HOME")
-        os.system(f"papirus-folders -C {folder_color} >/dev/null 2>&1 || true")
+            print("Falling back to Adwaita...")
 
     def _apply_spotify_theme(self) -> None:
         """Apply Material You theme to Spotify via Spicetify."""
@@ -910,6 +912,41 @@ class ApplierDomain:
                 f"Failed to set DTP title color (extension may not be installed): {e}"
             )
 
+    def _sync_gnome_shell_css(self) -> None:
+        """Sync generated gnome-shell.css into ~/.local/share/themes/.
+
+        GNOME Shell's user-theme extension searches ~/.local/share/themes/ before
+        ~/.themes/ on modern GNOME (45+). Config.generate() writes the freshly
+        colored gnome-shell.css to ~/.themes/<name>/gnome-shell/, but install_files()
+        seeds ~/.local/share/themes/<name>/ from the static assets directory which may
+        contain a stale gnome-shell.css that shadows the generated one. This method
+        copies the up-to-date file (including any appended addon CSS) into the
+        ~/.local/share/themes/ path so GNOME Shell always loads the right version.
+        """
+        import shutil
+
+        home = os.path.expanduser("~")
+
+        for variant in ("dark", "light"):
+            theme_name = f"MeowterialYou-{variant}"
+            source = os.path.join(
+                home, ".themes", theme_name, "gnome-shell", "gnome-shell.css"
+            )
+            dest_dir = os.path.join(
+                home, ".local", "share", "themes", theme_name, "gnome-shell"
+            )
+            dest = os.path.join(dest_dir, "gnome-shell.css")
+
+            if not os.path.exists(source):
+                continue
+
+            try:
+                os.makedirs(dest_dir, exist_ok=True)
+                shutil.copy2(source, dest)
+                log.info(f"Synced gnome-shell.css to {dest}")
+            except OSError as error:
+                log.warning(f"Failed to sync gnome-shell.css to {dest}: {error}")
+
     def _sync_vscode_extensions(self) -> None:
         """Sync the generated VSCode extension to other editor forks."""
         import shutil
@@ -946,11 +983,9 @@ class ApplierDomain:
         editors = [
             {"name": "VSCode", "cmd": "code", "install_arg": "--install-extension"},
             {"name": "Cursor", "cmd": "cursor", "install_arg": "--install-extension"},
-            {
-                "name": "Antigravity",
-                "cmd": "antigravity",
-                "install_arg": "--install-extension",
-            },
+            # NOTE: `antigravity` no longer refers to the IDE fork — it now resolves
+            # to the Antigravity AI app. Extension sync for Antigravity is handled
+            # separately via _sync_vscode_extensions (direct file copy).
         ]
 
         extension_id = "PKief.material-icon-theme"
@@ -1295,7 +1330,6 @@ class ApplierDomain:
         from src.util import Theme, Scheme
 
         theme_name = f"MeowterialYou-{variant}"
-        system_theme = f"/usr/share/themes/{theme_name}"
 
         template_path = (
             Path(self._generation_options.parent_dir)
@@ -1349,65 +1383,78 @@ class ApplierDomain:
             tmp.write(output_data)
             tmp_path = tmp.name
 
-        # Create gtk-4.0 directory and copy CSS
-        # First ensure the base theme directory exists with assets
-        source_asset = os.path.abspath(f"assets/{theme_name}")
-        if os.path.exists(source_asset):
-            subprocess.run(
-                ["sudo", "cp", "-r", source_asset, "/usr/share/themes/"],
-                capture_output=True,
-            )
+        # Determine target directory based on system_install flag
+        if self._generation_options.system_install:
+            theme_dir = f"/usr/share/themes/{theme_name}"
+            use_sudo = True
+        else:
+            theme_dir = os.path.expanduser(f"~/.local/share/themes/{theme_name}")
+            use_sudo = False
 
-        # Clean and recreate gtk-4.0 directory
-        check_dir = subprocess.run(
-            ["test", "-d", f"{system_theme}/gtk-4.0"], capture_output=True
-        )
-        if check_dir.returncode == 0:
-            subprocess.run(
-                ["sudo", "rm", "-rf", f"{system_theme}/gtk-4.0"],
-                capture_output=True,
-            )
+        import shutil
 
-        result = subprocess.run(
-            ["sudo", "mkdir", "-p", f"{system_theme}/gtk-4.0"],
-            capture_output=True,
-            text=True,
-        )
-        if result.returncode != 0:
-            print(f"Failed to create gtk-4.0 directory: {result.stderr}")
-            os.unlink(tmp_path)
-            return
-
-        # Copy CSS as both gtk.css and gtk-dark.css
-        for css_name in ["gtk.css", "gtk-dark.css"]:
-            result = subprocess.run(
-                ["sudo", "cp", tmp_path, f"{system_theme}/gtk-4.0/{css_name}"],
-                capture_output=True,
-                text=True,
-            )
-            if result.returncode == 0:
+        if use_sudo:
+            # System-wide install with sudo -n (non-interactive)
+            source_asset = os.path.abspath(f"assets/{theme_name}")
+            if os.path.exists(source_asset):
                 subprocess.run(
-                    ["sudo", "chmod", "644", f"{system_theme}/gtk-4.0/{css_name}"],
+                    ["sudo", "-n", "cp", "-r", source_asset, "/usr/share/themes/"],
                     capture_output=True,
                 )
-            else:
-                print(f"Failed to copy {css_name}: {result.stderr}")
-
-        print(f"Successfully installed system GTK4 CSS to {system_theme}/gtk-4.0/")
-
-        # Copy assets for title button SVGs
-        assets_src = (
-            Path(self._generation_options.parent_dir)
-            / f"assets/{theme_name}/gtk-3.0/assets"
-        )
-        if assets_src.exists():
+            subprocess.run(
+                ["sudo", "-n", "rm", "-rf", f"{theme_dir}/gtk-4.0"],
+                capture_output=True,
+            )
             result = subprocess.run(
-                ["sudo", "cp", "-r", str(assets_src), f"{system_theme}/gtk-4.0/"],
+                ["sudo", "-n", "mkdir", "-p", f"{theme_dir}/gtk-4.0"],
                 capture_output=True,
                 text=True,
             )
-            if result.returncode == 0:
-                print(f"Copied assets to {system_theme}/gtk-4.0/assets/")
+            if result.returncode != 0:
+                print(f"Failed to create gtk-4.0 directory: {result.stderr}")
+                os.unlink(tmp_path)
+                return
+            for css_name in ["gtk.css", "gtk-dark.css"]:
+                result = subprocess.run(
+                    ["sudo", "-n", "cp", tmp_path, f"{theme_dir}/gtk-4.0/{css_name}"],
+                    capture_output=True,
+                    text=True,
+                )
+                if result.returncode == 0:
+                    subprocess.run(
+                        ["sudo", "-n", "chmod", "644", f"{theme_dir}/gtk-4.0/{css_name}"],
+                        capture_output=True,
+                    )
+                else:
+                    print(f"Failed to copy {css_name}: {result.stderr}")
+            assets_src = (
+                Path(self._generation_options.parent_dir)
+                / f"assets/{theme_name}/gtk-3.0/assets"
+            )
+            if assets_src.exists():
+                subprocess.run(
+                    ["sudo", "-n", "cp", "-r", str(assets_src), f"{theme_dir}/gtk-4.0/"],
+                    capture_output=True,
+                    text=True,
+                )
+        else:
+            # Local install — no sudo needed
+            gtk4_dir = os.path.join(theme_dir, "gtk-4.0")
+            if os.path.exists(gtk4_dir):
+                shutil.rmtree(gtk4_dir)
+            os.makedirs(gtk4_dir, exist_ok=True)
+
+            for css_name in ["gtk.css", "gtk-dark.css"]:
+                shutil.copy2(tmp_path, os.path.join(gtk4_dir, css_name))
+
+            assets_src = (
+                Path(self._generation_options.parent_dir)
+                / f"assets/{theme_name}/gtk-3.0/assets"
+            )
+            if assets_src.exists():
+                shutil.copytree(str(assets_src), os.path.join(gtk4_dir, "assets"), dirs_exist_ok=True)
+
+        print(f"Successfully installed GTK4 CSS to {theme_dir}/gtk-4.0/")
 
         # Cleanup temp file
         os.unlink(tmp_path)

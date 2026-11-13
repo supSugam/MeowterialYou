@@ -194,15 +194,33 @@ def parse_arguments():
     return args
 
 
-def on_theme_applied() -> None:
+def on_theme_applied(icon_theme: str = None) -> None:
     """Execute maintenance tasks after theme is successfully applied."""
     try:
-        # Quit Nautilus to force icon refresh for folder icons
+        # Toggle icon-theme to force apps to refresh icons dynamically
+        if icon_theme:
+            current_theme = icon_theme
+        else:
+            current_theme_proc = subprocess.run(
+                ["gsettings", "get", "org.gnome.desktop.interface", "icon-theme"],
+                capture_output=True,
+                text=True
+            )
+            current_theme = current_theme_proc.stdout.strip().strip("'")
+            
+        if current_theme:
+            subprocess.run(["gsettings", "set", "org.gnome.desktop.interface", "icon-theme", "Adwaita"])
+            import time
+            time.sleep(0.2)
+            subprocess.run(["gsettings", "set", "org.gnome.desktop.interface", "icon-theme", current_theme])
+            
+        # We must restart Nautilus anyway to pick up GTK4 CSS changes (like the sidebar color)
+        # since we aren't using the high-contrast hack to hot-reload GTK4 stylesheets.
         subprocess.run(
             ["nautilus", "-q"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
         )
     except Exception as e:
-        log.warning(f"Failed to refresh Nautilus: {e}")
+        log.warning(f"Failed to refresh icons/Nautilus: {e}")
 
     # Restart DING extension to refresh desktop rubberband selection colors
     # DING caches GTK accent colors and needs a restart to pick up new theme colors
@@ -560,10 +578,10 @@ def reload_apps(lightmode_enabled: bool, scheme: MaterialColors, wallpaper_path:
 
     # Combined command to toggle to Adwaita and back instantly to trigger CSS reload
     # without visible jitter.
-    os.system(
-        f"gsettings set org.gnome.desktop.interface gtk-theme Adwaita && "
-        f"gsettings set org.gnome.desktop.interface gtk-theme MeowterialYou-{postfix}"
-    )
+    import time
+    os.system(f"gsettings set org.gnome.desktop.interface gtk-theme Adwaita")
+    time.sleep(0.5)
+    os.system(f"gsettings set org.gnome.desktop.interface gtk-theme MeowterialYou-{postfix}")
 
     # Symlink assets folder to ~/.config/gtk-4.0/assets
     # This is required because CSS in ~/.config/gtk-4.0/ (like gtk.css) uses relative paths (url("assets/..."))
@@ -593,10 +611,25 @@ def reload_apps(lightmode_enabled: bool, scheme: MaterialColors, wallpaper_path:
         pass
 
     log.info("Restarting Gnome Shell theme")
-    os.system(
-        f"gsettings set org.gnome.shell.extensions.user-theme name 'Default' && "
-        f"gsettings set org.gnome.shell.extensions.user-theme name 'MeowterialYou-{postfix}'"
-    )
+
+    # Bust the GNOME Shell CSS cache before toggling the theme.
+    # GNOME Shell compiles gnome-shell.css into a binary cache under
+    # ~/.cache/gnome-shell/. When the theme name stays the same between
+    # runs, Shell may serve the stale compiled file even though the CSS on
+    # disk has changed — leaving the quick-settings panel and other Shell UI
+    # elements stuck on old wallpaper colors.
+    import shutil as _shutil
+    gnome_shell_cache = Path.home() / ".cache" / "gnome-shell"
+    if gnome_shell_cache.exists():
+        try:
+            _shutil.rmtree(gnome_shell_cache)
+            log.info("Cleared GNOME Shell CSS cache")
+        except Exception as cache_err:
+            log.warning(f"Could not clear GNOME Shell cache: {cache_err}")
+
+    os.system(f"gsettings set org.gnome.shell.extensions.user-theme name 'Default'")
+    time.sleep(0.5)
+    os.system(f"gsettings set org.gnome.shell.extensions.user-theme name 'MeowterialYou-{postfix}'")
 
     # Set Tiling Assistant extension accent color to match theme
     try:
@@ -1053,7 +1086,9 @@ _my_header() {{ echo -e "${{_MY_BOLD}}${{_MY_PRIMARY}}══ $1 ══${{_MY_RES
                 with open(shell_rc, "a") as f:
                     f.write(f"\n# MeowterialYou themed prompt\n{source_line}\n")
                 log.info(f"Added prompt source to {shell_rc}")
-
+                
+    # Reload Ghostty configuration
+    os.system("killall -SIGUSR2 ghostty >/dev/null 2>&1 || true")
 
 def get_file_hash(path: str) -> str | None:
     """Calculates the MD5 hash of a file."""

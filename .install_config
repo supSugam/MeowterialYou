@@ -43,7 +43,7 @@ CHROME_GTK4=true
 UI_IMPROVEMENTS=true
 
 # Desktop widgets (Clock, Weather, Media) - Requires Rust/Cargo
-DESKTOP_WIDGETS=true
+DESKTOP_WIDGETS=false
 
 # Fully transparent top panel (auto-adjusts text contrast)
 TRANSPARENT_PANEL=true
@@ -55,9 +55,9 @@ THEMED_FOLDER_ICONS="true"
 # App Theming
 # ─────────────────────────────────────────────────────────────────────────────
 THEME_GNOME_TERMINAL=true
-THEME_SPOTIFY=true
-THEME_DISCORD=true
-THEME_VSCODE=true
+THEME_SPOTIFY=false
+THEME_DISCORD=false
+THEME_VSCODE=false
 THEME_OBSIDIAN=true
 THEME_VIVALDI=false
 THEME_VICINAE=true

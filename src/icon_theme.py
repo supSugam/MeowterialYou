@@ -3,6 +3,7 @@ Material You Dynamic Icon Theme Generator
 
 This module generates a custom icon theme with folder icons recolored
 to match the Material You color palette derived from the wallpaper.
+Uses Meowaita icon templates as the base for folder icons.
 """
 
 import os
@@ -10,418 +11,230 @@ import re
 import shutil
 import concurrent.futures
 from pathlib import Path
-from typing import Dict, Optional, List, Tuple
+from typing import Dict, List
 
 
 class IconThemeGenerator:
-    """Generates Material You themed icons by recoloring Papirus SVGs."""
+    """Generates Material You themed icons by recoloring Meowaita SVGs."""
 
-    # Sizes to generate icons for
-    ICON_SIZES = ["16x16", "22x22", "24x24", "32x32", "48x48", "64x64"]
+    def __init__(self, base_icon_path: str = None):
+        if base_icon_path is None:
+            base_icon_path = str(Path(__file__).parent.parent / "assets/meowaita")
 
-    # Base Papirus color variants and their hex colors
-    # We use 'blue' as the source template since it's the most common
-    PAPIRUS_BLUE_COLORS = {
-        "back": "#4877b1",    # Darker back of folder
-        "front": "#5294e2",   # Main folder color
-        "paper": "#e4e4e4",   # Inside paper color
-    }
-
-    # Additional color variants found in some icons
-    PAPIRUS_SECONDARY_COLORS = {
-        "highlight": "#ffffff",  # White highlights (keep as-is)
-        "shadow": "opacity:0.2", # Shadow (keep as-is)
-    }
-
-    def __init__(self, base_icon_path: str = "/usr/share/icons/Papirus"):
-        """
-        Initialize the icon theme generator.
-        
-        Args:
-            base_icon_path: Path to the base Papirus icon theme.
-        """
         self.base_icon_path = Path(base_icon_path)
-        self.output_base = Path.home() / ".local/share/icons/MeowterialYou"
+        self.output_base = Path.home() / ".local/share/icons/Meowaita"
 
     def generate(
-        self, 
-        colors: Dict[str, str], 
+        self,
+        colors: Dict[str, str],
         is_dark_mode: bool = False,
-        force_regenerate: bool = False
+        force_regenerate: bool = False,
     ) -> Path:
-        """
-        Generate the Material You icon theme.
-        
-        Args:
-            colors: Dictionary of Material You colors with hex values.
-            is_dark_mode: Whether generating for dark mode.
-            force_regenerate: Force regeneration even if cache exists.
-            
-        Returns:
-            Path to the generated icon theme.
-        """
-        # Calculate the icon colors from the Material You palette
         icon_colors = self._calculate_icon_colors(colors, is_dark_mode)
 
-        # Create output directory structure
         self._create_theme_structure()
-
-        # Generate index.theme
         self._create_index_theme(is_dark_mode)
 
-        # 3. Recolor icons in parallel
         all_tasks = []
         with concurrent.futures.ThreadPoolExecutor(
             max_workers=os.cpu_count() or 4
         ) as executor:
-            # Fixed sizes
-            for size in self.ICON_SIZES:
-                all_tasks.extend(
-                    self._submit_recolor_tasks(executor, size, icon_colors)
-                )
-
-            # Scalable
+            # Only recolor places, apps are just copied/symlinked
             all_tasks.extend(
-                self._submit_recolor_tasks(
-                    executor, "scalable", icon_colors, is_scalable=True
-                )
+                self._submit_recolor_tasks(executor, "places/scalable", icon_colors, recolor=True)
             )
-
-            # Wait for all icons to be processed
+            all_tasks.extend(
+                self._submit_recolor_tasks(executor, "apps/scalable", icon_colors, recolor=False)
+            )
             concurrent.futures.wait(all_tasks)
 
         return self.output_base
 
     def _calculate_icon_colors(
-        self, 
-        colors: Dict[str, str], 
-        is_dark_mode: bool
+        self, colors: Dict[str, str], is_dark_mode: bool
     ) -> Dict[str, str]:
-        """
-        Calculate icon colors from the Material You palette.
+        primary = colors.get("primary", "#38693d")
         
-        Folder icon anatomy:
-        - folder_back: The back tab/fold (should be DARKER than front)
-        - folder_front: Main folder body (primary color)
-        - folder_paper: The paper sheet inside
-        - folder_emblem: Icons inside the folder (download arrow, etc.)
-        
-        Args:
-            colors: Material You color palette.
-            is_dark_mode: Whether in dark mode.
-            
-        Returns:
-            Dictionary with folder colors.
-        """
-        if is_dark_mode:
-            # Dark mode: folder body is light, with darker accents
-            primary = colors.get("primary", "#9dd49e")  # Light green in dark mode
-            primaryContainer = colors.get("primaryContainer", "#1f5027")  # Dark green
+        # Rewaita styling
+        back = self._darken_color(primary, 0.3)
+        front = primary if is_dark_mode else self._darken_color(primary, -0.2)
+        shadow = self._darken_color(primary, 0.5)
 
-            return {
-                # Back tab should be darker than front
-                "folder_back": primaryContainer,
-                # Front body is the main light color
-                "folder_front": primary,
-                # Paper is surface color
-                "folder_paper": colors.get("surfaceContainerHighest", "#333532"),
-                # Emblem on light front needs dark color - use onPrimary
-                "folder_emblem": colors.get("onPrimary", "#023912"),
-            }
-        else:
-            # Light mode: folder body is dark green, with light accents
-            primary = colors.get("primary", "#38693d")  # Dark green in light mode
-            primaryContainer = colors.get("primaryContainer", "#b8f0b8")  # Light green
-
-            folder_back = self._darken_color(primary, 0.25)
-            return {
-                # Back tab is darkened primary
-                "folder_back": folder_back,
-                # Front body is primary
-                "folder_front": primary,
-                # Paper is light surface
-                "folder_paper": colors.get("surfaceContainerHigh", "#e8e9e3"),
-                # Emblem contrasts with dark front, so use light primaryContainer
-                "folder_emblem": primaryContainer,
-            }
+        return {
+            "back": back,
+            "front": front,
+            "shadow": shadow,
+        }
 
     def _darken_color(self, hex_color: str, factor: float = 0.2) -> str:
-        """
-        Darken a hex color by a factor.
-        
-        Args:
-            hex_color: Hex color string (e.g., "#38693d").
-            factor: How much to darken (0.0-1.0).
-            
-        Returns:
-            Darkened hex color.
-        """
+        """Darken a hex color by a factor (0.0-1.0). If factor is negative, lightens."""
         hex_color = hex_color.lstrip("#")
-        r = int(hex_color[0:2], 16)
-        g = int(hex_color[2:4], 16)
-        b = int(hex_color[4:6], 16)
-
-        r = int(r * (1 - factor))
-        g = int(g * (1 - factor))
-        b = int(b * (1 - factor))
-
+        r, g, b = int(hex_color[0:2], 16), int(hex_color[2:4], 16), int(hex_color[4:6], 16)
+        
+        if factor >= 0:
+            r = int(r * (1 - factor))
+            g = int(g * (1 - factor))
+            b = int(b * (1 - factor))
+        else:
+            factor = -factor
+            r = int(r + (255 - r) * factor)
+            g = int(g + (255 - g) * factor)
+            b = int(b + (255 - b) * factor)
+            
         return f"#{r:02x}{g:02x}{b:02x}"
 
     def _create_theme_structure(self) -> None:
-        """Create the icon theme directory structure."""
-        # Remove old theme if exists
         if self.output_base.exists():
             shutil.rmtree(self.output_base)
-
         self.output_base.mkdir(parents=True, exist_ok=True)
-
-        # Create size directories
-        for size in self.ICON_SIZES + ["scalable"]:
-            places_dir = self.output_base / size / "places"
-            places_dir.mkdir(parents=True, exist_ok=True)
+        for category in ["places", "apps"]:
+            (self.output_base / category / "scalable").mkdir(parents=True, exist_ok=True)
 
     def _create_index_theme(self, is_dark_mode: bool) -> None:
-        """
-        Create the index.theme file.
-        
-        Args:
-            is_dark_mode: Whether this is a dark mode theme.
-        """
-        parent_theme = "Papirus-Dark" if is_dark_mode else "Papirus"
-
-        # Build directories list
-        directories = []
-        for size in self.ICON_SIZES:
-            directories.append(f"{size}/places")
-        directories.append("scalable/places")
-
-        # Build size entries
-        size_entries = []
-        for size in self.ICON_SIZES:
-            pixels = size.split("x")[0]
-            size_entries.append(f"""
-[{size}/places]
-Context=Places
-Size={pixels}
-Type=Fixed""")
-
-        size_entries.append("""
-[scalable/places]
-Context=Places
-Size=64
-MinSize=16
-MaxSize=512
-Type=Scalable""")
-
-        index_content = f"""[Icon Theme]
-Name=MeowterialYou
+        index_content = """[Icon Theme]
+Name=Meowaita
 Comment=Material You dynamic icon theme
-Inherits={parent_theme}
+Inherits=Adwaita
 Example=folder
 
-Directories={",".join(directories)}
-{"".join(size_entries)}
-"""
+Directories=apps/scalable,places/scalable
 
+[apps/scalable]
+Size=96
+Context=Applications
+MinSize=16
+MaxSize=128
+Type=Scalable
+
+[places/scalable]
+Size=96
+Context=Places
+MinSize=16
+MaxSize=128
+Type=Scalable
+"""
         index_file = self.output_base / "index.theme"
         index_file.write_text(index_content)
 
     def _submit_recolor_tasks(
         self,
         executor: concurrent.futures.ThreadPoolExecutor,
-        size: str,
+        category_path: str,
         colors: Dict[str, str],
-        is_scalable: bool = False,
+        recolor: bool = True,
     ) -> List[concurrent.futures.Future]:
-        """Submit recoloring tasks for all icons in a given size directory."""
         tasks = []
-        source_dir = self.base_icon_path / size / "places"
+        source_dir = self.base_icon_path / category_path
         if not source_dir.exists():
             return []
 
-        output_dir = self.output_base / size / "places"
+        output_dir = self.output_base / category_path
 
-        # 1. Process folder-blue-* icons
-        for svg_file in source_dir.glob("folder-blue*.svg"):
+        for svg_file in source_dir.glob("*.svg"):
+            target_path = output_dir / svg_file.name
+
             if svg_file.is_symlink():
-                continue
-
-            target_name = svg_file.name
-            if target_name == "folder-blue.svg":
-                target_name = "folder.svg"
+                link_target = os.readlink(svg_file)
+                def create_link(src=link_target, dst=target_path):
+                    if dst.exists() or dst.is_symlink():
+                        dst.unlink()
+                    dst.symlink_to(src)
+                tasks.append(executor.submit(create_link))
             else:
-                target_name = target_name.replace("folder-blue-", "folder-")
-
-            tasks.append(
-                executor.submit(
-                    self._process_svg_task, svg_file, output_dir / target_name, colors
+                tasks.append(
+                    executor.submit(
+                        self._process_svg_task, svg_file, target_path, colors, recolor
+                    )
                 )
-            )
-
-        # 2. Process user-blue-* icons
-        for svg_file in source_dir.glob("user-blue*.svg"):
-            if svg_file.is_symlink():
-                continue
-
-            target_name = svg_file.name
-            if target_name == "user-blue.svg":
-                target_name = "user-desktop.svg"
-            else:
-                target_name = target_name.replace("user-blue-", "user-")
-
-            tasks.append(
-                executor.submit(
-                    self._process_svg_task, svg_file, output_dir / target_name, colors
-                )
-            )
-
-            # Special case for desktop symlink
-            if target_name == "user-desktop.svg":
-
-                def create_symlink():
-                    sym = output_dir / "folder-desktop.svg"
-                    if sym.exists():
-                        sym.unlink()
-                    sym.symlink_to("user-desktop.svg")
-
-                tasks.append(executor.submit(create_symlink))
 
         return tasks
 
     def _process_svg_task(
-        self, source: Path, destination: Path, colors: Dict[str, str]
+        self, source: Path, destination: Path, colors: Dict[str, str], recolor: bool
     ):
-        """Individual task to recolor and write a single SVG file."""
         try:
             svg_content = source.read_text()
-            recolored = self._recolor_svg(svg_content, colors)
-            destination.write_text(recolored)
+            if recolor:
+                svg_content = self._recolor_svg(svg_content, colors)
+            destination.write_text(svg_content)
         except Exception as e:
-            print(f"Warning: Failed to recolor {source}: {e}")
+            print(f"Warning: Failed to process {source}: {e}")
 
     def _recolor_svg(self, svg_content: str, colors: Dict[str, str]) -> str:
         """
-        Recolor an SVG by replacing Papirus blue colors with Material You colors.
-        
-        Args:
-            svg_content: The SVG content as string.
-            colors: Dictionary with folder_back, folder_front, folder_paper, folder_emblem.
-            
-        Returns:
-            Recolored SVG content.
+        Recolor a Meowaita folder SVG by matching the specific paths.
         """
-        # Replace the main folder colors (case-insensitive)
-        recolored = svg_content
-
-        # Back color (darker shade)
-        recolored = re.sub(
-            r'#4877b1',
-            colors["folder_back"],
-            recolored,
-            flags=re.IGNORECASE
-        )
-
-        # Front color (main color)
-        recolored = re.sub(
-            r'#5294e2',
-            colors["folder_front"],
-            recolored,
-            flags=re.IGNORECASE
-        )
-
-        # Paper/inside color
-        recolored = re.sub(
-            r'#e4e4e4',
-            colors["folder_paper"],
-            recolored,
-            flags=re.IGNORECASE
-        )
-
-        # Emblem/icon color (dark blue used for icons inside folders)
-        recolored = re.sub(
-            r'#1d344f',
-            colors.get("folder_emblem", colors["folder_back"]),
-            recolored,
-            flags=re.IGNORECASE
-        )
-
-        return recolored
+        import xml.etree.ElementTree as ET
+        ET.register_namespace("", "http://www.w3.org/2000/svg")
+        ET.register_namespace("sodipodi", "http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd")
+        ET.register_namespace("inkscape", "http://www.inkscape.org/namespaces/inkscape")
+        
+        try:
+            root = ET.fromstring(svg_content)
+        except Exception:
+            return svg_content
+            
+        for path in root.findall(".//{http://www.w3.org/2000/svg}path"):
+            d = path.attrib.get("d", "").strip()
+            new_color = None
+            
+            # Back flap
+            if d.startswith("M 21.976562 12") or d.startswith("m 21.976562 12") or d.startswith("m 21.976562,12") or d.startswith("M 21.976562,12"):
+                new_color = colors["back"]
+            # Shadow flap
+            elif d.startswith("M 65.976562 36") or d.startswith("m 65.976562 36") or d.startswith("m 65.976562,36") or d.startswith("M 65.976562,36"):
+                new_color = colors["shadow"]
+            # Front flap
+            elif d.startswith("M 65.976562 32") or d.startswith("m 65.976562 32") or d.startswith("m 65.976562,32") or d.startswith("M 65.976562,32"):
+                new_color = colors["front"]
+            # Everything else (emblems, symbols) gets the dark accent color
+            else:
+                new_color = colors["back"]
+                
+            if new_color:
+                if "style" in path.attrib:
+                    path.attrib["style"] = re.sub(r"fill:#[0-9a-fA-F]{3,6}", f"fill:{new_color}", path.attrib["style"])
+                if "fill" in path.attrib and path.attrib["fill"].startswith("#"):
+                    path.attrib["fill"] = new_color
+                    
+        return ET.tostring(root, encoding="unicode")
 
     def apply_theme(self) -> None:
-        """Apply the generated icon theme via gsettings."""
         import subprocess
-
-        # Update icon cache
         try:
-            result = subprocess.run(
+            subprocess.run(
                 ["gtk-update-icon-cache", "-f", "-t", str(self.output_base)],
-                check=False,
-                capture_output=True,
-                text=True
+                check=False, capture_output=True, text=True
             )
-            if result.returncode != 0 and result.stderr:
-                print(f"Icon cache update warning: {result.stderr}")
         except FileNotFoundError:
-            pass  # gtk-update-icon-cache not available
+            pass
 
-        # Set the icon theme
         try:
-            result = subprocess.run(
-                ["gsettings", "set", "org.gnome.desktop.interface", "icon-theme", "MeowterialYou"],
-                check=True,
-                capture_output=True,
-                text=True
+            subprocess.run(
+                ["gsettings", "set", "org.gnome.desktop.interface", "icon-theme", "Meowaita"],
+                check=True, capture_output=True, text=True
             )
-            print("Applied MeowterialYou icon theme via gsettings")
+            print("Applied Meowaita icon theme via gsettings")
         except subprocess.CalledProcessError as e:
             print(f"Warning: Failed to set icon theme via gsettings: {e.stderr}")
         except FileNotFoundError:
-            print("Warning: gsettings not found, cannot apply icon theme automatically")
+            pass
 
 
 def generate_material_you_icons(
     colors: Dict[str, str],
     is_dark_mode: bool = False,
-    apply_theme: bool = True
+    apply_theme: bool = True,
 ) -> Path:
-    """
-    Convenience function to generate and optionally apply Material You icons.
-    
-    Args:
-        colors: Material You color palette dictionary.
-        is_dark_mode: Whether generating for dark mode.
-        apply_theme: Whether to also set the icon theme after generation.
-        
-    Returns:
-        Path to the generated icon theme.
-    """
     generator = IconThemeGenerator()
     theme_path = generator.generate(colors, is_dark_mode)
-    
     if apply_theme:
         generator.apply_theme()
-    
     return theme_path
 
-
 if __name__ == "__main__":
-    # Test with sample colors
-    sample_light_colors = {
-        "primary": "#38693d",
-        "primaryContainer": "#b8f0b8",
-        "surfaceContainerHigh": "#e8e9e3",
-        "surfaceContainerHighest": "#e2e3dd",
-    }
-    
     sample_dark_colors = {
-        "primary": "#9dd49e",
-        "primaryContainer": "#215227",
-        "surfaceContainerHigh": "#373a36",
-        "surfaceContainerHighest": "#424540",
+        "primary": "#bb86fc",
     }
-    
-    print("Generating light mode icons...")
-    path = generate_material_you_icons(sample_light_colors, is_dark_mode=False, apply_theme=False)
+    path = generate_material_you_icons(sample_dark_colors, is_dark_mode=True, apply_theme=False)
     print(f"Generated icon theme at: {path}")
-    
-    print("\nTest complete! Run with apply_theme=True to actually set the icon theme.")
