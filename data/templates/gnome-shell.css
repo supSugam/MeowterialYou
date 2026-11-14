@@ -86,7 +86,50 @@ stage {
   font-size: 12px;
 }
 
-/* System Tray styling moved to addons/ui_improvements/ */
+/* Scoped panel buttons: Flatten App Indicators and Global Menu buttons */
+#panelLeft .panel-button,
+#panelRight .panel-button {
+  background-color: transparent;
+  box-shadow: none;
+}
+
+#panelLeft .panel-button:hover,
+#panelLeft .panel-button:active,
+#panelLeft .panel-button:focus,
+#panelLeft .panel-button:checked,
+#panelRight .panel-button:hover,
+#panelRight .panel-button:active,
+#panelRight .panel-button:focus,
+#panelRight .panel-button:checked {
+  box-shadow: inset 0 0 0 100px rgba(0, 0, 0, 0.08);
+}
+
+/* Restore pill styling for system islands: Activities and Quick Settings */
+#panel #panelActivities.panel-button {
+  background-color: @{surfaceVariant.hex};
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.03);
+}
+
+#panel #panelActivities.panel-button:hover,
+#panel #panelActivities.panel-button:active,
+#panel #panelActivities.panel-button:overview,
+#panel #panelActivities.panel-button:focus,
+#panel #panelActivities.panel-button:checked {
+  box-shadow: inset 0 0 0 100px rgba(0, 0, 0, 0.1), inset 0 0 0 1px rgba(0, 0, 0, 0.05);
+}
+
+/* Retain pill background for Quick Settings (last child in #panelRight) */
+#panelRight > *:last-child .panel-button {
+  background-color: @{surfaceVariant.hex};
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.03);
+}
+
+#panelRight > *:last-child .panel-button:hover,
+#panelRight > *:last-child .panel-button:active,
+#panelRight > *:last-child .panel-button:focus,
+#panelRight > *:last-child .panel-button:checked {
+  box-shadow: inset 0 0 0 100px rgba(0, 0, 0, 0.1), inset 0 0 0 1px rgba(0, 0, 0, 0.05);
+}
 
 /* date-menu-mod */
 .clock-display {

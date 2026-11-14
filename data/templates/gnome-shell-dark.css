@@ -91,7 +91,50 @@ stage {
   font-size: 12px;
 }
 
-/* System Tray styling moved to addons/ui_improvements/ */
+/* Scoped panel buttons: Flatten App Indicators and Global Menu buttons */
+#panelLeft .panel-button,
+#panelRight .panel-button {
+  background-color: transparent;
+  box-shadow: none;
+}
+
+#panelLeft .panel-button:hover,
+#panelLeft .panel-button:active,
+#panelLeft .panel-button:focus,
+#panelLeft .panel-button:checked,
+#panelRight .panel-button:hover,
+#panelRight .panel-button:active,
+#panelRight .panel-button:focus,
+#panelRight .panel-button:checked {
+  box-shadow: inset 0 0 0 100px rgba(255, 255, 255, 0.08);
+}
+
+/* Retain pill background for Activities button */
+#panel #panelActivities.panel-button {
+  background-color: @{surfaceVariant.hex};
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.05);
+}
+
+#panel #panelActivities.panel-button:hover,
+#panel #panelActivities.panel-button:active,
+#panel #panelActivities.panel-button:overview,
+#panel #panelActivities.panel-button:focus,
+#panel #panelActivities.panel-button:checked {
+  box-shadow: inset 0 0 0 100px rgba(255, 255, 255, 0.08), inset 0 0 0 1px rgba(255, 255, 255, 0.05);
+}
+
+/* Retain pill background for Quick Settings (last child in #panelRight) */
+#panelRight > *:last-child .panel-button {
+  background-color: @{surfaceVariant.hex};
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.05);
+}
+
+#panelRight > *:last-child .panel-button:hover,
+#panelRight > *:last-child .panel-button:active,
+#panelRight > *:last-child .panel-button:focus,
+#panelRight > *:last-child .panel-button:checked {
+  box-shadow: inset 0 0 0 100px rgba(255, 255, 255, 0.08), inset 0 0 0 1px rgba(255, 255, 255, 0.05);
+}
 
 /* date-menu-mod */
 .clock-display{
@@ -1747,15 +1790,6 @@ StEntry:focus {
 .usage-level StIcon{ width: 1.29em; }
 
 
-/* panel */
-/* Logic: 
-   1. Go to the Right Panel Box (#panel .panel-right)
-   2. Select all children (wrappers) EXCEPT the last one (:not(:last-child))
-   3. Inside those selected wrappers, target the .panel-button
-*/
-
-/* Targets the container for app indicators only */
-/* Target the St_Bin wrappers that are NOT the last one in the right panel */
 
 .quick-toggle-menu .header .icon { 
 	color: @{onPrimary.hex};
