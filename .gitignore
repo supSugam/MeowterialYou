@@ -169,6 +169,12 @@ node_modules
 layout_sync.json
 desktop_widgets/configs/**/theme.css
 TODO
+# Root files exception
+!metadata.json
+!package.json
+!stylesheet.css
+!tsconfig.json
+
 # Node / TypeScript
 node_modules/
 dist/

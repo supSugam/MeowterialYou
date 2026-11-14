@@ -75,6 +75,9 @@ export default class MeowterialYouExtension extends Extension {
   private _setupIndicator(): void {
     this._indicator = new MeowterialIndicator();
     this._indicator.initialize(this._settings, {
+      onReapplyTheme: () => {
+        void this._triggerThemeUpdate(true);
+      },
       onCycleNext: () => this._cycler.cycleToNext(),
       onOpenPreferences: () => this.openPreferences(),
     });
@@ -88,7 +91,7 @@ export default class MeowterialYouExtension extends Extension {
       this._cycler.updateConfiguration(
         this._settings.get_string('wallpaper-cycle-directory'),
         this._settings.get_int('wallpaper-cycle-interval'),
-        this._settings.get_boolean('wallpaper-cycle-shuffle'),
+        this._settings.get_string('wallpaper-cycle-order') as import('./types/theme.js').WallpaperCycleOrder,
         this._settings.get_boolean('wallpaper-cycle-enabled')
       );
     };
@@ -96,7 +99,7 @@ export default class MeowterialYouExtension extends Extension {
     const keys = [
       'wallpaper-cycle-directory',
       'wallpaper-cycle-interval',
-      'wallpaper-cycle-shuffle',
+      'wallpaper-cycle-order',
       'wallpaper-cycle-enabled',
     ];
     for (const key of keys) {
@@ -133,8 +136,8 @@ export default class MeowterialYouExtension extends Extension {
     }
   }
 
-  private async _triggerThemeUpdate(): Promise<void> {
-    await this._orchestrator.applyTheme();
+  private async _triggerThemeUpdate(force: boolean = false): Promise<void> {
+    await this._orchestrator.applyTheme(force);
     if (this._indicator) {
       this._indicator.updateDisplay(this._orchestrator.isDarkMode());
     }

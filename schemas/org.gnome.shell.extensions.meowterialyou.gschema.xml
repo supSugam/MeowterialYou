@@ -28,6 +28,14 @@
     <value value="1" nick="left" />
   </enum>
 
+  <enum id="org.gnome.shell.extensions.meowterialyou.WallpaperCycleOrder">
+    <value value="0" nick="random" />
+    <value value="1" nick="alphabetical-asc" />
+    <value value="2" nick="alphabetical-desc" />
+    <value value="3" nick="date-newest" />
+    <value value="4" nick="date-oldest" />
+  </enum>
+
   <schema id="org.gnome.shell.extensions.meowterialyou" path="/org/gnome/shell/extensions/meowterialyou/">
     <key name="theme-mode" enum="org.gnome.shell.extensions.meowterialyou.ThemeMode">
       <default>'system'</default>
@@ -65,10 +73,10 @@
       <description>Interval in minutes between wallpaper changes.</description>
     </key>
 
-    <key name="wallpaper-cycle-shuffle" type="b">
-      <default>true</default>
-      <summary>Shuffle wallpapers</summary>
-      <description>Shuffle wallpapers without repetition until all have been displayed.</description>
+    <key name="wallpaper-cycle-order" enum="org.gnome.shell.extensions.meowterialyou.WallpaperCycleOrder">
+      <default>'random'</default>
+      <summary>Wallpaper cycle sort order</summary>
+      <description>Sort order for cycling wallpapers: random shuffle, alphabetical, or date modified.</description>
     </key>
 
     <key name="window-button-style" enum="org.gnome.shell.extensions.meowterialyou.WindowButtonStyle">
@@ -90,7 +98,7 @@
     </key>
 
     <key name="base-icon-theme" type="s">
-      <default>'Adwaita'</default>
+      <default>'Meowaita'</default>
       <summary>Base icon theme</summary>
       <description>Base icon theme that the custom dynamic icon theme inherits from.</description>
     </key>

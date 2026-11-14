@@ -48,7 +48,7 @@ export function writeGeneratedThemes(options: ThemeWriteOptions): void {
     }
   }
 
-  // 2. GTK4 Theme
+  // 2. GTK4 Theme (writes both gtk.css and gtk-dark.css for Chrome Wayland theming)
   if (options.isGtk4Enabled) {
     const gtk4TemplateName = options.isDark ? 'gtk4-dark.css' : 'gtk4.css';
     const gtk4TemplatePath = GLib.build_filenamev([dataDir, 'templates', gtk4TemplateName]);
@@ -60,14 +60,19 @@ export function writeGeneratedThemes(options: ThemeWriteOptions): void {
       gtk4Css += '\n' + readTextFile(macPath);
     }
 
-    writeTextFile(GLib.build_filenamev([home, '.config', 'gtk-4.0', 'gtk.css']), gtk4Css);
-    writeTextFile(
+    const gtk4Targets = [
+      GLib.build_filenamev([home, '.config', 'gtk-4.0', 'gtk.css']),
+      GLib.build_filenamev([home, '.config', 'gtk-4.0', 'gtk-dark.css']),
       GLib.build_filenamev([home, '.local', 'share', 'themes', themeName, 'gtk-4.0', 'gtk.css']),
-      gtk4Css
-    );
+      GLib.build_filenamev([home, '.local', 'share', 'themes', themeName, 'gtk-4.0', 'gtk-dark.css']),
+    ];
+
+    for (const target of gtk4Targets) {
+      writeTextFile(target, gtk4Css);
+    }
   }
 
-  // 3. GTK3 Theme
+  // 3. GTK3 Theme (writes both gtk.css and gtk-dark.css)
   if (options.isGtk3Enabled) {
     const gtk3TemplateName = options.isDark ? 'gtk3-dark.css' : 'gtk3.css';
     const gtk3TemplatePath = GLib.build_filenamev([dataDir, 'templates', gtk3TemplateName]);
@@ -79,11 +84,15 @@ export function writeGeneratedThemes(options: ThemeWriteOptions): void {
       gtk3Css += '\n' + readTextFile(macPath);
     }
 
-    writeTextFile(GLib.build_filenamev([home, '.config', 'gtk-3.0', 'gtk.css']), gtk3Css);
-    writeTextFile(GLib.build_filenamev([home, '.config', 'gtk-3.0', 'gtk-dark.css']), gtk3Css);
-    writeTextFile(
+    const gtk3Targets = [
+      GLib.build_filenamev([home, '.config', 'gtk-3.0', 'gtk.css']),
+      GLib.build_filenamev([home, '.config', 'gtk-3.0', 'gtk-dark.css']),
       GLib.build_filenamev([home, '.local', 'share', 'themes', themeName, 'gtk-3.0', 'gtk.css']),
-      gtk3Css
-    );
+      GLib.build_filenamev([home, '.local', 'share', 'themes', themeName, 'gtk-3.0', 'gtk-dark.css']),
+    ];
+
+    for (const target of gtk3Targets) {
+      writeTextFile(target, gtk3Css);
+    }
   }
 }

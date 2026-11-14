@@ -13,6 +13,7 @@ echo "=========================================================="
 # 1. Build TypeScript extension
 echo "🔨 Building latest TypeScript extension..."
 export PATH="/home/ctrlcat/.local/share/pnpm:/home/ctrlcat/.nvm/versions/node/v25.2.1/bin:$PATH"
+export GSETTINGS_SCHEMA_DIR="$REPO_DIR/dist/schemas:$REPO_DIR/schemas:$GSETTINGS_SCHEMA_DIR"
 cd "$REPO_DIR"
 pnpm build
 

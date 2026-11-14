@@ -9,6 +9,7 @@ import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
 import type Gio from 'gi://Gio';
 
 export interface IndicatorCallbacks {
+  onReapplyTheme(): void;
   onCycleNext(): void;
   onOpenPreferences(): void;
 }
@@ -17,13 +18,11 @@ export const MeowterialIndicator = GObject.registerClass(
   class MeowterialIndicator extends PanelMenu.Button {
     private _settings!: Gio.Settings;
     private _callbacks!: IndicatorCallbacks;
-    private _statusLabel!: St.Label;
     private _pauseSwitch!: PopupMenu.PopupSwitchMenuItem;
-    private _currentMode: string = 'system';
-    private _isDark: boolean = false;
 
     _init() {
       super._init(0.0, 'MeowterialYou Indicator', false);
+      this.add_style_class_name('meowterialyou-indicator-button');
 
       const icon = new St.Icon({
         icon_name: 'applications-graphics-symbolic',
@@ -38,21 +37,11 @@ export const MeowterialIndicator = GObject.registerClass(
       this._buildMenu();
     }
 
-    updateDisplay(isDark: boolean): void {
-      if (!this._statusLabel || !this._pauseSwitch) {
+    updateDisplay(_isDark: boolean): void {
+      if (!this._pauseSwitch) {
         return;
       }
-
-      this._isDark = isDark;
-      this._currentMode = this._settings.get_string('theme-mode');
       const isPaused = this._settings.get_boolean('paused');
-      const modeText =
-        this._currentMode === 'system'
-          ? `System (${this._isDark ? 'Dark' : 'Light'})`
-          : this._currentMode.toUpperCase();
-      const statusText = isPaused ? 'Paused' : 'Active';
-
-      this._statusLabel.set_text(`MeowterialYou • ${statusText} • ${modeText}`);
       this._pauseSwitch.setToggleState(isPaused);
     }
 
@@ -62,23 +51,21 @@ export const MeowterialIndicator = GObject.registerClass(
         return;
       }
 
-      // 1. Status Header
-      const headerItem = new PopupMenu.PopupMenuItem('MeowterialYou • Initializing...', {
-        reactive: false,
-        can_focus: false,
+      // 1. Reapply Theme
+      const reapplyItem = new PopupMenu.PopupMenuItem('Reapply Theme');
+      reapplyItem.connect('activate', () => {
+        this._callbacks.onReapplyTheme();
       });
-      this._statusLabel = headerItem.label;
-      this._statusLabel.add_style_class_name('meowterialyou-status-label');
-      menu.addMenuItem(headerItem);
+      menu.addMenuItem(reapplyItem);
 
-      menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
-
-      // 2. Next Wallpaper Button
+      // 2. Next Wallpaper
       const nextWallpaperItem = new PopupMenu.PopupMenuItem('Next Wallpaper');
       nextWallpaperItem.connect('activate', () => {
         this._callbacks.onCycleNext();
       });
       menu.addMenuItem(nextWallpaperItem);
+
+      menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
 
       // 3. Pause/Resume Auto-Theming
       this._pauseSwitch = new PopupMenu.PopupSwitchMenuItem(
@@ -112,11 +99,11 @@ export const MeowterialIndicator = GObject.registerClass(
       menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
 
       // 5. Open Preferences
-      const prefsItem = new PopupMenu.PopupMenuItem('Extension Settings');
-      prefsItem.connect('activate', () => {
+      const preferencesItem = new PopupMenu.PopupMenuItem('Extension Settings');
+      preferencesItem.connect('activate', () => {
         this._callbacks.onOpenPreferences();
       });
-      menu.addMenuItem(prefsItem);
+      menu.addMenuItem(preferencesItem);
     }
   }
 );

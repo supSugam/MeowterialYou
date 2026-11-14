@@ -18,6 +18,13 @@ export type SchemeVariant =
 export type WindowButtonStyle = 'native' | 'mac';
 export type WindowButtonPosition = 'left' | 'right';
 
+export type WallpaperCycleOrder =
+  | 'random'
+  | 'alphabetical-asc'
+  | 'alphabetical-desc'
+  | 'date-newest'
+  | 'date-oldest';
+
 export interface MaterialSchemeColors {
   primary: string;
   onPrimary: string;
@@ -65,7 +72,7 @@ export interface ExtensionConfig {
   isWallpaperCycleEnabled: boolean;
   wallpaperCycleDirectory: string;
   wallpaperCycleIntervalMinutes: number;
-  isWallpaperCycleShuffleEnabled: boolean;
+  wallpaperCycleOrder: WallpaperCycleOrder;
   windowButtonStyle: WindowButtonStyle;
   windowButtonPosition: WindowButtonPosition;
   isThemedIconsEnabled: boolean;

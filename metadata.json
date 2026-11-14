@@ -1,0 +1,16 @@
+{
+  "uuid": "meowterialyou@supsugam.github.com",
+  "name": "MeowterialYou",
+  "description": "Dynamic Material You theming and wallpaper management for GNOME Shell, GTK3, GTK4, and icons.",
+  "shell-version": [
+    "45",
+    "46",
+    "47",
+    "48",
+    "49",
+    "50"
+  ],
+  "url": "https://github.com/supSugam/MeowterialYou",
+  "version": 1,
+  "settings-schema": "org.gnome.shell.extensions.meowterialyou"
+}

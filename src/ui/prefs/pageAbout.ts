@@ -42,15 +42,24 @@ export function createAboutPage(): Adw.PreferencesPage {
   group.add(githubRow);
 
   const creditsGroup = new Adw.PreferencesGroup({
-    title: 'Credits & Attributions',
+    title: 'Credits and Attributions',
     description: 'Built upon Google Material Color Utilities, Mitsugen, and Adwaita',
   });
   page.add(creditsGroup);
 
   const credits = [
-    { title: 'Google Material Color Utilities', desc: 'HCT color space, Celebi quantizer & scoring algorithm' },
-    { title: 'Mitsugen by Dimitris Milonopoulos', desc: 'Original Linux Material You concept & template foundations' },
-    { title: 'GNOME Shell & Libadwaita', desc: 'Native desktop environment & widget ecosystem' },
+    {
+      title: 'Google Material Color Utilities',
+      desc: 'HCT color space, Celebi quantizer, and scoring algorithm',
+    },
+    {
+      title: 'Mitsugen by Dimitris Milonopoulos',
+      desc: 'Original Linux Material You concept and template foundations',
+    },
+    {
+      title: 'GNOME Shell and Libadwaita',
+      desc: 'Native desktop environment and modern widget ecosystem',
+    },
   ];
 
   for (const credit of credits) {

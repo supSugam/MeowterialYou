@@ -16,23 +16,23 @@ export function createWallpaperPage(
   });
 
   const group = new Adw.PreferencesGroup({
-    title: 'Wallpaper Slideshow',
-    description: 'Periodically rotate wallpapers from a folder and auto-update themes',
+    title: 'Automatic Wallpaper Changer',
+    description: 'Automatically change your desktop wallpaper from a chosen folder on a timer',
   });
   page.add(group);
 
-  // 1. Enable Slideshow Switch
+  // 1. Enable Auto-Changer Switch
   const enableRow = new Adw.SwitchRow({
-    title: 'Enable Slideshow Cycling',
-    subtitle: 'Rotate desktop wallpaper automatically on a schedule',
+    title: 'Enable Automatic Wallpaper Changer',
+    subtitle: 'Rotate through wallpapers in a folder and dynamically reapply colors',
   });
   settings.bind('wallpaper-cycle-enabled', enableRow, 'active', Gio.SettingsBindFlags.DEFAULT);
   group.add(enableRow);
 
   // 2. Wallpaper Directory Row with Folder Chooser
   const dirRow = new Adw.ActionRow({
-    title: 'Wallpaper Directory',
-    subtitle: settings.get_string('wallpaper-cycle-directory') || 'No directory selected',
+    title: 'Wallpaper Folder',
+    subtitle: settings.get_string('wallpaper-cycle-directory') || 'No folder selected',
   });
 
   const browseButton = new Gtk.Button({
@@ -42,7 +42,7 @@ export function createWallpaperPage(
 
   browseButton.connect('clicked', () => {
     const dialog = new Gtk.FileDialog({
-      title: 'Select Wallpaper Directory',
+      title: 'Select Wallpaper Folder',
     });
 
     dialog.select_folder(parentWindow ?? null, null, (_source, result) => {
@@ -64,10 +64,42 @@ export function createWallpaperPage(
   dirRow.add_suffix(browseButton);
   group.add(dirRow);
 
-  // 3. Cycle Interval (minutes)
+  // 3. Wallpaper Cycle Order ComboRow
+  const orderLabels = [
+    'Random Shuffle (Non-repeating)',
+    'Alphabetical (A → Z)',
+    'Alphabetical Reverse (Z → A)',
+    'Newest First (Date Modified)',
+    'Oldest First (Date Modified)',
+  ];
+  const orderValues = [
+    'random',
+    'alphabetical-asc',
+    'alphabetical-desc',
+    'date-newest',
+    'date-oldest',
+  ];
+
+  const orderRow = new Adw.ComboRow({
+    title: 'Cycle Order',
+    subtitle: 'How wallpapers are sequenced from the folder',
+    model: Gtk.StringList.new(orderLabels),
+  });
+
+  const currentOrder = settings.get_string('wallpaper-cycle-order');
+  const initialIndex = Math.max(0, orderValues.indexOf(currentOrder));
+  orderRow.set_selected(initialIndex);
+
+  orderRow.connect('notify::selected', () => {
+    const selected = orderValues[orderRow.get_selected()] ?? 'random';
+    settings.set_string('wallpaper-cycle-order', selected);
+  });
+  group.add(orderRow);
+
+  // 4. Change Interval (minutes)
   const intervalRow = new Adw.SpinRow({
-    title: 'Cycle Interval (Minutes)',
-    subtitle: 'Time between wallpaper transitions',
+    title: 'Change Interval (Minutes)',
+    subtitle: 'Frequency of wallpaper rotation',
     adjustment: new Gtk.Adjustment({
       lower: 1,
       upper: 1440,
@@ -78,14 +110,6 @@ export function createWallpaperPage(
   });
   settings.bind('wallpaper-cycle-interval', intervalRow, 'value', Gio.SettingsBindFlags.DEFAULT);
   group.add(intervalRow);
-
-  // 4. Shuffle Order Switch
-  const shuffleRow = new Adw.SwitchRow({
-    title: 'Shuffle Wallpapers',
-    subtitle: 'Randomize sequence without repeating until all are shown',
-  });
-  settings.bind('wallpaper-cycle-shuffle', shuffleRow, 'active', Gio.SettingsBindFlags.DEFAULT);
-  group.add(shuffleRow);
 
   return page;
 }

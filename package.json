@@ -1,0 +1,20 @@
+{
+  "name": "meowterialyou",
+  "version": "1.0.0",
+  "description": "Dynamic Material You theming and wallpaper management GNOME Shell Extension",
+  "type": "module",
+  "scripts": {
+    "build": "node build.js",
+    "typecheck": "tsc --noEmit",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@material/material-color-utilities": "^0.3.0"
+  },
+  "devDependencies": {
+    "@girs/gjs": "^5.6.0",
+    "@girs/gnome-shell": "^50.0.4",
+    "esbuild": "^0.25.0",
+    "typescript": "^5.8.0"
+  }
+}

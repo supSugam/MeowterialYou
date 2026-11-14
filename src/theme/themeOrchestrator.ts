@@ -40,8 +40,8 @@ export class ThemeOrchestrator {
     return colorScheme === 'prefer-dark';
   }
 
-  async applyTheme(): Promise<boolean> {
-    if (this._isApplying || this._settings.get_boolean('paused')) {
+  async applyTheme(force: boolean = false): Promise<boolean> {
+    if (this._isApplying || (!force && this._settings.get_boolean('paused'))) {
       return false;
     }
 

@@ -3,7 +3,9 @@
  */
 
 import Adw from 'gi://Adw';
+import Gtk from 'gi://Gtk';
 import Gio from 'gi://Gio';
+import { scanInstalledIconThemes } from '../../icons/iconScanner.js';
 
 export function createIconsPage(settings: Gio.Settings): Adw.PreferencesPage {
   const page = new Adw.PreferencesPage({
@@ -20,21 +22,29 @@ export function createIconsPage(settings: Gio.Settings): Adw.PreferencesPage {
   // 1. Enable Themed Icons Switch
   const enableRow = new Adw.SwitchRow({
     title: 'Enable Themed Folder Icons',
-    subtitle: 'Generate Material You folder icons in ~/.local/share/icons/MeowterialYou',
+    subtitle: 'Generate Material You folder icons in ~/.local/share/icons/Meowaita',
   });
   settings.bind('themed-icons-enabled', enableRow, 'active', Gio.SettingsBindFlags.DEFAULT);
   group.add(enableRow);
 
-  // 2. Base Icon Theme Entry
-  const baseThemeRow = new Adw.EntryRow({
-    title: 'Base Icon Theme',
+  // 2. Base Icon Theme Dropdown
+  const installedThemes = scanInstalledIconThemes();
+  const themeNames = installedThemes.map((t) => t.name);
+  const themeIds = installedThemes.map((t) => t.id);
+
+  const baseThemeRow = new Adw.ComboRow({
+    title: 'Icon Theme',
+    subtitle: 'Select icon pack to use and recolor (Meowaita includes 200+ themed app icons)',
+    model: Gtk.StringList.new(themeNames),
   });
-  baseThemeRow.set_text(settings.get_string('base-icon-theme') || 'Adwaita');
-  baseThemeRow.connect('apply', () => {
-    const text = baseThemeRow.get_text().trim();
-    if (text) {
-      settings.set_string('base-icon-theme', text);
-    }
+
+  const currentThemeId = settings.get_string('base-icon-theme') || 'Meowaita';
+  const initialIndex = Math.max(0, themeIds.indexOf(currentThemeId));
+  baseThemeRow.set_selected(initialIndex);
+
+  baseThemeRow.connect('notify::selected', () => {
+    const selectedId = themeIds[baseThemeRow.get_selected()] ?? 'Meowaita';
+    settings.set_string('base-icon-theme', selectedId);
   });
   group.add(baseThemeRow);
 
