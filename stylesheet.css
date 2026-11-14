@@ -33,12 +33,28 @@
   margin: 0;
 }
 
-/* Preserve Quick Settings island padding across spacing modes */
+/* Completely isolate Quick Settings from indicator spacing tweaks */
 #panel.meowterialyou-indicators-relaxed #panelRight > *:last-child .panel-button,
 #panel.meowterialyou-indicators-compact #panelRight > *:last-child .panel-button,
 #panel.meowterialyou-indicators-ultra-compact #panelRight > *:last-child .panel-button {
-  -natural-hpadding: 10px;
+  -natural-hpadding: 12px;
   -minimum-hpadding: 6px;
+}
+
+#panel.meowterialyou-indicators-relaxed #panelRight .panel-status-indicators-box,
+#panel.meowterialyou-indicators-compact #panelRight .panel-status-indicators-box,
+#panel.meowterialyou-indicators-ultra-compact #panelRight .panel-status-indicators-box {
+  spacing: 4px;
+}
+
+#panel.meowterialyou-indicators-relaxed #panelRight .panel-status-indicators-box .system-status-icon,
+#panel.meowterialyou-indicators-compact #panelRight .panel-status-indicators-box .system-status-icon,
+#panel.meowterialyou-indicators-ultra-compact #panelRight .panel-status-indicators-box .system-status-icon,
+#panel.meowterialyou-indicators-relaxed #panelRight .panel-status-indicators-box StIcon,
+#panel.meowterialyou-indicators-compact #panelRight .panel-status-indicators-box StIcon,
+#panel.meowterialyou-indicators-ultra-compact #panelRight .panel-status-indicators-box StIcon {
+  padding: 0;
+  margin: 0;
 }
 
 /* Hide Notification Dot / Bell on Clock */
