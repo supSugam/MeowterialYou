@@ -2,6 +2,7 @@
  * Top bar panel indicator for MeowterialYou status and quick actions.
  */
 
+import Clutter from 'gi://Clutter';
 import GObject from 'gi://GObject';
 import St from 'gi://St';
 import * as PanelMenu from 'resource:///org/gnome/shell/ui/panelMenu.js';
@@ -21,14 +22,18 @@ export const MeowterialIndicator = GObject.registerClass(
     private _pauseSwitch!: PopupMenu.PopupSwitchMenuItem;
 
     _init() {
-      super._init(0.0, 'MeowterialYou Indicator', false);
-      this.add_style_class_name('meowterialyou-indicator-button');
+      super._init(0.5, 'MeowterialYou Indicator', false);
+
+      const box = new St.BoxLayout({
+        orientation: Clutter.Orientation.HORIZONTAL,
+      });
+      this.add_child(box);
 
       const icon = new St.Icon({
         icon_name: 'applications-graphics-symbolic',
-        style_class: 'system-status-icon meowterialyou-indicator-icon',
+        style_class: 'system-status-icon',
       });
-      this.add_child(icon);
+      box.add_child(icon);
     }
 
     initialize(settings: Gio.Settings, callbacks: IndicatorCallbacks): void {

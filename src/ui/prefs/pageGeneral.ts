@@ -84,5 +84,13 @@ export function createGeneralPage(settings: Gio.Settings): Adw.PreferencesPage {
   settings.bind('transparent-panel', transparentRow, 'active', Gio.SettingsBindFlags.DEFAULT);
   group.add(transparentRow);
 
+  // 4. Show Top Bar Indicator Switch
+  const indicatorRow = new Adw.SwitchRow({
+    title: 'Show Top Bar Indicator',
+    subtitle: 'Display quick actions icon in the GNOME Shell top panel',
+  });
+  settings.bind('show-indicator', indicatorRow, 'active', Gio.SettingsBindFlags.DEFAULT);
+  group.add(indicatorRow);
+
   return page;
 }

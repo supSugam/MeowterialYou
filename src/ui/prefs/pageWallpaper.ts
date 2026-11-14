@@ -66,11 +66,11 @@ export function createWallpaperPage(
 
   // 3. Wallpaper Cycle Order ComboRow
   const orderLabels = [
-    'Random Shuffle (Non-repeating)',
-    'Alphabetical (A → Z)',
-    'Alphabetical Reverse (Z → A)',
-    'Newest First (Date Modified)',
-    'Oldest First (Date Modified)',
+    'Randomize',
+    'A to Z',
+    'Z to A',
+    'Newest First',
+    'Oldest First',
   ];
   const orderValues = [
     'random',

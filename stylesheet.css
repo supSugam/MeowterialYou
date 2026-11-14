@@ -1,19 +1,5 @@
 /* MeowterialYou GNOME Shell Extension Stylesheet */
 
-/* Panel Indicator Button */
-#panel .meowterialyou-indicator-button {
-  -natural-hpadding: 6px;
-  -minimum-hpadding: 6px;
-  padding-left: 4px;
-  padding-right: 4px;
-}
-
-#panel .meowterialyou-indicator-button .meowterialyou-indicator-icon {
-  padding: 0;
-  margin: 0;
-  icon-size: 16px;
-}
-
 /* Panel Transparency Override */
 .meowterialyou-transparent-panel {
   background-color: transparent !important;

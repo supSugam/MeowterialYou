@@ -73,16 +73,24 @@ export default class MeowterialYouExtension extends Extension {
   }
 
   private _setupIndicator(): void {
-    this._indicator = new MeowterialIndicator();
-    this._indicator.initialize(this._settings, {
-      onReapplyTheme: () => {
-        void this._triggerThemeUpdate(true);
-      },
-      onCycleNext: () => this._cycler.cycleToNext(),
-      onOpenPreferences: () => this.openPreferences(),
-    });
+    const updateIndicatorState = () => {
+      const shouldShow = this._settings.get_boolean('show-indicator');
+      if (shouldShow && !this._indicator) {
+        this._indicator = new MeowterialIndicator();
+        this._indicator.initialize(this._settings, {
+          onReapplyTheme: () => void this._triggerThemeUpdate(true),
+          onCycleNext: () => this._cycler.cycleToNext(),
+          onOpenPreferences: () => this.openPreferences(),
+        });
+        Main.panel.addToStatusArea(this.uuid, this._indicator, 1, 'right');
+      } else if (!shouldShow && this._indicator) {
+        this._indicator.destroy();
+        this._indicator = null;
+      }
+    };
 
-    Main.panel.addToStatusArea(this.uuid, this._indicator);
+    this._signalIds.push(this._settings.connect('changed::show-indicator', updateIndicatorState));
+    updateIndicatorState();
   }
 
   private _setupCycler(): void {
@@ -96,13 +104,11 @@ export default class MeowterialYouExtension extends Extension {
       );
     };
 
-    const keys = [
-      'wallpaper-cycle-directory',
-      'wallpaper-cycle-interval',
-      'wallpaper-cycle-order',
-      'wallpaper-cycle-enabled',
+    const cyclerKeys = [
+      'wallpaper-cycle-directory', 'wallpaper-cycle-interval',
+      'wallpaper-cycle-order', 'wallpaper-cycle-enabled',
     ];
-    for (const key of keys) {
+    for (const key of cyclerKeys) {
       this._signalIds.push(this._settings.connect(`changed::${key}`, updateCyclerConfig));
     }
     updateCyclerConfig();
@@ -115,16 +121,9 @@ export default class MeowterialYouExtension extends Extension {
 
   private _setupSettingsListeners(): void {
     const themeReapplyKeys = [
-      'theme-mode',
-      'scheme-variant',
-      'window-button-style',
-      'window-button-position',
-      'themed-icons-enabled',
-      'base-icon-theme',
-      'gtk3-enabled',
-      'gtk4-enabled',
-      'shell-theme-enabled',
-      'paused',
+      'theme-mode', 'scheme-variant', 'window-button-style',
+      'window-button-position', 'themed-icons-enabled', 'base-icon-theme',
+      'gtk3-enabled', 'gtk4-enabled', 'shell-theme-enabled', 'paused',
     ];
 
     for (const key of themeReapplyKeys) {

@@ -613,7 +613,7 @@ stage {
 
 .quick-toggle, .quick-menu-toggle .quick-toggle { 
 	color: @{onSurface.hex};
-  /* border-radius: 15px; */
+  border-radius: 15px;
 	background-color:  @{surfaceVariant.hex};
 	transition-duration: 100ms;
 }
@@ -695,6 +695,7 @@ stage {
   padding: 2px 1px;
   margin: 0px;
   color: @{onSurface.hex};
+  border-radius: 15px;
 }
 .quick-slider .slider-bin:focus {
   background-color:  @{surfaceVariant.hex};

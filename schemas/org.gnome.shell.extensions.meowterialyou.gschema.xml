@@ -55,6 +55,12 @@
       <description>Make GNOME Shell top panel transparent.</description>
     </key>
 
+    <key name="show-indicator" type="b">
+      <default>true</default>
+      <summary>Show top bar indicator</summary>
+      <description>Display the MeowterialYou quick action indicator in the top panel.</description>
+    </key>
+
     <key name="wallpaper-cycle-enabled" type="b">
       <default>false</default>
       <summary>Enable wallpaper cycling</summary>
