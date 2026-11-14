@@ -10,6 +10,7 @@ import { ThemeOrchestrator } from './theme/themeOrchestrator.js';
 import { WallpaperMonitor } from './wallpaper/wallpaperMonitor.js';
 import { WallpaperCycler } from './wallpaper/wallpaperCycler.js';
 import { MeowterialIndicator, type MeowterialIndicatorType } from './ui/indicator.js';
+import { TweaksManager } from './tweaks/tweaksManager.js';
 
 export default class MeowterialYouExtension extends Extension {
   private _settings!: Gio.Settings;
@@ -18,6 +19,7 @@ export default class MeowterialYouExtension extends Extension {
   private _monitor!: WallpaperMonitor;
   private _cycler!: WallpaperCycler;
   private _indicator: MeowterialIndicatorType | null = null;
+  private _tweaksManager!: TweaksManager;
   private _signalIds: number[] = [];
 
   enable(): void {
@@ -29,6 +31,9 @@ export default class MeowterialYouExtension extends Extension {
       extensionDir: this.path,
       settings: this._settings,
     });
+
+    this._tweaksManager = new TweaksManager(this._settings);
+    this._tweaksManager.enable();
 
     this._setupIndicator();
     this._setupCycler();
@@ -44,6 +49,7 @@ export default class MeowterialYouExtension extends Extension {
     }
     this._signalIds = [];
 
+    this._tweaksManager?.destroy();
     this._monitor.stop();
     this._cycler.stop();
 

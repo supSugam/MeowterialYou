@@ -4,3 +4,54 @@
   padding: 0;
   margin: 0;
 }
+
+/* App Indicator Spacing Presets */
+#panel.meowterialyou-indicators-relaxed #panelRight .panel-button {
+  -natural-hpadding: 8px;
+  -minimum-hpadding: 4px;
+}
+#panel.meowterialyou-indicators-relaxed #panelRight .panel-button .system-status-icon {
+  padding: 0 4px;
+  margin: 0 2px;
+}
+
+#panel.meowterialyou-indicators-compact #panelRight .panel-button {
+  -natural-hpadding: 4px;
+  -minimum-hpadding: 2px;
+}
+#panel.meowterialyou-indicators-compact #panelRight .panel-button .system-status-icon {
+  padding: 0 2px;
+  margin: 0 1px;
+}
+
+#panel.meowterialyou-indicators-ultra-compact #panelRight .panel-button {
+  -natural-hpadding: 2px;
+  -minimum-hpadding: 0px;
+}
+#panel.meowterialyou-indicators-ultra-compact #panelRight .panel-button .system-status-icon {
+  padding: 0 1px;
+  margin: 0;
+}
+
+/* Preserve Quick Settings island padding across spacing modes */
+#panel.meowterialyou-indicators-relaxed #panelRight > *:last-child .panel-button,
+#panel.meowterialyou-indicators-compact #panelRight > *:last-child .panel-button,
+#panel.meowterialyou-indicators-ultra-compact #panelRight > *:last-child .panel-button {
+  -natural-hpadding: 10px;
+  -minimum-hpadding: 6px;
+}
+
+/* Hide Notification Dot / Bell on Clock */
+#panel.meowterialyou-hide-notification-dot .clock-display .messages-indicator {
+  width: 0;
+  height: 0;
+  padding: 0;
+  margin: 0;
+}
+
+/* Hide Window Close Button on Previews in Overview */
+.meowterialyou-hide-window-close .window-close {
+  width: 0;
+  height: 0;
+  opacity: 0;
+}

@@ -25,6 +25,8 @@ export type WallpaperCycleOrder =
   | 'date-newest'
   | 'date-oldest';
 
+export type IndicatorSpacing = 'default' | 'relaxed' | 'compact' | 'ultra-compact';
+
 export interface MaterialSchemeColors {
   primary: string;
   onPrimary: string;

@@ -8,6 +8,7 @@ import { createGeneralPage } from './ui/prefs/pageGeneral.js';
 import { createWallpaperPage } from './ui/prefs/pageWallpaper.js';
 import { createWindowControlsPage } from './ui/prefs/pageWindowControls.js';
 import { createIconsPage } from './ui/prefs/pageIcons.js';
+import { createTweaksPage } from './ui/prefs/pageTweaks.js';
 import { createAdvancedPage } from './ui/prefs/pageAdvanced.js';
 import { createAboutPage } from './ui/prefs/pageAbout.js';
 
@@ -19,6 +20,7 @@ export default class MeowterialYouPreferences extends ExtensionPreferences {
     window.add(createWallpaperPage(settings, window));
     window.add(createWindowControlsPage(settings));
     window.add(createIconsPage(settings));
+    window.add(createTweaksPage(settings));
     window.add(createAdvancedPage(settings));
     window.add(createAboutPage());
   }

@@ -36,6 +36,13 @@
     <value value="4" nick="date-oldest" />
   </enum>
 
+  <enum id="org.gnome.shell.extensions.meowterialyou.IndicatorSpacing">
+    <value value="0" nick="default" />
+    <value value="1" nick="relaxed" />
+    <value value="2" nick="compact" />
+    <value value="3" nick="ultra-compact" />
+  </enum>
+
   <schema id="org.gnome.shell.extensions.meowterialyou" path="/org/gnome/shell/extensions/meowterialyou/">
     <key name="theme-mode" enum="org.gnome.shell.extensions.meowterialyou.ThemeMode">
       <default>'system'</default>
@@ -131,6 +138,48 @@
       <default>false</default>
       <summary>Pause auto-theming</summary>
       <description>Temporarily pause automatic theme updates when wallpaper changes.</description>
+    </key>
+
+    <key name="hide-workspace-indicator" type="b">
+      <default>false</default>
+      <summary>Hide workspace indicator</summary>
+      <description>Hide the Activities button and workspace dots from the top bar.</description>
+    </key>
+
+    <key name="hide-a11y-indicator" type="b">
+      <default>false</default>
+      <summary>Hide accessibility indicator</summary>
+      <description>Hide the accessibility (a11y) icon from the top bar.</description>
+    </key>
+
+    <key name="hide-keyboard-indicator" type="b">
+      <default>false</default>
+      <summary>Hide keyboard layout indicator</summary>
+      <description>Hide the input source / keyboard layout badge from the top bar.</description>
+    </key>
+
+    <key name="hide-notification-dot" type="b">
+      <default>false</default>
+      <summary>Hide notification indicator in clock</summary>
+      <description>Hide the notification dot and bell icon in the date/time display.</description>
+    </key>
+
+    <key name="indicator-spacing" enum="org.gnome.shell.extensions.meowterialyou.IndicatorSpacing">
+      <default>'default'</default>
+      <summary>App indicator spacing</summary>
+      <description>Adjust horizontal gap between tray app indicators.</description>
+    </key>
+
+    <key name="type-to-search" type="b">
+      <default>false</default>
+      <summary>Type to search in overview</summary>
+      <description>Hide search entry in overview until typing begins.</description>
+    </key>
+
+    <key name="hide-window-close-button" type="b">
+      <default>false</default>
+      <summary>Hide window preview close button</summary>
+      <description>Hide the floating close button on window previews in overview.</description>
     </key>
   </schema>
 </schemalist>
