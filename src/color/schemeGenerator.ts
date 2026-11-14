@@ -95,5 +95,6 @@ export function generateMaterialScheme(
     surfaceContainer: getHex(MaterialDynamicColors.surfaceContainer),
     surfaceContainerHigh: getHex(MaterialDynamicColors.surfaceContainerHigh),
     surfaceContainerHighest: getHex(MaterialDynamicColors.surfaceContainerHighest),
+    panelTextColor: getHex(MaterialDynamicColors.onSurface),
   };
 }

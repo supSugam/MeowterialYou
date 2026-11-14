@@ -66,6 +66,7 @@ export class ThemeOrchestrator {
         isGtk3Enabled: this._settings.get_boolean('gtk3-enabled'),
         isGtk4Enabled: this._settings.get_boolean('gtk4-enabled'),
         isMacButtonsEnabled: this._settings.get_string('window-button-style') === 'mac',
+        isTransparentPanelEnabled: this._settings.get_boolean('transparent-panel'),
       });
 
       const position = this._settings.get_string('window-button-position') as WindowButtonPosition;

@@ -4,16 +4,3 @@
   padding: 0;
   margin: 0;
 }
-
-/* Panel Transparency Override */
-#panel.meowterialyou-transparent-panel {
-  background-color: transparent !important;
-  background-gradient-direction: none !important;
-  box-shadow: none !important;
-  border-bottom-width: 0 !important;
-  transition-duration: 350ms;
-}
-
-#panel.meowterialyou-transparent-panel:overview {
-  background-color: rgba(0, 0, 0, 0.4) !important;
-}

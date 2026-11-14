@@ -30,7 +30,6 @@ export default class MeowterialYouExtension extends Extension {
       settings: this._settings,
     });
 
-    this._setupPanelTransparency();
     this._setupIndicator();
     this._setupCycler();
     this._setupMonitor();
@@ -48,33 +47,12 @@ export default class MeowterialYouExtension extends Extension {
     this._monitor.stop();
     this._cycler.stop();
 
-    Main.panel.remove_style_class_name('meowterialyou-transparent-panel');
-    Main.panel.set_style(null);
-
     if (this._indicator) {
       this._indicator.destroy();
       this._indicator = null;
     }
 
     this._sessionState.restoreOriginalState();
-  }
-
-  private _setupPanelTransparency(): void {
-    const updateTransparency = () => {
-      const isTransparent = this._settings.get_boolean('transparent-panel');
-      if (isTransparent) {
-        Main.panel.add_style_class_name('meowterialyou-transparent-panel');
-        Main.panel.set_style(
-          'background-color: transparent !important; background-gradient-direction: none !important; box-shadow: none !important;'
-        );
-      } else {
-        Main.panel.remove_style_class_name('meowterialyou-transparent-panel');
-        Main.panel.set_style(null);
-      }
-    };
-
-    this._signalIds.push(this._settings.connect('changed::transparent-panel', updateTransparency));
-    updateTransparency();
   }
 
   private _setupIndicator(): void {
@@ -129,6 +107,7 @@ export default class MeowterialYouExtension extends Extension {
       'theme-mode', 'scheme-variant', 'window-button-style',
       'window-button-position', 'themed-icons-enabled', 'base-icon-theme',
       'gtk3-enabled', 'gtk4-enabled', 'shell-theme-enabled', 'paused',
+      'transparent-panel',
     ];
 
     for (const key of themeReapplyKeys) {

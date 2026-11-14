@@ -21,6 +21,7 @@ export interface ThemeWriteOptions {
   isGtk3Enabled: boolean;
   isGtk4Enabled: boolean;
   isMacButtonsEnabled: boolean;
+  isTransparentPanelEnabled: boolean;
 }
 
 export function writeGeneratedThemes(options: ThemeWriteOptions): void {
@@ -34,7 +35,22 @@ export function writeGeneratedThemes(options: ThemeWriteOptions): void {
     const shellTemplateName = options.isDark ? 'gnome-shell-dark.css' : 'gnome-shell.css';
     const shellTemplatePath = GLib.build_filenamev([dataDir, 'templates', shellTemplateName]);
     const shellRaw = readTextFile(shellTemplatePath);
-    const shellCss = substituteTemplate(shellRaw, options.scheme, options.wallpaperPath);
+    let shellCss = substituteTemplate(shellRaw, options.scheme, options.wallpaperPath);
+
+    if (options.isTransparentPanelEnabled) {
+      const addonName = options.isDark ? 'shell_dark.css' : 'shell_light.css';
+      const addonPath = GLib.build_filenamev([
+        dataDir,
+        'templates',
+        'addons',
+        'transparent_panel',
+        addonName,
+      ]);
+      if (GLib.file_test(addonPath, GLib.FileTest.EXISTS)) {
+        const addonRaw = readTextFile(addonPath);
+        shellCss += '\n' + substituteTemplate(addonRaw, options.scheme, options.wallpaperPath);
+      }
+    }
 
     const themeLocations = [
       GLib.build_filenamev([home, '.themes', themeName, 'gnome-shell']),
