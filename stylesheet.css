@@ -6,7 +6,7 @@
 }
 
 /* Panel Transparency Override */
-.meowterialyou-transparent-panel {
+#panel.meowterialyou-transparent-panel {
   background-color: transparent !important;
   background-gradient-direction: none !important;
   box-shadow: none !important;
@@ -14,6 +14,6 @@
   transition-duration: 350ms;
 }
 
-.meowterialyou-transparent-panel:overview {
+#panel.meowterialyou-transparent-panel:overview {
   background-color: rgba(0, 0, 0, 0.4) !important;
 }

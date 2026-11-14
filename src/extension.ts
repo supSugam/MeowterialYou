@@ -49,6 +49,7 @@ export default class MeowterialYouExtension extends Extension {
     this._cycler.stop();
 
     Main.panel.remove_style_class_name('meowterialyou-transparent-panel');
+    Main.panel.set_style(null);
 
     if (this._indicator) {
       this._indicator.destroy();
@@ -63,8 +64,12 @@ export default class MeowterialYouExtension extends Extension {
       const isTransparent = this._settings.get_boolean('transparent-panel');
       if (isTransparent) {
         Main.panel.add_style_class_name('meowterialyou-transparent-panel');
+        Main.panel.set_style(
+          'background-color: transparent !important; background-gradient-direction: none !important; box-shadow: none !important;'
+        );
       } else {
         Main.panel.remove_style_class_name('meowterialyou-transparent-panel');
+        Main.panel.set_style(null);
       }
     };
 
