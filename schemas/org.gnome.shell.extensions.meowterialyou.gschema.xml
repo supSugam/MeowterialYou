@@ -92,6 +92,12 @@
       <description>Sort order for cycling wallpapers: random shuffle, alphabetical, or date modified.</description>
     </key>
 
+    <key name="wallpaper-cycle-shuffle" type="b">
+      <default>true</default>
+      <summary>Deprecated shuffle key</summary>
+      <description>Preserved for backward compatibility.</description>
+    </key>
+
     <key name="window-button-style" enum="org.gnome.shell.extensions.meowterialyou.WindowButtonStyle">
       <default>'native'</default>
       <summary>Window button style</summary>

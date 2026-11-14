@@ -65,6 +65,10 @@ export default class MeowterialYouExtension extends Extension {
     const updateIndicatorState = () => {
       const shouldShow = this._settings.get_boolean('show-indicator');
       if (shouldShow && !this._indicator) {
+        const existing = (Main.panel.statusArea as Record<string, { destroy(): void } | undefined>)[this.uuid];
+        if (existing) {
+          existing.destroy();
+        }
         this._indicator = new MeowterialIndicator();
         this._indicator.initialize(this._settings, {
           onReapplyTheme: () => void this._triggerThemeUpdate(true),

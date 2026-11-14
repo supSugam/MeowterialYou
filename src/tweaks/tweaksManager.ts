@@ -5,22 +5,19 @@
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import type Gio from 'gi://Gio';
 import type { IndicatorSpacing } from '../types/theme.js';
+import { IndicatorSpacingController } from './indicatorSpacing.js';
 import { TypeToSearchController } from './typeToSearch.js';
-
-const SPACING_CLASSES = [
-  'meowterialyou-indicators-relaxed',
-  'meowterialyou-indicators-compact',
-  'meowterialyou-indicators-ultra-compact',
-];
 
 export class TweaksManager {
   private _settings: Gio.Settings;
   private _typeToSearch: TypeToSearchController;
+  private _indicatorSpacing: IndicatorSpacingController;
   private _signalIds: number[] = [];
 
   constructor(settings: Gio.Settings) {
     this._settings = settings;
     this._typeToSearch = new TypeToSearchController();
+    this._indicatorSpacing = new IndicatorSpacingController();
   }
 
   enable(): void {
@@ -39,8 +36,9 @@ export class TweaksManager {
     this._signalIds = [];
 
     this._typeToSearch.disable();
+    this._indicatorSpacing.destroy();
     this._restoreTopBarElementVisibility();
-    this._clearPanelClasses();
+    Main.panel.remove_style_class_name('meowterialyou-hide-notification-dot');
     Main.layoutManager.uiGroup.remove_style_class_name('meowterialyou-hide-window-close');
   }
 
@@ -90,13 +88,8 @@ export class TweaksManager {
   }
 
   private _applyIndicatorSpacing(): void {
-    for (const className of SPACING_CLASSES) {
-      Main.panel.remove_style_class_name(className);
-    }
     const spacing = this._settings.get_string('indicator-spacing') as IndicatorSpacing;
-    if (spacing !== 'default') {
-      Main.panel.add_style_class_name(`meowterialyou-indicators-${spacing}`);
-    }
+    this._indicatorSpacing.apply(spacing);
   }
 
   private _applyNotificationDot(): void {
@@ -123,12 +116,5 @@ export class TweaksManager {
     } else {
       this._typeToSearch.disable();
     }
-  }
-
-  private _clearPanelClasses(): void {
-    for (const className of SPACING_CLASSES) {
-      Main.panel.remove_style_class_name(className);
-    }
-    Main.panel.remove_style_class_name('meowterialyou-hide-notification-dot');
   }
 }

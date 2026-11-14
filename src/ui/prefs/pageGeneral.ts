@@ -13,7 +13,7 @@ export function createGeneralPage(settings: Gio.Settings): Adw.PreferencesPage {
   });
 
   const group = new Adw.PreferencesGroup({
-    title: 'Theme & Appearance',
+    title: 'Theme and Appearance',
     description: 'Configure system theme behavior and dynamic color variants',
   });
   page.add(group);

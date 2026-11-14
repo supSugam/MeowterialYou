@@ -73,17 +73,17 @@
 }
 
 /* Override ui_improvements Quick Settings restoration - subtle inset border */
-#panelRight > *:last-child .panel-button {
+#panelRight .panel-button.meowterialyou-quick-settings-button {
   background-color: transparent !important;
   box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.1) !important;
   transition-duration: 100ms;
 }
 
 /* Quick Settings Hover/Active/Focus/Checked states - border + overlay */
-#panelRight > *:last-child .panel-button:hover,
-#panelRight > *:last-child .panel-button:active,
-#panelRight > *:last-child .panel-button:focus,
-#panelRight > *:last-child .panel-button:checked {
+#panelRight .panel-button.meowterialyou-quick-settings-button:hover,
+#panelRight .panel-button.meowterialyou-quick-settings-button:active,
+#panelRight .panel-button.meowterialyou-quick-settings-button:focus,
+#panelRight .panel-button.meowterialyou-quick-settings-button:checked {
   background-color: transparent !important;
   box-shadow: inset 0 0 0 100px rgba(0, 0, 0, 0.1), inset 0 0 0 1px rgba(0, 0, 0, 0.1) !important;
 }

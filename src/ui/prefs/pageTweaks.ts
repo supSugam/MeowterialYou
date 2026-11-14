@@ -78,9 +78,9 @@ export function createTweaksPage(settings: Gio.Settings): Adw.PreferencesPage {
   });
   spacingGroup.add(spacingRow);
 
-  // 3. Overview & Windows
+  // 3. Overview and Windows
   const overviewGroup = new Adw.PreferencesGroup({
-    title: 'Overview & Windows',
+    title: 'Overview and Windows',
     description: 'Refine desktop overview appearance and interactions',
   });
   page.add(overviewGroup);

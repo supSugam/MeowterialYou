@@ -5,55 +5,31 @@
   margin: 0;
 }
 
-/* App Indicator Spacing Presets */
-#panel.meowterialyou-indicators-relaxed #panelRight .panel-button {
+/* App Indicator Spacing Presets (Applies strictly to tagged app indicators; Quick Settings is untouched) */
+#panel.meowterialyou-indicators-relaxed .meowterialyou-app-indicator {
   -natural-hpadding: 8px;
   -minimum-hpadding: 4px;
 }
-#panel.meowterialyou-indicators-relaxed #panelRight .panel-button .system-status-icon {
+#panel.meowterialyou-indicators-relaxed .meowterialyou-app-indicator .system-status-icon {
   padding: 0 4px;
   margin: 0 2px;
 }
 
-#panel.meowterialyou-indicators-compact #panelRight .panel-button {
+#panel.meowterialyou-indicators-compact .meowterialyou-app-indicator {
   -natural-hpadding: 4px;
   -minimum-hpadding: 2px;
 }
-#panel.meowterialyou-indicators-compact #panelRight .panel-button .system-status-icon {
+#panel.meowterialyou-indicators-compact .meowterialyou-app-indicator .system-status-icon {
   padding: 0 2px;
   margin: 0 1px;
 }
 
-#panel.meowterialyou-indicators-ultra-compact #panelRight .panel-button {
+#panel.meowterialyou-indicators-ultra-compact .meowterialyou-app-indicator {
   -natural-hpadding: 2px;
   -minimum-hpadding: 0px;
 }
-#panel.meowterialyou-indicators-ultra-compact #panelRight .panel-button .system-status-icon {
+#panel.meowterialyou-indicators-ultra-compact .meowterialyou-app-indicator .system-status-icon {
   padding: 0 1px;
-  margin: 0;
-}
-
-/* Completely isolate Quick Settings from indicator spacing tweaks */
-#panel.meowterialyou-indicators-relaxed #panelRight > *:last-child .panel-button,
-#panel.meowterialyou-indicators-compact #panelRight > *:last-child .panel-button,
-#panel.meowterialyou-indicators-ultra-compact #panelRight > *:last-child .panel-button {
-  -natural-hpadding: 12px;
-  -minimum-hpadding: 6px;
-}
-
-#panel.meowterialyou-indicators-relaxed #panelRight .panel-status-indicators-box,
-#panel.meowterialyou-indicators-compact #panelRight .panel-status-indicators-box,
-#panel.meowterialyou-indicators-ultra-compact #panelRight .panel-status-indicators-box {
-  spacing: 4px;
-}
-
-#panel.meowterialyou-indicators-relaxed #panelRight .panel-status-indicators-box .system-status-icon,
-#panel.meowterialyou-indicators-compact #panelRight .panel-status-indicators-box .system-status-icon,
-#panel.meowterialyou-indicators-ultra-compact #panelRight .panel-status-indicators-box .system-status-icon,
-#panel.meowterialyou-indicators-relaxed #panelRight .panel-status-indicators-box StIcon,
-#panel.meowterialyou-indicators-compact #panelRight .panel-status-indicators-box StIcon,
-#panel.meowterialyou-indicators-ultra-compact #panelRight .panel-status-indicators-box StIcon {
-  padding: 0;
   margin: 0;
 }
 
