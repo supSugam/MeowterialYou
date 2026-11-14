@@ -25,6 +25,7 @@ export const MeowterialIndicator = GObject.registerClass(
       super._init(0.5, 'MeowterialYou Indicator', false);
 
       const box = new St.BoxLayout({
+        style_class: 'meowterialyou-indicator-box',
         orientation: Clutter.Orientation.HORIZONTAL,
       });
       this.add_child(box);

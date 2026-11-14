@@ -1,5 +1,10 @@
 /* MeowterialYou GNOME Shell Extension Stylesheet */
 
+.meowterialyou-indicator-box .system-status-icon {
+  padding: 0;
+  margin: 0;
+}
+
 /* Panel Transparency Override */
 .meowterialyou-transparent-panel {
   background-color: transparent !important;
