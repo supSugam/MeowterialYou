@@ -10,7 +10,6 @@ export type WallpaperChangeCallback = (newWallpaperPath: string) => void;
 
 export class WallpaperMonitor {
   private _backgroundSettings: Gio.Settings;
-  private _interfaceSettings: Gio.Settings;
   private _callback: WallpaperChangeCallback;
   private _signalIds: number[] = [];
   private _debounceSourceId: number | null = null;
@@ -21,7 +20,6 @@ export class WallpaperMonitor {
   constructor(callback: WallpaperChangeCallback) {
     this._callback = callback;
     this._backgroundSettings = getDesktopBackgroundSettings();
-    this._interfaceSettings = new Gio.Settings({ schema: 'org.gnome.desktop.interface' });
   }
 
   start(): void {
@@ -29,8 +27,7 @@ export class WallpaperMonitor {
 
     this._signalIds.push(
       this._backgroundSettings.connect('changed::picture-uri', onSignalTriggered),
-      this._backgroundSettings.connect('changed::picture-uri-dark', onSignalTriggered),
-      this._interfaceSettings.connect('changed::color-scheme', onSignalTriggered)
+      this._backgroundSettings.connect('changed::picture-uri-dark', onSignalTriggered)
     );
 
     this._setupFileMonitor();
@@ -43,23 +40,16 @@ export class WallpaperMonitor {
     }
 
     for (const signalId of this._signalIds) {
-      if (this._backgroundSettings) {
-        this._backgroundSettings.disconnect(signalId);
-      }
+      this._backgroundSettings.disconnect(signalId);
     }
     this._signalIds = [];
 
     this._teardownFileMonitor();
   }
 
-  private _isDarkMode(): boolean {
-    const colorScheme = this._interfaceSettings.get_string('color-scheme');
-    return colorScheme === 'prefer-dark';
-  }
-
   private _setupFileMonitor(): void {
     this._teardownFileMonitor();
-    const currentPath = getCurrentWallpaperPath(this._isDarkMode());
+    const currentPath = getCurrentWallpaperPath();
     if (!currentPath) {
       return;
     }
@@ -91,7 +81,7 @@ export class WallpaperMonitor {
 
     this._debounceSourceId = GLib.timeout_add(GLib.PRIORITY_DEFAULT, 400, () => {
       this._debounceSourceId = null;
-      const currentPath = getCurrentWallpaperPath(this._isDarkMode());
+      const currentPath = getCurrentWallpaperPath();
       if (currentPath && currentPath !== this._lastWallpaperPath) {
         this._lastWallpaperPath = currentPath;
         this._setupFileMonitor();

@@ -29,6 +29,11 @@ export function writeGeneratedThemes(options: ThemeWriteOptions): void {
   const themeSuffix = options.isDark ? 'dark' : 'light';
   const themeName = `MeowterialYou-${themeSuffix}`;
   const dataDir = GLib.build_filenamev([options.extensionDir, 'data']);
+  const themeBases = [
+    GLib.build_filenamev([home, '.local', 'share', 'themes', themeName]),
+    GLib.build_filenamev([home, '.themes', themeName]),
+  ];
+  const gtkAssetsSrc = GLib.build_filenamev([dataDir, 'assets', themeName, 'gtk-3.0', 'assets']);
 
   // 1. GNOME Shell Theme
   if (options.isShellThemeEnabled) {
@@ -52,39 +57,42 @@ export function writeGeneratedThemes(options: ThemeWriteOptions): void {
       }
     }
 
-    const themeLocations = [
-      GLib.build_filenamev([home, '.themes', themeName, 'gnome-shell']),
-      GLib.build_filenamev([home, '.local', 'share', 'themes', themeName, 'gnome-shell']),
-    ];
-
-    for (const location of themeLocations) {
-      writeTextFile(GLib.build_filenamev([location, 'gnome-shell.css']), shellCss);
-      const assetsSrc = GLib.build_filenamev([dataDir, 'assets', themeName, 'gnome-shell']);
-      copyDirectoryRecursive(assetsSrc, location);
+    const shellAssetsSrc = GLib.build_filenamev([dataDir, 'assets', themeName, 'gnome-shell']);
+    for (const base of themeBases) {
+      const shellDir = GLib.build_filenamev([base, 'gnome-shell']);
+      writeTextFile(GLib.build_filenamev([shellDir, 'gnome-shell.css']), shellCss);
+      copyDirectoryRecursive(shellAssetsSrc, shellDir);
     }
   }
 
-  // 2. GTK4 Theme (writes both gtk.css and gtk-dark.css for Chrome Wayland theming)
+  // 2. GTK4 Theme (writes config override for Libadwaita & theme folder for Chrome Wayland)
   if (options.isGtk4Enabled) {
     const gtk4TemplateName = options.isDark ? 'gtk4-dark.css' : 'gtk4.css';
     const gtk4TemplatePath = GLib.build_filenamev([dataDir, 'templates', gtk4TemplateName]);
-    let gtk4Css = substituteTemplate(readTextFile(gtk4TemplatePath), options.scheme);
+    const gtk4Css = substituteTemplate(readTextFile(gtk4TemplatePath), options.scheme);
 
-    if (options.isMacButtonsEnabled) {
-      const macGtk4Addon = options.isDark ? 'gtk_dark.css' : 'gtk_light.css';
-      const macPath = GLib.build_filenamev([dataDir, 'templates', 'addons', 'macbuttons', macGtk4Addon]);
-      gtk4Css += '\n' + readTextFile(macPath);
-    }
+    writeTextFile(GLib.build_filenamev([home, '.config', 'gtk-4.0', 'gtk.css']), gtk4Css);
+    writeTextFile(GLib.build_filenamev([home, '.config', 'gtk-4.0', 'gtk-dark.css']), gtk4Css);
 
-    const gtk4Targets = [
-      GLib.build_filenamev([home, '.config', 'gtk-4.0', 'gtk.css']),
-      GLib.build_filenamev([home, '.config', 'gtk-4.0', 'gtk-dark.css']),
-      GLib.build_filenamev([home, '.local', 'share', 'themes', themeName, 'gtk-4.0', 'gtk.css']),
-      GLib.build_filenamev([home, '.local', 'share', 'themes', themeName, 'gtk-4.0', 'gtk-dark.css']),
-    ];
+    // Chrome Wayland GTK4 theme from original addon template
+    const chromeTemplateName = options.isDark ? 'gtk_4_chrome_dark.css' : 'gtk_4_chrome_light.css';
+    const chromePath = GLib.build_filenamev([dataDir, 'templates', 'addons', 'chrome_gtk4', chromeTemplateName]);
+    if (GLib.file_test(chromePath, GLib.FileTest.EXISTS)) {
+      let chromeCss = substituteTemplate(readTextFile(chromePath), options.scheme);
+      if (options.isMacButtonsEnabled) {
+        const macAddon = options.isDark ? 'gtk_dark.css' : 'gtk_light.css';
+        const macPath = GLib.build_filenamev([dataDir, 'templates', 'addons', 'macbuttons', macAddon]);
+        if (GLib.file_test(macPath, GLib.FileTest.EXISTS)) {
+          chromeCss += '\n' + readTextFile(macPath);
+        }
+      }
 
-    for (const target of gtk4Targets) {
-      writeTextFile(target, gtk4Css);
+      for (const base of themeBases) {
+        const g4 = GLib.build_filenamev([base, 'gtk-4.0']);
+        writeTextFile(GLib.build_filenamev([g4, 'gtk.css']), chromeCss);
+        writeTextFile(GLib.build_filenamev([g4, 'gtk-dark.css']), chromeCss);
+        copyDirectoryRecursive(gtkAssetsSrc, GLib.build_filenamev([g4, 'assets']));
+      }
     }
   }
 
@@ -100,15 +108,14 @@ export function writeGeneratedThemes(options: ThemeWriteOptions): void {
       gtk3Css += '\n' + readTextFile(macPath);
     }
 
-    const gtk3Targets = [
-      GLib.build_filenamev([home, '.config', 'gtk-3.0', 'gtk.css']),
-      GLib.build_filenamev([home, '.config', 'gtk-3.0', 'gtk-dark.css']),
-      GLib.build_filenamev([home, '.local', 'share', 'themes', themeName, 'gtk-3.0', 'gtk.css']),
-      GLib.build_filenamev([home, '.local', 'share', 'themes', themeName, 'gtk-3.0', 'gtk-dark.css']),
-    ];
+    writeTextFile(GLib.build_filenamev([home, '.config', 'gtk-3.0', 'gtk.css']), gtk3Css);
+    writeTextFile(GLib.build_filenamev([home, '.config', 'gtk-3.0', 'gtk-dark.css']), gtk3Css);
 
-    for (const target of gtk3Targets) {
-      writeTextFile(target, gtk3Css);
+    for (const base of themeBases) {
+      const g3 = GLib.build_filenamev([base, 'gtk-3.0']);
+      writeTextFile(GLib.build_filenamev([g3, 'gtk.css']), gtk3Css);
+      writeTextFile(GLib.build_filenamev([g3, 'gtk-dark.css']), gtk3Css);
+      copyDirectoryRecursive(gtkAssetsSrc, GLib.build_filenamev([g3, 'assets']));
     }
   }
 }

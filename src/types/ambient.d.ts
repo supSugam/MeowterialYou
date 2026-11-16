@@ -11,3 +11,6 @@
 /// <reference types="@girs/st-18/ambient" />
 /// <reference types="@girs/clutter-18/ambient" />
 /// <reference types="@girs/shell-18/ambient" />
+
+declare const global: Shell.Global;
+

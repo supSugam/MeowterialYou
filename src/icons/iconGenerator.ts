@@ -66,12 +66,17 @@ export function generateThemedIcons(options: IconGenerateOptions): void {
   const placesDestDir = GLib.build_filenamev([iconThemeDir, 'places', 'scalable']);
   const appsDestDir = GLib.build_filenamev([iconThemeDir, 'apps', 'scalable']);
 
-  // 1. Create index.theme
-  const inheritTheme = options.baseIconTheme && options.baseIconTheme !== 'Meowaita' ? options.baseIconTheme : 'Adwaita';
+  // 1. Create index.theme with multi-theme fallback hierarchy
+  const baseTheme =
+    options.baseIconTheme && options.baseIconTheme !== 'Meowaita' ? options.baseIconTheme : null;
+  const fallbacks = [baseTheme, 'Yaru', 'Adwaita', 'hicolor'].filter(
+    (theme): theme is string => Boolean(theme) && theme !== 'Meowaita'
+  );
+  const uniqueInherits = Array.from(new Set(fallbacks)).join(',');
   const indexThemeContent = `[Icon Theme]
 Name=Meowaita
 Comment=Material You dynamic icon theme
-Inherits=${inheritTheme}
+Inherits=${uniqueInherits}
 Example=folder
 Directories=apps/scalable,places/scalable
 

@@ -50,13 +50,22 @@ function createDynamicScheme(
 export function generateMaterialScheme(
   seedArgb: number,
   isDark: boolean,
-  variant: SchemeVariant = 'tonal-spot'
+  variant: SchemeVariant = 'tonal-spot',
+  isTopDark?: boolean
 ): MaterialSchemeColors {
   const hct = Hct.fromInt(seedArgb);
   const scheme = createDynamicScheme(hct, isDark, variant);
 
   const getHex = (dynamicColor: { getArgb(s: DynamicScheme): number }): string =>
     convertArgbToHex(dynamicColor.getArgb(scheme));
+
+  const panelScheme =
+    isTopDark !== undefined && isTopDark !== isDark
+      ? createDynamicScheme(hct, isTopDark, variant)
+      : scheme;
+  const panelTextColor = convertArgbToHex(
+    MaterialDynamicColors.onSurface.getArgb(panelScheme)
+  );
 
   return {
     primary: getHex(MaterialDynamicColors.primary),
@@ -95,6 +104,6 @@ export function generateMaterialScheme(
     surfaceContainer: getHex(MaterialDynamicColors.surfaceContainer),
     surfaceContainerHigh: getHex(MaterialDynamicColors.surfaceContainerHigh),
     surfaceContainerHighest: getHex(MaterialDynamicColors.surfaceContainerHighest),
-    panelTextColor: getHex(MaterialDynamicColors.onSurface),
+    panelTextColor,
   };
 }

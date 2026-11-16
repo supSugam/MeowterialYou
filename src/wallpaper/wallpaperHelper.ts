@@ -9,12 +9,16 @@ export function getDesktopBackgroundSettings(): Gio.Settings {
   return new Gio.Settings({ schema: 'org.gnome.desktop.background' });
 }
 
-export function getCurrentWallpaperPath(isDark: boolean): string | null {
+export function getCurrentWallpaperPath(isDark?: boolean): string | null {
   const settings = getDesktopBackgroundSettings();
-  const key = isDark ? 'picture-uri-dark' : 'picture-uri';
+  const effectiveIsDark =
+    isDark ??
+    new Gio.Settings({ schema: 'org.gnome.desktop.interface' }).get_string('color-scheme') ===
+      'prefer-dark';
+  const key = effectiveIsDark ? 'picture-uri-dark' : 'picture-uri';
   let uri = settings.get_string(key);
 
-  if (!uri && isDark) {
+  if (!uri && effectiveIsDark) {
     uri = settings.get_string('picture-uri');
   }
 

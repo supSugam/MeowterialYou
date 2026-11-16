@@ -27,18 +27,26 @@ export default class MeowterialYouExtension extends Extension {
     this._sessionState = new SessionStateManager();
     this._sessionState.captureInitialState();
 
+    this._tweaksManager = new TweaksManager(this._settings);
+    this._tweaksManager.enable();
+
     this._orchestrator = new ThemeOrchestrator({
       extensionDir: this.path,
       settings: this._settings,
+      onExtractionCompleted: (ext, isDark) => {
+        this._tweaksManager.updatePanelContrast(ext.isTopDark, ext.isBottomDark);
+        this._tweaksManager.syncBlurMyShell(isDark);
+      },
     });
-
-    this._tweaksManager = new TweaksManager(this._settings);
-    this._tweaksManager.enable();
 
     this._setupIndicator();
     this._setupCycler();
     this._setupMonitor();
     this._setupSettingsListeners();
+
+    this._orchestrator.connectSystemModeListener(() => {
+      void this._triggerThemeUpdate(true);
+    });
 
     this._triggerThemeUpdate();
   }
@@ -49,6 +57,7 @@ export default class MeowterialYouExtension extends Extension {
     }
     this._signalIds = [];
 
+    this._orchestrator?.destroy();
     this._tweaksManager?.destroy();
     this._monitor.stop();
     this._cycler.stop();
@@ -70,11 +79,15 @@ export default class MeowterialYouExtension extends Extension {
           existing.destroy();
         }
         this._indicator = new MeowterialIndicator();
-        this._indicator.initialize(this._settings, {
-          onReapplyTheme: () => void this._triggerThemeUpdate(true),
-          onCycleNext: () => this._cycler.cycleToNext(),
-          onOpenPreferences: () => this.openPreferences(),
-        });
+        this._indicator.initialize(
+          this._settings,
+          {
+            onReapplyTheme: () => void this._triggerThemeUpdate(true),
+            onCycleNext: () => this._cycler.cycleToNext(),
+            onOpenPreferences: () => this.openPreferences(),
+          },
+          this.path
+        );
         Main.panel.addToStatusArea(this.uuid, this._indicator, 1, 'right');
       } else if (!shouldShow && this._indicator) {
         this._indicator.destroy();
@@ -122,9 +135,7 @@ export default class MeowterialYouExtension extends Extension {
 
     for (const key of themeReapplyKeys) {
       this._signalIds.push(
-        this._settings.connect(`changed::${key}`, () => {
-          this._triggerThemeUpdate();
-        })
+        this._settings.connect(`changed::${key}`, () => void this._triggerThemeUpdate())
       );
     }
   }

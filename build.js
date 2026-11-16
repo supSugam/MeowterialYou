@@ -48,6 +48,11 @@ async function build() {
   // Copy templates and icon templates
   fs.cpSync('data', path.join(DIST_DIR, 'data'), { recursive: true });
 
+  // Copy extension symbolic icons
+  if (fs.existsSync('icons')) {
+    fs.cpSync('icons', path.join(DIST_DIR, 'icons'), { recursive: true });
+  }
+
   console.log('Build completed successfully -> dist/');
 }
 

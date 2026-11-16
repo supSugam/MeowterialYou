@@ -7,7 +7,7 @@ import GObject from 'gi://GObject';
 import St from 'gi://St';
 import * as PanelMenu from 'resource:///org/gnome/shell/ui/panelMenu.js';
 import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
-import type Gio from 'gi://Gio';
+import Gio from 'gi://Gio';
 
 export interface IndicatorCallbacks {
   onReapplyTheme(): void;
@@ -17,29 +17,44 @@ export interface IndicatorCallbacks {
 
 export const MeowterialIndicator = GObject.registerClass(
   class MeowterialIndicator extends PanelMenu.Button {
-    private _settings!: Gio.Settings;
-    private _callbacks!: IndicatorCallbacks;
-    private _pauseSwitch!: PopupMenu.PopupSwitchMenuItem;
+    declare private _settings: Gio.Settings;
+    declare private _callbacks: IndicatorCallbacks;
+    declare private _pauseSwitch: PopupMenu.PopupSwitchMenuItem;
+    declare private _icon: St.Icon;
 
     _init() {
       super._init(0.5, 'MeowterialYou Indicator', false);
 
-      const box = new St.BoxLayout({
-        style_class: 'meowterialyou-indicator-box',
-        orientation: Clutter.Orientation.HORIZONTAL,
-      });
-      this.add_child(box);
-
-      const icon = new St.Icon({
-        icon_name: 'applications-graphics-symbolic',
+      this._icon = new St.Icon({
         style_class: 'system-status-icon',
+        y_align: Clutter.ActorAlign.CENTER,
+        y_expand: true,
       });
-      box.add_child(icon);
+      this.add_child(this._icon);
     }
 
-    initialize(settings: Gio.Settings, callbacks: IndicatorCallbacks): void {
+    initialize(settings: Gio.Settings, callbacks: IndicatorCallbacks, extensionPath: string): void {
       this._settings = settings;
       this._callbacks = callbacks;
+
+      if (!this._icon) {
+        this._icon = new St.Icon({
+          style_class: 'system-status-icon',
+          y_align: Clutter.ActorAlign.CENTER,
+          y_expand: true,
+        });
+        this.add_child(this._icon);
+      }
+
+      const iconFile = Gio.File.new_for_path(
+        `${extensionPath}/data/icons/meowterialyou-symbolic.svg`
+      );
+      if (iconFile.query_exists(null)) {
+        this._icon.gicon = new Gio.FileIcon({ file: iconFile });
+      } else {
+        this._icon.icon_name = 'applications-graphics-symbolic';
+      }
+
       this._buildMenu();
     }
 

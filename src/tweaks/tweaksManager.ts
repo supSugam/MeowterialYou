@@ -6,18 +6,24 @@ import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import type Gio from 'gi://Gio';
 import type { IndicatorSpacing } from '../types/theme.js';
 import { IndicatorSpacingController } from './indicatorSpacing.js';
+import { PanelContrastController } from './panelContrast.js';
 import { TypeToSearchController } from './typeToSearch.js';
+import { BlurMyShellSyncController } from './blurMyShellSync.js';
 
 export class TweaksManager {
   private _settings: Gio.Settings;
   private _typeToSearch: TypeToSearchController;
   private _indicatorSpacing: IndicatorSpacingController;
+  private _panelContrast: PanelContrastController;
+  private _bmsSync: BlurMyShellSyncController;
   private _signalIds: number[] = [];
 
   constructor(settings: Gio.Settings) {
     this._settings = settings;
     this._typeToSearch = new TypeToSearchController();
     this._indicatorSpacing = new IndicatorSpacingController();
+    this._panelContrast = new PanelContrastController(settings);
+    this._bmsSync = new BlurMyShellSyncController();
   }
 
   enable(): void {
@@ -26,6 +32,8 @@ export class TweaksManager {
     this._applyNotificationDot();
     this._applyWindowCloseButton();
     this._applyTypeToSearch();
+    this._panelContrast.enable();
+    this._bmsSync.enable();
     this._setupSettingsListeners();
   }
 
@@ -37,9 +45,19 @@ export class TweaksManager {
 
     this._typeToSearch.disable();
     this._indicatorSpacing.destroy();
+    this._panelContrast.destroy();
+    this._bmsSync.destroy();
     this._restoreTopBarElementVisibility();
     Main.panel.remove_style_class_name('meowterialyou-hide-notification-dot');
     Main.layoutManager.uiGroup.remove_style_class_name('meowterialyou-hide-window-close');
+  }
+
+  updatePanelContrast(isTopDark: boolean, isBottomDark: boolean): void {
+    this._panelContrast.update({ isTopDark, isBottomDark });
+  }
+
+  syncBlurMyShell(isDark: boolean): void {
+    this._bmsSync.syncThemeMode(isDark);
   }
 
   private _setupSettingsListeners(): void {

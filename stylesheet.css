@@ -1,10 +1,5 @@
 /* MeowterialYou GNOME Shell Extension Stylesheet */
 
-.meowterialyou-indicator-box .system-status-icon {
-  padding: 0;
-  margin: 0;
-}
-
 /* App Indicator Spacing Presets (Applies strictly to tagged app indicators; Quick Settings is untouched) */
 #panel.meowterialyou-indicators-relaxed .meowterialyou-app-indicator {
   -natural-hpadding: 8px;
