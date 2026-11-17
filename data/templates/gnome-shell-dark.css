@@ -174,8 +174,8 @@ stage {
 #panel.meowterialyou-panel-trans-dark #panelLeft #panelActivities.panel-button,
 #panel.meowterialyou-panel-trans-light #panelActivities.panel-button,
 #panel.meowterialyou-panel-trans-light #panelLeft #panelActivities.panel-button {
-  background-color: @{surfaceContainer.rgba50} !important;
-  color: @{onSurface.hex} !important;
+  background-color: @{secondaryContainer.hex} !important;
+  color: @{onSecondaryContainer.hex} !important;
   box-shadow: inset 0 0 0 1px @{outlineVariant.rgba32} !important;
 }
 
@@ -191,7 +191,7 @@ stage {
 #panel.meowterialyou-panel-trans-light #panelLeft #panelActivities.panel-button StLabel,
 #panel.meowterialyou-panel-trans-light #panelActivities.panel-button StIcon,
 #panel.meowterialyou-panel-trans-light #panelLeft #panelActivities.panel-button StIcon {
-  color: @{onSurface.hex} !important;
+  color: @{onSecondaryContainer.hex} !important;
 }
 
 #panel #panelActivities.panel-button:hover,
@@ -199,8 +199,8 @@ stage {
 #panel #panelActivities.panel-button:overview,
 #panel #panelActivities.panel-button:focus,
 #panel #panelActivities.panel-button:checked {
-  background-color: @{surfaceContainerHighest.rgba50} !important;
-  box-shadow: inset 0 0 0 1px @{outlineVariant.rgba50} !important;
+  background-color: @{secondaryContainer.hex} !important;
+  box-shadow: inset 0 0 0 100px @{onSecondaryContainer.rgba08}, inset 0 0 0 1px @{outlineVariant.rgba50} !important;
 }
 
 /* Retain pill background for Quick Settings */
@@ -211,8 +211,8 @@ stage {
 #panel.meowterialyou-panel-opaque #panelRight .panel-button.meowterialyou-quick-settings-button,
 #panelRight .meowterialyou-quick-settings-button,
 #panel #panelRight .meowterialyou-quick-settings-button {
-  background-color: @{surfaceContainer.rgba50} !important;
-  color: @{onSurface.hex} !important;
+  background-color: @{secondaryContainer.hex} !important;
+  color: @{onSecondaryContainer.hex} !important;
   box-shadow: inset 0 0 0 1px @{outlineVariant.rgba32} !important;
 }
 
@@ -231,15 +231,15 @@ stage {
 #panel.meowterialyou-panel-opaque #panelRight .panel-button.meowterialyou-quick-settings-button StLabel,
 #panel.meowterialyou-panel-opaque #panelRight .panel-button.meowterialyou-quick-settings-button StIcon,
 #panel.meowterialyou-panel-opaque #panelRight .panel-button.meowterialyou-quick-settings-button .system-status-icon {
-  color: @{onSurface.hex} !important;
+  color: @{onSecondaryContainer.hex} !important;
 }
 
 #panelRight .panel-button.meowterialyou-quick-settings-button:hover,
 #panelRight .panel-button.meowterialyou-quick-settings-button:active,
 #panelRight .panel-button.meowterialyou-quick-settings-button:focus,
 #panelRight .panel-button.meowterialyou-quick-settings-button:checked {
-  background-color: @{surfaceContainerHighest.rgba50} !important;
-  box-shadow: inset 0 0 0 1px @{outlineVariant.rgba50} !important;
+  background-color: @{secondaryContainer.hex} !important;
+  box-shadow: inset 0 0 0 100px @{onSecondaryContainer.rgba08}, inset 0 0 0 1px @{outlineVariant.rgba50} !important;
 }
 
 /* date-menu-mod */
@@ -259,8 +259,8 @@ stage {
 #panel.meowterialyou-panel-trans-light #panelCenter .panel-button .clock,
 #panel.meowterialyou-panel-opaque #panelCenter .panel-button .clock,
 #panel .clock {
-  background-color: @{surfaceContainer.rgba50} !important;
-  color: @{onSurface.hex} !important;
+  background-color: @{secondaryContainer.hex} !important;
+  color: @{onSecondaryContainer.hex} !important;
   border-radius: 14px;
   border: 4px solid transparent;
   box-shadow: inset 0 0 0 1px @{outlineVariant.rgba32} !important;
@@ -273,8 +273,8 @@ stage {
 #panel #panelCenter .panel-button:checked .clock,
 .panel-button:hover .clock,
 .panel-button:active .clock {
-  background-color: @{surfaceContainerHighest.rgba50} !important;
-  box-shadow: inset 0 0 0 1px @{outlineVariant.rgba50} !important;
+  background-color: @{secondaryContainer.hex} !important;
+  box-shadow: inset 0 0 0 100px @{onSecondaryContainer.rgba08}, inset 0 0 0 1px @{outlineVariant.rgba50} !important;
 }
 
 /* Reset any unwanted nested backgrounds, borders, or padding on icons inside clock */
@@ -397,7 +397,7 @@ stage {
 .clock-display .clock-label,
 .clock-display .weather_label,
 .clock-display .system-status-icon {
-  color: @{onSurface.hex} !important;
+  color: @{onSecondaryContainer.hex} !important;
 }
 
 /* clock fix by Aylur's widgets */
@@ -548,13 +548,9 @@ stage {
 }
 
 .bms-popup-surface-dark .popup-menu-item:checked StLabel,
-.bms-popup-background-dark .popup-menu-item:checked StLabel,
-.bms-popup-surface-light .popup-menu-item:checked StLabel,
-.bms-popup-background-light .popup-menu-item:checked StLabel,
 .bms-popup-surface-dark .popup-menu-item:checked StIcon,
-.bms-popup-background-dark .popup-menu-item:checked StIcon,
+.bms-popup-surface-light .popup-menu-item:checked StLabel,
 .bms-popup-surface-light .popup-menu-item:checked StIcon,
-.bms-popup-background-light .popup-menu-item:checked StIcon,
 .popup-menu-item:checked StLabel,
 .popup-menu-item:checked StIcon {
   color: @{onSecondaryContainer.hex} !important;
@@ -2208,8 +2204,11 @@ StEntry:focus {
 }
 
 
-#panelActivities.panel-button .workspace-dot {
-    background-color: @{primary.hex};
+#panel .panel-button#panelActivities .workspace-dot,
+#panel #panelActivities.panel-button .workspace-dot,
+#panelActivities.panel-button .workspace-dot,
+.workspace-dot {
+  background-color: @{primary.hex} !important;
 }
 
 
