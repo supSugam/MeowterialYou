@@ -440,10 +440,20 @@ stage {
 .bms-popup-background-light .popup-menu-content,
 .bms-popup-surface-dark .popup-menu-content,
 .bms-popup-background-dark .popup-menu-content,
+.bms-popup-surface-dark .quick-settings,
+.bms-popup-background-dark .quick-settings,
+.bms-popup-surface-light .quick-settings,
+.bms-popup-background-light .quick-settings,
+.bms-popup-surface-dark .quick-toggle-menu,
+.bms-popup-background-dark .quick-toggle-menu,
+.bms-popup-surface-light .quick-toggle-menu,
+.bms-popup-background-light .quick-toggle-menu,
 .panel-menu .popup-menu-content,
 .popup-menu-boxpointer .popup-menu-content,
 .popup-menu .popup-menu-content,
 .popup-menu-content,
+.quick-settings,
+.quick-toggle-menu,
 .candidate-popup-content {
   color: @{onSurface.hex} !important;
   background-color: @{surfaceContainer.hex} !important;
@@ -492,6 +502,18 @@ stage {
   color: @{onSurface.hex} !important;
 }
 
+.bms-popup-surface-dark .popup-menu-item:focus,
+.bms-popup-surface-dark .popup-menu-item:hover,
+.bms-popup-surface-dark .popup-menu-item:checked,
+.bms-popup-background-dark .popup-menu-item:focus,
+.bms-popup-background-dark .popup-menu-item:hover,
+.bms-popup-background-dark .popup-menu-item:checked,
+.bms-popup-surface-light .popup-menu-item:focus,
+.bms-popup-surface-light .popup-menu-item:hover,
+.bms-popup-surface-light .popup-menu-item:checked,
+.bms-popup-background-light .popup-menu-item:focus,
+.bms-popup-background-light .popup-menu-item:hover,
+.bms-popup-background-light .popup-menu-item:checked,
 .popup-menu-item:focus,
 .popup-menu-item:hover,
 .popup-menu-item:checked {
@@ -500,6 +522,18 @@ stage {
   color: @{onSurface.hex} !important;
 }
 
+.bms-popup-surface-dark .popup-menu-item:focus StLabel,
+.bms-popup-surface-dark .popup-menu-item:hover StLabel,
+.bms-popup-surface-dark .popup-menu-item:checked StLabel,
+.bms-popup-surface-dark .popup-menu-item:focus StIcon,
+.bms-popup-surface-dark .popup-menu-item:hover StIcon,
+.bms-popup-surface-dark .popup-menu-item:checked StIcon,
+.bms-popup-surface-light .popup-menu-item:focus StLabel,
+.bms-popup-surface-light .popup-menu-item:hover StLabel,
+.bms-popup-surface-light .popup-menu-item:checked StLabel,
+.bms-popup-surface-light .popup-menu-item:focus StIcon,
+.bms-popup-surface-light .popup-menu-item:hover StIcon,
+.bms-popup-surface-light .popup-menu-item:checked StIcon,
 .popup-menu-item:focus StLabel,
 .popup-menu-item:hover StLabel,
 .popup-menu-item:checked StLabel,
@@ -513,6 +547,10 @@ stage {
   border-radius: 12px 12px 0 0;
 }
 
+.bms-popup-surface-dark .popup-menu-item:active,
+.bms-popup-background-dark .popup-menu-item:active,
+.bms-popup-surface-light .popup-menu-item:active,
+.bms-popup-background-light .popup-menu-item:active,
 .popup-menu-item:active {
   background-color: @{surfaceVariant.hex} !important;
   color: @{onSurface.hex} !important;

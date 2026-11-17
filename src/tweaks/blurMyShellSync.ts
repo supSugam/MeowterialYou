@@ -93,22 +93,14 @@ export class BlurMyShellSyncController {
     }
 
     try {
-      const currentStyle = this._bmsPopupSettings.get_int('style-popup');
-      if (isDark) {
-        if (currentStyle === 1 && this._originalStylePopup !== null) {
-          this._bmsPopupSettings.set_int('style-popup', this._originalStylePopup);
-        }
-        if (this._bmsPopupSettings.get_string('pipeline') === 'pipeline_default_light') {
-          this._bmsPopupSettings.set_string('pipeline', 'pipeline_default');
-        }
-      } else {
-        // Light mode: ensure light surface style (1) and light pipeline
-        if (currentStyle === 3 || currentStyle === 2) {
-          this._bmsPopupSettings.set_int('style-popup', 1);
-        }
-        if (this._bmsPopupSettings.get_string('pipeline') === 'pipeline_default') {
-          this._bmsPopupSettings.set_string('pipeline', 'pipeline_default_light');
-        }
+      const targetStyle = isDark ? 2 : 1;
+      const targetPipeline = isDark ? 'pipeline_default' : 'pipeline_default_light';
+
+      if (this._bmsPopupSettings.get_int('style-popup') !== targetStyle) {
+        this._bmsPopupSettings.set_int('style-popup', targetStyle);
+      }
+      if (this._bmsPopupSettings.get_string('pipeline') !== targetPipeline) {
+        this._bmsPopupSettings.set_string('pipeline', targetPipeline);
       }
     } catch {
       // Graceful fallback if settings keys fail
@@ -121,9 +113,13 @@ export class BlurMyShellSyncController {
     }
 
     try {
-      if (this._originalStylePopup !== null) {
-        this._bmsPopupSettings.set_int('style-popup', this._originalStylePopup);
-      }
+      const restoreStyle =
+        this._originalStylePopup !== null &&
+        this._originalStylePopup !== 1 &&
+        this._originalStylePopup !== 2
+          ? this._originalStylePopup
+          : 3;
+      this._bmsPopupSettings.set_int('style-popup', restoreStyle);
       if (this._originalPipeline !== null) {
         this._bmsPopupSettings.set_string('pipeline', this._originalPipeline);
       }
