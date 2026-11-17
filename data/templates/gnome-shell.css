@@ -424,8 +424,8 @@ stage {
 
 /* Activities Ripple */
 .ripple-box {
-  background-color: @{surfaceVariant.hex}7f;
-  box-shadow: 0 0 2px 2px @{surfaceVariant.hex}7f;
+  background-color: @{surfaceVariant.rgba50};
+  box-shadow: 0 0 2px 2px @{surfaceVariant.rgba50};
 }
 
 /* POPOVERS */
@@ -1396,7 +1396,7 @@ StScrollBar StButton#hhandle:active {
 }
 
 .workspace-thumbnail-indicator {
-  background-color: @{surfaceVariant.hex}7f;
+  background-color: @{surfaceVariant.rgba50};
   border-color: @{outline.hex};
   border-width: 1px;
   border-radius: 3px;
@@ -1562,7 +1562,7 @@ StScrollBar StButton#hhandle:active {
 .app-well-app.app-folder:drop .overview-icon,
 .app-folder.grid-search-result:drop .overview-icon {
   border: 2px solid @{secondary.hex};
-  background-color: @{surfaceVariant.hex}7f;
+  background-color: @{surfaceVariant.rgba50};
 }
 
 /* folder dialog */
@@ -2089,7 +2089,7 @@ StEntry:focus {
 .screenshot-ui-window-selector-window:checked
   .screenshot-ui-window-selector-window-border {
   border-color: @{primary.hex};
-  background-color: @{surfaceVariant.hex}7f;
+  background-color: @{surfaceVariant.rgba50};
 }
 
 .screenshot-ui-window-selector-window:checked

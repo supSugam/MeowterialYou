@@ -30,13 +30,13 @@ export function substituteTemplate(
     result = result.replaceAll(`@{${key}}`, hexStripped);
     result = result.replaceAll(`@{${key}.rgb}`, `rgb(${r}, ${g}, ${b})`);
 
-    // Alpha variants
-    result = result.replaceAll(`@{${key}.rgba08}`, `#${hexStripped}14`);
-    result = result.replaceAll(`@{${key}.rgba12}`, `#${hexStripped}1f`);
-    result = result.replaceAll(`@{${key}.rgba16}`, `#${hexStripped}29`);
-    result = result.replaceAll(`@{${key}.rgba24}`, `#${hexStripped}3d`);
-    result = result.replaceAll(`@{${key}.rgba32}`, `#${hexStripped}52`);
-    result = result.replaceAll(`@{${key}.rgba50}`, `#${hexStripped}80`);
+    // Alpha variants (using standard rgba() because St / libcroco rejects 8-digit hex #rrggbbaa)
+    result = result.replaceAll(`@{${key}.rgba08}`, `rgba(${r}, ${g}, ${b}, 0.08)`);
+    result = result.replaceAll(`@{${key}.rgba12}`, `rgba(${r}, ${g}, ${b}, 0.12)`);
+    result = result.replaceAll(`@{${key}.rgba16}`, `rgba(${r}, ${g}, ${b}, 0.16)`);
+    result = result.replaceAll(`@{${key}.rgba24}`, `rgba(${r}, ${g}, ${b}, 0.24)`);
+    result = result.replaceAll(`@{${key}.rgba32}`, `rgba(${r}, ${g}, ${b}, 0.32)`);
+    result = result.replaceAll(`@{${key}.rgba50}`, `rgba(${r}, ${g}, ${b}, 0.5)`);
 
     // HLS components
     result = result.replaceAll(`@{${key}.hue}`, String(h));
