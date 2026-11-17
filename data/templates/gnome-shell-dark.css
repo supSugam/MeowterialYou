@@ -512,9 +512,8 @@ stage {
 .bms-popup-background-light .popup-menu-item:focus,
 .bms-popup-background-light .popup-menu-item:hover,
 .bms-popup-background-light .popup-menu-item:checked,
-.popup-menu-item:focus, .popup-menu-item:hover, .popup-menu-item:checked {
-  background-color: transparent !important;
-  box-shadow: inset 0 0 0 100px rgba(255, 255, 255, 0.08), inset 0 0 0 1px rgba(255, 255, 255, 0.05) !important;
+.popup-menu-item:focus, .popup-menu-item:hover, .popup-menu-item:selected, .popup-menu-item:checked {
+  background-color: rgba(255, 255, 255, 0.1) !important;
   color: @{onSurface.hex} !important;
 }
 
@@ -548,8 +547,7 @@ stage {
 .bms-popup-surface-light .popup-menu-item:active,
 .bms-popup-background-light .popup-menu-item:active,
 .popup-menu-item:active {
-  background-color: transparent !important;
-  box-shadow: inset 0 0 0 100px rgba(255, 255, 255, 0.12), inset 0 0 0 1px rgba(255, 255, 255, 0.08) !important;
+  background-color: rgba(255, 255, 255, 0.16) !important;
   color: @{onSurface.hex} !important;
 }
 
@@ -602,8 +600,14 @@ stage {
   border-radius: 0 0 12px 12px;
 }
 
-.popup-sub-menu .popup-menu-item:hover, .popup-sub-menu .popup-menu-item:focus {
-  background-color:  @{surfaceVariant.hex} !important;
+.popup-sub-menu .popup-menu-item:hover,
+.popup-sub-menu .popup-menu-item:focus,
+.popup-sub-menu .popup-menu-item:selected {
+  background-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+.popup-sub-menu .popup-menu-item:active {
+  background-color: rgba(255, 255, 255, 0.16) !important;
 }
 
 .popup-menu-item:insensitive { color: @{outline.hex}; margin: 0; }
@@ -1182,18 +1186,16 @@ stage {
 }
 
 .background-apps-quick-toggle:hover {
-  background-color: transparent;
-  box-shadow: inset 0 0 0 100px rgba(255, 255, 255, 0.08), inset 0 0 0 1px rgba(255, 255, 255, 0.05);
+  background-color: rgba(255, 255, 255, 0.1);
 }
 
 .background-apps-quick-toggle:focus {
-  background-color: transparent;
-  box-shadow: inset 0 0 0 100px rgba(255, 255, 255, 0.12), inset 0 0 0 2px @{secondary.hex};
+  background-color: rgba(255, 255, 255, 0.12);
+  box-shadow: inset 0 0 0 2px @{secondary.hex};
 }
 
 .background-apps-quick-toggle:active {
-  background-color: transparent;
-  box-shadow: inset 0 0 0 100px rgba(255, 255, 255, 0.12);
+  background-color: rgba(255, 255, 255, 0.16);
 }
 
 .nm-dialog-item:focus, .nm-dialog-item:hover {
