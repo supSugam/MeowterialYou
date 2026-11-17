@@ -9,6 +9,7 @@ import { IndicatorSpacingController } from './indicatorSpacing.js';
 import { PanelContrastController } from './panelContrast.js';
 import { TypeToSearchController } from './typeToSearch.js';
 import { BlurMyShellSyncController } from './blurMyShellSync.js';
+import { CenterIslandsController } from './centerIslands.js';
 
 export class TweaksManager {
   private _settings: Gio.Settings;
@@ -16,6 +17,7 @@ export class TweaksManager {
   private _indicatorSpacing: IndicatorSpacingController;
   private _panelContrast: PanelContrastController;
   private _bmsSync: BlurMyShellSyncController;
+  private _centerIslands: CenterIslandsController;
   private _signalIds: number[] = [];
 
   constructor(settings: Gio.Settings) {
@@ -24,6 +26,7 @@ export class TweaksManager {
     this._indicatorSpacing = new IndicatorSpacingController();
     this._panelContrast = new PanelContrastController(settings);
     this._bmsSync = new BlurMyShellSyncController();
+    this._centerIslands = new CenterIslandsController();
   }
 
   enable(): void {
@@ -34,6 +37,7 @@ export class TweaksManager {
     this._applyTypeToSearch();
     this._panelContrast.enable();
     this._bmsSync.enable();
+    this._centerIslands.enable();
     this._setupSettingsListeners();
   }
 
@@ -47,6 +51,7 @@ export class TweaksManager {
     this._indicatorSpacing.destroy();
     this._panelContrast.destroy();
     this._bmsSync.destroy();
+    this._centerIslands.destroy();
     this._restoreTopBarElementVisibility();
     Main.panel.remove_style_class_name('meowterialyou-hide-notification-dot');
     Main.layoutManager.uiGroup.remove_style_class_name('meowterialyou-hide-window-close');

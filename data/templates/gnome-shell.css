@@ -273,6 +273,51 @@ stage {
   box-shadow: inset 0 0 0 100px rgba(0, 0, 0, 0.1), inset 0 0 0 1px rgba(0, 0, 0, 0.05) !important;
 }
 
+/* Media Controls & Center Island Pills */
+#panel #panelCenter .panel-button:not(.clock-display),
+#panel .panel-button.meowterialyou-media-controls-button,
+#panel .panel-button.meowterialyou-center-island,
+.panel-button.meowterialyou-media-controls-button,
+.panel-button.meowterialyou-center-island {
+  background-color: @{secondaryContainer.hex} !important;
+  color: @{onSecondaryContainer.hex} !important;
+  border-radius: 14px;
+  border: 4px solid transparent;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.03) !important;
+  transition-duration: 100ms;
+}
+
+#panel #panelCenter .panel-button:not(.clock-display):hover,
+#panel #panelCenter .panel-button:not(.clock-display):active,
+#panel #panelCenter .panel-button:not(.clock-display):focus,
+#panel #panelCenter .panel-button:not(.clock-display):checked,
+.panel-button.meowterialyou-media-controls-button:hover,
+.panel-button.meowterialyou-media-controls-button:active,
+.panel-button.meowterialyou-media-controls-button:focus,
+.panel-button.meowterialyou-media-controls-button:checked,
+.panel-button.meowterialyou-center-island:hover,
+.panel-button.meowterialyou-center-island:active,
+.panel-button.meowterialyou-center-island:focus,
+.panel-button.meowterialyou-center-island:checked {
+  background-color: @{secondaryContainer.hex} !important;
+  box-shadow: inset 0 0 0 100px rgba(0, 0, 0, 0.1), inset 0 0 0 1px rgba(0, 0, 0, 0.05) !important;
+}
+
+#panel #panelCenter .panel-button:not(.clock-display) StLabel,
+#panel #panelCenter .panel-button:not(.clock-display) StIcon:not(.colored-icon),
+.meowterialyou-media-controls-button StLabel,
+.meowterialyou-media-controls-button StIcon:not(.colored-icon),
+.meowterialyou-center-island StLabel,
+.meowterialyou-center-island StIcon:not(.colored-icon) {
+  color: @{onSecondaryContainer.hex} !important;
+}
+
+.meowterialyou-media-controls-button .panel-controls-box > *:hover,
+#panelCenter .panel-button .panel-controls-box > *:hover {
+  background-color: @{primary.rgba12} !important;
+  border-radius: 99px;
+}
+
 /* Reset any unwanted nested backgrounds, borders, or padding on icons inside clock */
 #panel #panelCenter .clock StIcon,
 #panel #panelCenter .clock .system-status-icon,
