@@ -210,6 +210,19 @@ stage {
   color: @{onSecondaryContainer.hex} !important;
 }
 
+/* Transparent panel: QS icon color overrides — must beat (2,2,1) above, so we use 3 IDs */
+#panel.meowterialyou-panel-trans-dark #panelRight .panel-button.meowterialyou-quick-settings-button StLabel,
+#panel.meowterialyou-panel-trans-dark #panelRight .panel-button.meowterialyou-quick-settings-button StIcon,
+#panel.meowterialyou-panel-trans-dark #panelRight .panel-button.meowterialyou-quick-settings-button .system-status-icon {
+  color: #ffffff !important;
+}
+
+#panel.meowterialyou-panel-trans-light #panelRight .panel-button.meowterialyou-quick-settings-button StLabel,
+#panel.meowterialyou-panel-trans-light #panelRight .panel-button.meowterialyou-quick-settings-button StIcon,
+#panel.meowterialyou-panel-trans-light #panelRight .panel-button.meowterialyou-quick-settings-button .system-status-icon {
+  color: @{onSurface.hex} !important;
+}
+
 #panelRight .panel-button.meowterialyou-quick-settings-button:hover,
 #panelRight .panel-button.meowterialyou-quick-settings-button:active,
 #panelRight .panel-button.meowterialyou-quick-settings-button:focus,
