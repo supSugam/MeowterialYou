@@ -112,3 +112,10 @@
 #panelActivities StLabel {
   color: @{panelTextColor.hex} !important;
 }
+
+/* QS icon color — matches base specificity (2,2,1); wins because addon is appended last */
+#panel #panelRight .panel-button.meowterialyou-quick-settings-button StLabel,
+#panel #panelRight .panel-button.meowterialyou-quick-settings-button StIcon,
+#panel #panelRight .panel-button.meowterialyou-quick-settings-button .system-status-icon {
+  color: @{panelTextColor.hex} !important;
+}
