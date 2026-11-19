@@ -22,6 +22,9 @@ export interface ThemeWriteOptions {
   isGtk4Enabled: boolean;
   isMacButtonsEnabled: boolean;
   isTransparentPanelEnabled: boolean;
+  /** Wallpaper brightness under the panel — drives transparent panel overlay colors,
+   *  independent of the GNOME theme mode. Falls back to `isDark` when not provided. */
+  isTopDark?: boolean;
 }
 
 export function writeGeneratedThemes(options: ThemeWriteOptions): void {
@@ -43,7 +46,10 @@ export function writeGeneratedThemes(options: ThemeWriteOptions): void {
     let shellCss = substituteTemplate(shellRaw, options.scheme, options.wallpaperPath);
 
     if (options.isTransparentPanelEnabled) {
-      const addonName = options.isDark ? 'shell_dark.css' : 'shell_light.css';
+      // Use wallpaper brightness (not GNOME theme mode) to pick overlay colors.
+      // e.g. light theme + dark wallpaper → shell_dark.css (white borders/icons).
+      const isPanelRegionDark = options.isTopDark ?? options.isDark;
+      const addonName = isPanelRegionDark ? 'shell_dark.css' : 'shell_light.css';
       const addonPath = GLib.build_filenamev([
         dataDir,
         'templates',

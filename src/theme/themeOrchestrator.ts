@@ -100,6 +100,7 @@ export class ThemeOrchestrator {
         scheme,
         isDark,
         wallpaperPath,
+        isTopDark: extraction.isTopDark,
         isShellThemeEnabled: this._settings.get_boolean('shell-theme-enabled'),
         isGtk3Enabled: this._settings.get_boolean('gtk3-enabled'),
         isGtk4Enabled: this._settings.get_boolean('gtk4-enabled'),
