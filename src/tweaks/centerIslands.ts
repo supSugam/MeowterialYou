@@ -1,20 +1,18 @@
 /**
- * Center Islands & Media Controls Controller.
- * Identifies center panel buttons and Media Controls instances to apply Material You island pill styling.
+ * Center Islands Controller.
+ * Generically classifies every non-clock button in #panelCenter as a
+ * meowterialyou-center-island so it receives the same Material You pill
+ * styling as the Clock — without hardcoding any extension name.
  */
 
 import Clutter from 'gi://Clutter';
 import St from 'gi://St';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 
-const MEDIA_CONTROLS_CLASS = 'meowterialyou-media-controls-button';
 const CENTER_ISLAND_CLASS = 'meowterialyou-center-island';
 
-interface PanelWithBoxes {
-  _leftBox?: St.BoxLayout;
+interface PanelWithCenterBox {
   _centerBox?: St.BoxLayout;
-  _rightBox?: St.BoxLayout;
-  statusArea: Record<string, { container?: Clutter.Actor; add_style_class_name(c: string): void; remove_style_class_name(c: string): void } | undefined>;
 }
 
 export class CenterIslandsController {
@@ -30,8 +28,8 @@ export class CenterIslandsController {
     this._untagAllIslands();
   }
 
-  private _getPanel(): PanelWithBoxes {
-    return Main.panel as unknown as PanelWithBoxes;
+  private _getPanel(): PanelWithCenterBox {
+    return Main.panel as unknown as PanelWithCenterBox;
   }
 
   private _resolveButtonActor(actor: Clutter.Actor): St.Widget | null {
@@ -42,91 +40,45 @@ export class CenterIslandsController {
     return actor instanceof St.Widget ? actor : null;
   }
 
+  /**
+   * The native GNOME clock button carries the `clock-display` style class.
+   * Every other button in #panelCenter is a third-party center island.
+   */
   private _isClockActor(actor: Clutter.Actor): boolean {
     const button = this._resolveButtonActor(actor);
     return button?.has_style_class_name('clock-display') ?? false;
   }
 
-  private _isMediaControlsActor(actor: Clutter.Actor): boolean {
-    const button = this._resolveButtonActor(actor);
-    const target = button ?? actor;
-    if (target.name === 'Media Controls') {
-      return true;
-    }
-    const panel = this._getPanel();
-    const mcEntry = panel.statusArea['Media Controls'];
-    if (mcEntry && (mcEntry.container === actor || mcEntry.container === target)) {
-      return true;
-    }
-    return false;
-  }
-
-  private _tagActor(child: Clutter.Actor, isCenter: boolean): void {
+  private _tagActor(child: Clutter.Actor): void {
+    if (this._isClockActor(child)) return;
     const button = this._resolveButtonActor(child);
-    if (!button) return;
-
-    if (this._isMediaControlsActor(child) || this._isMediaControlsActor(button)) {
-      button.add_style_class_name(MEDIA_CONTROLS_CLASS);
-    }
-    if (isCenter && !this._isClockActor(child)) {
-      button.add_style_class_name(CENTER_ISLAND_CLASS);
-    }
+    button?.add_style_class_name(CENTER_ISLAND_CLASS);
   }
 
   private _tagAllIslands(): void {
-    const panel = this._getPanel();
-
-    // Check direct statusArea registration
-    const mcEntry = panel.statusArea['Media Controls'];
-    mcEntry?.add_style_class_name(MEDIA_CONTROLS_CLASS);
-
-    // Tag children in boxes
-    const centerBox = panel._centerBox;
-    if (centerBox) {
-      for (const child of centerBox.get_children()) {
-        this._tagActor(child, true);
-      }
-    }
-
-    // Check if media controls is in left or right boxes
-    for (const box of [panel._leftBox, panel._rightBox]) {
-      if (!box) continue;
-      for (const child of box.get_children()) {
-        this._tagActor(child, false);
-      }
+    const centerBox = this._getPanel()._centerBox;
+    if (!centerBox) return;
+    for (const child of centerBox.get_children()) {
+      this._tagActor(child);
     }
   }
 
   private _untagAllIslands(): void {
-    const panel = this._getPanel();
-    const mcEntry = panel.statusArea['Media Controls'];
-    mcEntry?.remove_style_class_name(MEDIA_CONTROLS_CLASS);
-
-    for (const box of [panel._leftBox, panel._centerBox, panel._rightBox]) {
-      if (!box) continue;
-      for (const child of box.get_children()) {
-        const button = this._resolveButtonActor(child);
-        button?.remove_style_class_name(MEDIA_CONTROLS_CLASS);
-        button?.remove_style_class_name(CENTER_ISLAND_CLASS);
-      }
+    const centerBox = this._getPanel()._centerBox;
+    if (!centerBox) return;
+    for (const child of centerBox.get_children()) {
+      const button = this._resolveButtonActor(child);
+      button?.remove_style_class_name(CENTER_ISLAND_CLASS);
     }
   }
 
   private _listenForBoxChanges(): void {
-    const panel = this._getPanel();
-    const boxes: Array<{ box?: St.BoxLayout; isCenter: boolean }> = [
-      { box: panel._centerBox, isCenter: true },
-      { box: panel._leftBox, isCenter: false },
-      { box: panel._rightBox, isCenter: false },
-    ];
-
-    for (const { box, isCenter } of boxes) {
-      if (!box) continue;
-      const id = box.connect('child-added', (_b, child) => {
-        this._tagActor(child, isCenter);
-      });
-      this._signalIds.push({ box, id });
-    }
+    const centerBox = this._getPanel()._centerBox;
+    if (!centerBox) return;
+    const id = centerBox.connect('child-added', (_box, child) => {
+      this._tagActor(child);
+    });
+    this._signalIds.push({ box: centerBox, id });
   }
 
   private _stopListening(): void {

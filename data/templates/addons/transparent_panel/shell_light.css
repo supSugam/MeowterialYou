@@ -31,9 +31,10 @@
 }
 
 /* Clock/Center Box base styling - subtle inset border always visible */
+#panel #panelCenter .clock,
+#panel #panelCenter .panel-button .clock,
 #panel .panel-button .clock,
 #panel #panelCenter .panel-button,
-#panel .panel-button.meowterialyou-media-controls-button,
 #panel .panel-button.meowterialyou-center-island {
   background-color: transparent !important;
   box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.1) !important;
@@ -49,10 +50,6 @@
 #panel #panelCenter .panel-button:active,
 #panel #panelCenter .panel-button:focus,
 #panel #panelCenter .panel-button:checked,
-#panel .panel-button.meowterialyou-media-controls-button:hover,
-#panel .panel-button.meowterialyou-media-controls-button:active,
-#panel .panel-button.meowterialyou-media-controls-button:focus,
-#panel .panel-button.meowterialyou-media-controls-button:checked,
 #panel .panel-button.meowterialyou-center-island:hover,
 #panel .panel-button.meowterialyou-center-island:active,
 #panel .panel-button.meowterialyou-center-island:focus,
