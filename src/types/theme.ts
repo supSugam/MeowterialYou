@@ -2,7 +2,7 @@
  * Core type definitions for MeowterialYou theming and configuration.
  */
 
-export type ThemeMode = 'system' | 'dark' | 'light';
+export type ThemeMode = 'dark' | 'light';
 
 export type SchemeVariant =
   | 'tonal-spot'

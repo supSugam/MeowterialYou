@@ -41,10 +41,7 @@ export class ThemeOrchestrator {
         return;
       }
 
-      const currentMode = this._settings.get_string('theme-mode');
-      if (currentMode !== 'system') {
-        this._settings.set_string('theme-mode', isSystemDark ? 'dark' : 'light');
-      }
+      this._settings.set_string('theme-mode', isSystemDark ? 'dark' : 'light');
       onModeChanged();
     });
   }
@@ -61,15 +58,7 @@ export class ThemeOrchestrator {
   }
 
   isDarkMode(): boolean {
-    const mode = this._settings.get_string('theme-mode');
-    if (mode === 'dark') {
-      return true;
-    }
-    if (mode === 'light') {
-      return false;
-    }
-    const colorScheme = this._interfaceSettings.get_string('color-scheme');
-    return colorScheme === 'prefer-dark';
+    return this._settings.get_string('theme-mode') === 'dark';
   }
 
   async applyTheme(force: boolean = false): Promise<boolean> {

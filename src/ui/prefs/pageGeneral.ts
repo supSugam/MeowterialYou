@@ -21,17 +21,17 @@ export function createGeneralPage(settings: Gio.Settings): Adw.PreferencesPage {
   // 1. Theme Mode Row
   const modeRow = new Adw.ComboRow({
     title: 'Theme Mode',
-    subtitle: 'Follow GNOME system light/dark setting or force a mode',
-    model: Gtk.StringList.new(['Follow System', 'Dark Mode', 'Light Mode']),
+    subtitle: 'Force dark or light mode — the extension always syncs with system automatically',
+    model: Gtk.StringList.new(['Dark Mode', 'Light Mode']),
   });
 
-  const modeValues = ['system', 'dark', 'light'];
+  const modeValues = ['dark', 'light'];
   const currentMode = settings.get_string('theme-mode');
   const initialModeIndex = Math.max(0, modeValues.indexOf(currentMode));
   modeRow.set_selected(initialModeIndex);
 
   modeRow.connect('notify::selected', () => {
-    const selectedMode = modeValues[modeRow.get_selected()] ?? 'system';
+    const selectedMode = modeValues[modeRow.get_selected()] ?? 'dark';
     settings.set_string('theme-mode', selectedMode);
   });
   group.add(modeRow);

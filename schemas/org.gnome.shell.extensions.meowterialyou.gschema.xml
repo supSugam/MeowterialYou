@@ -1,9 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <schemalist gettext-domain="meowterialyou">
   <enum id="org.gnome.shell.extensions.meowterialyou.ThemeMode">
-    <value value="0" nick="system" />
-    <value value="1" nick="dark" />
-    <value value="2" nick="light" />
+    <value value="0" nick="dark" />
+    <value value="1" nick="light" />
   </enum>
 
   <enum id="org.gnome.shell.extensions.meowterialyou.SchemeVariant">
@@ -45,9 +44,9 @@
 
   <schema id="org.gnome.shell.extensions.meowterialyou" path="/org/gnome/shell/extensions/meowterialyou/">
     <key name="theme-mode" enum="org.gnome.shell.extensions.meowterialyou.ThemeMode">
-      <default>'system'</default>
+      <default>'dark'</default>
       <summary>Theme mode</summary>
-      <description>Follow system light/dark setting, or force dark/light mode.</description>
+      <description>Force dark or light mode. The extension always syncs with the system color-scheme automatically.</description>
     </key>
 
     <key name="scheme-variant" enum="org.gnome.shell.extensions.meowterialyou.SchemeVariant">

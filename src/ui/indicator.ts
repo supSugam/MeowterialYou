@@ -102,8 +102,7 @@ export const MeowterialIndicator = GObject.registerClass(
 
       // 4. Mode Selection Submenu
       const modeSubmenu = new PopupMenu.PopupSubMenuMenuItem('Theme Mode', false);
-      const modes: Array<{ label: string; mode: 'system' | 'dark' | 'light' }> = [
-        { label: 'Follow System', mode: 'system' },
+      const modes: Array<{ label: string; mode: 'dark' | 'light' }> = [
         { label: 'Dark Mode', mode: 'dark' },
         { label: 'Light Mode', mode: 'light' },
       ];
