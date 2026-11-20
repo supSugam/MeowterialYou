@@ -1767,6 +1767,7 @@ StEntry:focus {
   margin-top: 24px;
   margin-bottom: 12px;
   width: 24em;
+  padding: 8px 16px;
 }
 
 .search-entry StLabel.hint-text {
