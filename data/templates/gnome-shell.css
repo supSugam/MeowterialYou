@@ -1795,7 +1795,8 @@ StEntry {
   border-radius: 13px;
   padding: 8px;
   transition-duration: 100ms;
-  border: 1px solid rgba(0, 0, 0, 0.03);
+  border: none;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.05);
   background-color: @{surfaceVariant.hex};
   color: @{onSurfaceVariant.hex};
   selection-background-color: @{primary.hex};
@@ -1811,7 +1812,8 @@ StEntry StLabel:insensitive {
 }
 
 StEntry:hover {
-  border: 1px solid @{outline.hex};
+  border: none;
+  box-shadow: inset 0 0 0 1px @{outline.hex};
   background-color: @{surfaceVariant.hex};
 }
 
@@ -1832,6 +1834,18 @@ StEntry:focus {
   margin-bottom: 12px;
   width: 24em;
   padding: 8px 16px;
+  border: none !important;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.05);
+}
+
+.search-entry:hover {
+  border: none !important;
+  box-shadow: inset 0 0 0 1px @{outline.hex};
+}
+
+.search-entry:focus, .search-entry:active {
+  border: none !important;
+  box-shadow: inset 0 0 0 2px @{primary.hex} !important;
 }
 
 .search-entry StLabel.hint-text {
