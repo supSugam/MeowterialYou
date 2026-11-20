@@ -75,8 +75,17 @@ export function writeGeneratedThemes(options: ThemeWriteOptions): void {
   if (options.isGtk4Enabled) {
     const gtk4TemplateName = options.isDark ? 'gtk4-dark.css' : 'gtk4.css';
     const gtk4TemplatePath = GLib.build_filenamev([dataDir, 'templates', gtk4TemplateName]);
-    const gtk4Css = substituteTemplate(readTextFile(gtk4TemplatePath), options.scheme);
+    let gtk4Css = substituteTemplate(readTextFile(gtk4TemplatePath), options.scheme);
 
+    if (options.isMacButtonsEnabled) {
+      const macAddon = options.isDark ? 'gtk_dark.css' : 'gtk_light.css';
+      const macPath = GLib.build_filenamev([dataDir, 'templates', 'addons', 'macbuttons', macAddon]);
+      if (GLib.file_test(macPath, GLib.FileTest.EXISTS)) {
+        gtk4Css += '\n' + readTextFile(macPath);
+      }
+    }
+
+    // Libadwaita config override — applies to all native GTK4/Libadwaita apps
     writeTextFile(GLib.build_filenamev([home, '.config', 'gtk-4.0', 'gtk.css']), gtk4Css);
     writeTextFile(GLib.build_filenamev([home, '.config', 'gtk-4.0', 'gtk-dark.css']), gtk4Css);
 
