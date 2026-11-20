@@ -1,5 +1,5 @@
 /**
- * Extra Tweaks preferences page for MeowterialYou.
+ * Top Bar preferences page — panel element visibility, indicators, and overview tweaks.
  */
 
 import Adw from 'gi://Adw';
@@ -8,46 +8,46 @@ import Gio from 'gi://Gio';
 
 export function createTweaksPage(settings: Gio.Settings): Adw.PreferencesPage {
   const page = new Adw.PreferencesPage({
-    title: 'Tweaks',
-    icon_name: 'emblem-system-symbolic',
+    title: 'Top Bar',
+    icon_name: 'view-app-grid-symbolic',
   });
 
-  // 1. Top Bar Elements
+  // ── Panel Element Visibility ──────────────────────────────────────────────
   const topBarGroup = new Adw.PreferencesGroup({
-    title: 'Top Bar Elements',
-    description: 'Toggle visibility of individual panel icons and indicators',
+    title: 'Panel Element Visibility',
+    description: 'Toggle individual icons and indicators in the top bar',
   });
   page.add(topBarGroup);
 
   const workspaceRow = new Adw.SwitchRow({
     title: 'Hide Workspace Indicator',
-    subtitle: 'Hide the Activities button and workspace dots from the top bar',
+    subtitle: 'Remove the Activities button and workspace dots from the top bar',
   });
   settings.bind('hide-workspace-indicator', workspaceRow, 'active', Gio.SettingsBindFlags.DEFAULT);
   topBarGroup.add(workspaceRow);
 
   const a11yRow = new Adw.SwitchRow({
     title: 'Hide Accessibility Menu',
-    subtitle: 'Hide the accessibility (a11y) icon from the top bar',
+    subtitle: 'Remove the accessibility (a11y) icon from the top bar',
   });
   settings.bind('hide-a11y-indicator', a11yRow, 'active', Gio.SettingsBindFlags.DEFAULT);
   topBarGroup.add(a11yRow);
 
   const keyboardRow = new Adw.SwitchRow({
     title: 'Hide Keyboard Layout Indicator',
-    subtitle: 'Hide the input source badge from the top bar',
+    subtitle: 'Remove the input source badge from the top bar',
   });
   settings.bind('hide-keyboard-indicator', keyboardRow, 'active', Gio.SettingsBindFlags.DEFAULT);
   topBarGroup.add(keyboardRow);
 
   const notificationDotRow = new Adw.SwitchRow({
     title: 'Hide Clock Notification Dot',
-    subtitle: 'Hide the notification dot and bell icon in the date display',
+    subtitle: 'Remove the notification dot and bell icon from the date display',
   });
   settings.bind('hide-notification-dot', notificationDotRow, 'active', Gio.SettingsBindFlags.DEFAULT);
   topBarGroup.add(notificationDotRow);
 
-  // 2. App Indicator Spacing
+  // ── App Indicators ────────────────────────────────────────────────────────
   const spacingGroup = new Adw.PreferencesGroup({
     title: 'App Indicators',
     description: 'Fine-tune spacing and density for status tray icons',
@@ -67,18 +67,14 @@ export function createTweaksPage(settings: Gio.Settings): Adw.PreferencesPage {
     subtitle: 'Horizontal spacing between status tray app indicators',
     model: Gtk.StringList.new(spacingLabels),
   });
-
   const currentSpacing = settings.get_string('indicator-spacing');
-  const initialIndex = Math.max(0, spacingValues.indexOf(currentSpacing));
-  spacingRow.set_selected(initialIndex);
-
+  spacingRow.set_selected(Math.max(0, spacingValues.indexOf(currentSpacing)));
   spacingRow.connect('notify::selected', () => {
-    const selected = spacingValues[spacingRow.get_selected()] ?? 'default';
-    settings.set_string('indicator-spacing', selected);
+    settings.set_string('indicator-spacing', spacingValues[spacingRow.get_selected()] ?? 'default');
   });
   spacingGroup.add(spacingRow);
 
-  // 3. Overview and Windows
+  // ── Overview and Windows ──────────────────────────────────────────────────
   const overviewGroup = new Adw.PreferencesGroup({
     title: 'Overview and Windows',
     description: 'Refine desktop overview appearance and interactions',
@@ -87,17 +83,18 @@ export function createTweaksPage(settings: Gio.Settings): Adw.PreferencesPage {
 
   const typeToSearchRow = new Adw.SwitchRow({
     title: 'Type to Search',
-    subtitle: 'Hide search entry in overview until typing begins',
+    subtitle: 'Hide the search entry in overview until typing begins',
   });
   settings.bind('type-to-search', typeToSearchRow, 'active', Gio.SettingsBindFlags.DEFAULT);
   overviewGroup.add(typeToSearchRow);
 
   const closeButtonRow = new Adw.SwitchRow({
     title: 'Hide Window Close Buttons',
-    subtitle: 'Hide the floating close button on window thumbnails in overview',
+    subtitle: 'Remove the floating close button on window thumbnails in overview',
   });
   settings.bind('hide-window-close-button', closeButtonRow, 'active', Gio.SettingsBindFlags.DEFAULT);
   overviewGroup.add(closeButtonRow);
 
   return page;
 }
+
