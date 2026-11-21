@@ -119,3 +119,25 @@
 #panel #panelRight .panel-button.meowterialyou-quick-settings-button .system-status-icon {
   color: @{panelTextColor.hex} !important;
 }
+
+/* Center Islands text & icons color — matches base specificity (2,2,1); wins because addon is appended last */
+#panel .panel-button.meowterialyou-center-island,
+#panel .panel-button.meowterialyou-center-island StLabel,
+#panel .panel-button.meowterialyou-center-island StIcon,
+#panel .panel-button.meowterialyou-center-island .system-status-icon,
+#panel .panel-button.meowterialyou-center-island StScrollView StLabel,
+#panel .panel-button.meowterialyou-center-island .panel-controls-box StIcon,
+#panel .panel-button.meowterialyou-center-island .panel-controls-box .system-status-icon,
+#panel #panelCenter .panel-button.meowterialyou-center-island StLabel,
+#panel #panelCenter .panel-button.meowterialyou-center-island StIcon,
+#panel #panelCenter .panel-button.meowterialyou-center-island .system-status-icon,
+#panel #panelCenter .panel-button.meowterialyou-center-island StScrollView StLabel,
+#panel #panelCenter .panel-button.meowterialyou-center-island .panel-controls-box StIcon,
+#panel #panelCenter .panel-button.meowterialyou-center-island .panel-controls-box .system-status-icon {
+  color: @{panelTextColor.hex} !important;
+}
+
+#panel .panel-button.meowterialyou-center-island .colored-icon,
+#panel #panelCenter .panel-button.meowterialyou-center-island .colored-icon {
+  -st-icon-style: requested;
+}
