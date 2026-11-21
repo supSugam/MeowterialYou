@@ -19,19 +19,10 @@ export function applyGnomeSystemSettings(
     windowButtonPosition === 'left' ? 'close,minimize,maximize:' : ':minimize,maximize,close';
   wmSettings.set_string('button-layout', buttonLayout);
 
-  // 2. Color scheme sync & Libadwaita live reload pulse
+  // 2. Color scheme sync
   const interfaceSettings = new Gio.Settings({ schema: 'org.gnome.desktop.interface' });
   const targetColorScheme = isDark ? 'prefer-dark' : 'default';
-  if (interfaceSettings.get_string('color-scheme') === targetColorScheme) {
-    const bounceScheme = isDark ? 'default' : 'prefer-dark';
-    interfaceSettings.set_string('color-scheme', bounceScheme);
-    Gio.Settings.sync();
-    GLib.timeout_add(GLib.PRIORITY_DEFAULT, 40, () => {
-      interfaceSettings.set_string('color-scheme', targetColorScheme);
-      Gio.Settings.sync();
-      return GLib.SOURCE_REMOVE;
-    });
-  } else {
+  if (interfaceSettings.get_string('color-scheme') !== targetColorScheme) {
     interfaceSettings.set_string('color-scheme', targetColorScheme);
     Gio.Settings.sync();
   }
@@ -64,17 +55,11 @@ export function applyGnomeSystemSettings(
     }
   }
 
-  // 5. Terminate stale extensions daemon & background nautilus service
+  // 5. Terminate stale extensions daemon if preferences window is not open
   terminateStaleDaemons();
 }
 
 function terminateStaleDaemons(): void {
-  try {
-    GLib.spawn_command_line_async('nautilus -q');
-  } catch {
-    // Ignore if nautilus is unavailable
-  }
-
   if (isExtensionPrefsWindowOpen()) {
     return;
   }

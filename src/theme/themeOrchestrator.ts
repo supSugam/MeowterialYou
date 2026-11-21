@@ -38,6 +38,9 @@ export class ThemeOrchestrator {
   connectSystemModeListener(onModeChanged: () => void): void {
     this.disconnectSystemModeListener();
     this._systemSignalId = this._interfaceSettings.connect('changed::color-scheme', () => {
+      if (this._isApplying) {
+        return;
+      }
       const isSystemDark = this._interfaceSettings.get_string('color-scheme') === 'prefer-dark';
       const currentApplierDark = this.isDarkMode();
       if (isSystemDark === currentApplierDark) {
