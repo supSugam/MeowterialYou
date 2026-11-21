@@ -9,6 +9,16 @@ export function getHomeDirectory(): string {
   return GLib.get_home_dir();
 }
 
+export function getTargetHomeDirectories(): string[] {
+  const dirs = [GLib.get_home_dir()];
+  const username = GLib.get_user_name();
+  const realHome = `/home/${username}`;
+  if (!dirs.includes(realHome) && GLib.file_test(realHome, GLib.FileTest.IS_DIR)) {
+    dirs.push(realHome);
+  }
+  return dirs;
+}
+
 export function readTextFile(filePath: string): string {
   const file = Gio.File.new_for_path(filePath);
   const [, contents] = file.load_contents(null);

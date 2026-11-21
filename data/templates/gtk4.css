@@ -1,40 +1,59 @@
-@define-color accent_bg_color @{primary.hex};
-@define-color accent_fg_color @{onPrimary.hex};
-@define-color accent_color @{primary.hex};
-@define-color destructive_bg_color @{error.hex};
-@define-color destructive_fg_color @{onError.hex};
-@define-color destructive_color @{error.hex};
-@define-color success_bg_color @{tertiaryContainer.hex};
-@define-color success_fg_color @{onTertiaryContainer.hex};
+/* ===== MeowterialYou Libadwaita / GTK4 Stylesheet ===== */
+
+/* Light Mode (Base) */
+@define-color accent_bg_color @{light.primary.hex};
+@define-color accent_fg_color @{light.onPrimary.hex};
+@define-color accent_color @{light.primary.hex};
+@define-color destructive_bg_color @{light.error.hex};
+@define-color destructive_fg_color @{light.onError.hex};
+@define-color destructive_color @{light.error.hex};
+@define-color success_bg_color @{light.tertiaryContainer.hex};
+@define-color success_fg_color @{light.onTertiaryContainer.hex};
 @define-color success_color #1b8553;
-@define-color warning_bg_color @{secondary.hex};
-@define-color warning_fg_color @{onSecondary.hex};
-@define-color warning_color @{secondary.hex};
-@define-color error_bg_color @{errorContainer.hex};
-@define-color error_fg_color @{onErrorContainer.hex};
-@define-color error_color @{error.hex};
-@define-color window_bg_color @{surface.hex};
-@define-color window_fg_color @{onSurface.hex};
-@define-color view_bg_color @{surface.hex};
-@define-color view_fg_color @{onSurface.hex};
-@define-color headerbar_bg_color @{surfaceContainer.hex};
-@define-color sidebar_bg_color @{surfaceContainerLow.hex};
-@define-color secondary_sidebar_bg_color @{surfaceContainerLow.hex};
-@define-color headerbar_fg_color @{onSurface.hex};
+@define-color warning_bg_color @{light.secondary.hex};
+@define-color warning_fg_color @{light.onSecondary.hex};
+@define-color warning_color @{light.secondary.hex};
+@define-color error_bg_color @{light.errorContainer.hex};
+@define-color error_fg_color @{light.onErrorContainer.hex};
+@define-color error_color @{light.error.hex};
+
+@define-color window_bg_color @{light.surface.hex};
+@define-color window_fg_color @{light.onSurface.hex};
+@define-color view_bg_color @{light.surface.hex};
+@define-color view_fg_color @{light.onSurface.hex};
+
+@define-color headerbar_bg_color @{light.surfaceContainer.hex};
+@define-color headerbar_fg_color @{light.onSurface.hex};
 @define-color headerbar_border_color rgba(0, 0, 0, 0.08);
 @define-color headerbar_backdrop_color @window_bg_color;
 @define-color headerbar_shade_color rgba(0, 0, 0, 0.04);
-@define-color card_bg_color @{surfaceContainerLowest.hex};
-@define-color card_fg_color @{onSurface.hex};
+
+@define-color sidebar_bg_color @{light.surfaceContainerLow.hex};
+@define-color sidebar_fg_color @{light.onSurface.hex};
+@define-color sidebar_backdrop_color @{light.surfaceContainerLowest.hex};
+@define-color sidebar_shade_color rgba(0, 0, 0, 0.04);
+@define-color sidebar_border_color rgba(0, 0, 0, 0.07);
+
+@define-color secondary_sidebar_bg_color @{light.surfaceContainerLow.hex};
+@define-color secondary_sidebar_fg_color @{light.onSurface.hex};
+@define-color secondary_sidebar_backdrop_color @{light.surfaceContainerLowest.hex};
+@define-color secondary_sidebar_shade_color rgba(0, 0, 0, 0.04);
+@define-color secondary_sidebar_border_color rgba(0, 0, 0, 0.07);
+
+@define-color card_bg_color @{light.surfaceContainerLowest.hex};
+@define-color card_fg_color @{light.onSurface.hex};
 @define-color card_shade_color rgba(0, 0, 0, 0.04);
-@define-color dialog_bg_color @{surfaceContainerHigh.hex};
-@define-color dialog_fg_color @{onSurface.hex};
-@define-color popover_bg_color @{surfaceContainer.hex};
-@define-color popover_fg_color @{onSurface.hex};
+
+@define-color dialog_bg_color @{light.surfaceContainerHigh.hex};
+@define-color dialog_fg_color @{light.onSurface.hex};
+@define-color popover_bg_color @{light.surfaceContainer.hex};
+@define-color popover_fg_color @{light.onSurface.hex};
+@define-color popover_shade_color rgba(0, 0, 0, 0.04);
+
 @define-color thumbnail_bg_color #ffffff;
 @define-color thumbnail_fg_color rgba(0, 0, 0, 0.8);
 @define-color shade_color rgba(0, 0, 0, 0.04);
-@define-color scrollbar_outline_color @{outlineVariant.hex};
+@define-color scrollbar_outline_color @{light.outlineVariant.hex};
 @define-color incognito_bg_color #d7e3f0;
 
 @define-color theme_bg_color @window_bg_color;
@@ -44,10 +63,75 @@
 @define-color theme_selected_bg_color @accent_bg_color;
 @define-color theme_selected_fg_color @accent_fg_color;
 
+/* Dark Mode Overrides */
+@media (prefers-color-scheme: dark) {
+  @define-color accent_bg_color @{dark.primary.hex};
+  @define-color accent_fg_color @{dark.onPrimary.hex};
+  @define-color accent_color @{dark.primary.hex};
+  @define-color destructive_bg_color @{dark.error.hex};
+  @define-color destructive_fg_color @{dark.onError.hex};
+  @define-color destructive_color @{dark.error.hex};
+  @define-color success_bg_color @{dark.tertiaryContainer.hex};
+  @define-color success_fg_color @{dark.onTertiaryContainer.hex};
+  @define-color success_color #1b8553;
+  @define-color warning_bg_color @{dark.secondary.hex};
+  @define-color warning_fg_color @{dark.onSecondary.hex};
+  @define-color warning_color @{dark.secondary.hex};
+  @define-color error_bg_color @{dark.errorContainer.hex};
+  @define-color error_fg_color @{dark.onErrorContainer.hex};
+  @define-color error_color @{dark.error.hex};
+
+  @define-color window_bg_color @{dark.surfaceContainer.hex};
+  @define-color window_fg_color @{dark.onSurface.hex};
+  @define-color view_bg_color @{dark.surfaceContainer.hex};
+  @define-color view_fg_color @{dark.onSurface.hex};
+
+  @define-color headerbar_bg_color @{dark.surfaceContainerHigh.hex};
+  @define-color headerbar_fg_color @{dark.onSurface.hex};
+  @define-color headerbar_border_color rgba(255, 255, 255, 0.08);
+  @define-color headerbar_backdrop_color @headerbar_bg_color;
+  @define-color headerbar_shade_color rgba(0, 0, 0, 0.15);
+
+  @define-color sidebar_bg_color @{dark.surfaceContainerLow.hex};
+  @define-color sidebar_fg_color @{dark.onSurface.hex};
+  @define-color sidebar_backdrop_color @{dark.surfaceContainerLowest.hex};
+  @define-color sidebar_shade_color rgba(0, 0, 0, 0.25);
+  @define-color sidebar_border_color rgba(255, 255, 255, 0.08);
+
+  @define-color secondary_sidebar_bg_color @{dark.surfaceContainerLow.hex};
+  @define-color secondary_sidebar_fg_color @{dark.onSurface.hex};
+  @define-color secondary_sidebar_backdrop_color @{dark.surfaceContainerLowest.hex};
+  @define-color secondary_sidebar_shade_color rgba(0, 0, 0, 0.25);
+  @define-color secondary_sidebar_border_color rgba(255, 255, 255, 0.08);
+
+  @define-color card_bg_color @{dark.surfaceContainerHigh.hex};
+  @define-color card_fg_color @{dark.onSurface.hex};
+  @define-color card_shade_color rgba(0, 0, 0, 0.15);
+
+  @define-color dialog_bg_color @{dark.surfaceContainerHigh.hex};
+  @define-color dialog_fg_color @{dark.onSurface.hex};
+  @define-color popover_bg_color @{dark.surfaceContainerHigh.hex};
+  @define-color popover_fg_color @{dark.onSurface.hex};
+  @define-color popover_shade_color rgba(0, 0, 0, 0.25);
+
+  @define-color thumbnail_bg_color #000000;
+  @define-color thumbnail_fg_color rgba(255, 255, 255, 0.8);
+  @define-color shade_color rgba(255, 255, 255, 0.07);
+  @define-color scrollbar_outline_color @{dark.outlineVariant.hex};
+  @define-color incognito_bg_color #d7e3f0;
+
+  @define-color theme_bg_color @window_bg_color;
+  @define-color theme_base_color @view_bg_color;
+  @define-color theme_fg_color @window_fg_color;
+  @define-color theme_text_color @view_fg_color;
+  @define-color theme_selected_bg_color @accent_bg_color;
+  @define-color theme_selected_fg_color @accent_fg_color;
+}
+
 /* DING Transparency Fix for GTK4 */
 window.ding-window,
 window.gungadin-window,
 .ding-window,
 .gjs-ding-window {
-    background-color: transparent;
+  background-color: transparent;
 }

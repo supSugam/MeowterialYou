@@ -89,16 +89,16 @@ export class ThemeOrchestrator {
       const extraction = await extractColorsFromWallpaper(wallpaperPath);
       this._onExtractionCompleted?.(extraction, isDark);
       const variant = this._settings.get_string('scheme-variant') as SchemeVariant;
-      const scheme = generateMaterialScheme(
-        extraction.seedArgb,
-        isDark,
-        variant,
-        extraction.isTopDark
-      );
+      const topDark = extraction.isTopDark;
+      const lightScheme = generateMaterialScheme(extraction.seedArgb, false, variant, topDark);
+      const darkScheme = generateMaterialScheme(extraction.seedArgb, true, variant, topDark);
+      const scheme = isDark ? darkScheme : lightScheme;
 
       writeGeneratedThemes({
         extensionDir: this._extensionDir,
         scheme,
+        lightScheme,
+        darkScheme,
         isDark,
         wallpaperPath,
         isTopDark: extraction.isTopDark,
