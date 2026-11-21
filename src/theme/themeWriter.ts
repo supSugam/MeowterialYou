@@ -6,7 +6,6 @@ import GLib from 'gi://GLib';
 import {
   copyDirectoryRecursive,
   deleteFile,
-  getHomeDirectory,
   getTargetHomeDirectories,
   readTextFile,
   writeTextFile,
@@ -47,14 +46,14 @@ const MAC_DARK_OVERRIDE = `
 }`;
 
 export function writeGeneratedThemes(options: ThemeWriteOptions): void {
-  const home = getHomeDirectory();
   const themeSuffix = options.isDark ? 'dark' : 'light';
   const themeName = `MeowterialYou-${themeSuffix}`;
   const dataDir = GLib.build_filenamev([options.extensionDir, 'data']);
-  const themeBases = [
-    GLib.build_filenamev([home, '.local', 'share', 'themes', themeName]),
-    GLib.build_filenamev([home, '.themes', themeName]),
-  ];
+  const themeBases: string[] = [];
+  for (const dir of getTargetHomeDirectories()) {
+    themeBases.push(GLib.build_filenamev([dir, '.local', 'share', 'themes', themeName]));
+    themeBases.push(GLib.build_filenamev([dir, '.themes', themeName]));
+  }
   const gtkAssetsSrc = GLib.build_filenamev([dataDir, 'assets', themeName, 'gtk-3.0', 'assets']);
 
   // 1. GNOME Shell Theme

@@ -730,83 +730,101 @@ stage {
 }
 
 /* calendar-days */
-.calendar-day-base,
-.calendar-month-header .pager-button {
-  color: @{onSurface.hex};
-  border-radius: 10px;
+.calendar {
+  border-radius: 14px;
+  background-color: @{surfaceVariant.hex};
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.03) !important;
+  padding: 5px;
 }
 
-.calendar-month-label {
+.calendar .calendar-month-header {
   color: @{onSurface.hex};
 }
 
-.calendar-day-base,
-.calendar-day,
+.calendar .calendar-month-header .calendar-month-label {
+  color: @{onSurface.hex} !important;
+  background-color: transparent !important;
+  font-weight: 700;
+}
+
 .calendar .calendar-month-header .pager-button {
+  color: @{onSurface.hex} !important;
+  background-color: transparent !important;
+  border-radius: 999px;
+  box-shadow: none !important;
   transition-duration: 100ms;
 }
 
-/* Pinpointed fix for calendar focus ring */
-.calendar-day-base:hover,
-.calendar-day-base:focus,
-.calendar-day-base:focus-visible,
-.calendar-day:hover,
-.calendar-day:focus,
-.calendar-day:focus-visible,
-.calendar-day-base:active:hover,
-.calendar-day-base:selected:hover,
 .calendar .calendar-month-header .pager-button:hover,
-.calendar .calendar-month-header .pager-button:focus,
-.calendar .calendar-month-header .pager-button:focus-visible {
-  background-color: rgba(0, 0, 0, 0.15) !important;
-  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.05);
+.calendar .calendar-month-header .pager-button:focus {
+  background-color: rgba(0, 0, 0, 0.08) !important;
+  color: @{onSurface.hex} !important;
 }
 
-.calendar-day-base:focus,
-.calendar-day-base:focus-visible,
-.calendar-day:focus,
-.calendar-day:focus-visible,
-.calendar .calendar-month-header .pager-button:focus,
-.calendar .calendar-month-header .pager-button:focus-visible {
-  box-shadow: inset 0 0 0 2px @{primary.hex} !important;
-  outline: none !important;
+.calendar .calendar-day-heading {
+  color: @{onSurfaceVariant.hex} !important;
+  background-color: transparent !important;
+  font-weight: 700;
+  box-shadow: none !important;
 }
+
+.calendar-day-base,
+.calendar .calendar-day {
+  color: @{onSurface.hex} !important;
+  background-color: transparent !important;
+  border-radius: 999px;
+  box-shadow: none !important;
+  transition-duration: 100ms;
+}
+
+.calendar-day-base:hover,
+.calendar .calendar-day:hover,
+.calendar-day-base:focus,
+.calendar .calendar-day:focus {
+  background-color: rgba(0, 0, 0, 0.08) !important;
+  color: @{onSurface.hex} !important;
+  box-shadow: none !important;
+}
+
+.calendar .calendar-day.calendar-weekend {
+  color: @{outline.hex} !important;
+  background-color: transparent !important;
+}
+
+.calendar .calendar-day.calendar-other-month {
+  color: @{outlineVariant.hex} !important;
+  background-color: transparent !important;
+  opacity: 0.6;
+}
+
 .calendar-day-base:active,
 .calendar-day-base:selected,
-.calendar-day:active,
-.calendar-day:selected {
+.calendar .calendar-day:active,
+.calendar .calendar-day:selected {
   background-color: @{secondaryContainer.hex} !important;
   color: @{onSecondaryContainer.hex} !important;
-  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.03);
   font-weight: 700 !important;
 }
 
+.calendar .calendar-day.calendar-today,
 .calendar-today,
 .calendar-today:selected {
   background-color: @{primary.hex} !important;
   color: @{onPrimary.hex} !important;
-  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.03);
   font-weight: 700 !important;
+  box-shadow: none !important;
 }
 
-.calendar-today:hover,
-.calendar-today:selected:hover {
+.calendar .calendar-day.calendar-today:hover,
+.calendar-today:hover {
   background-color: @{secondary.hex} !important;
-  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.03) !important;
+  color: @{onSecondary.hex} !important;
 }
 
 .calendar .calendar-day-with-events {
   background-image: url("calendar-today.svg");
   background-size: contain;
   font-weight: 700;
-}
-
-/* events */
-.calendar {
-  border-radius: 14px;
-  background-color: @{surfaceVariant.hex};
-  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.03) !important;
-  padding: 5px;
 }
 
 .events-button,
@@ -1830,10 +1848,9 @@ StEntry:focus {
 /* Search entry styling */
 .search-entry {
   border-radius: 999px;
-  margin-top: 12px;
-  margin-bottom: 6px;
+  margin-top: 24px;
+  margin-bottom: 12px;
   width: 24em;
-  min-height: 38px;
   padding: 8px 16px;
   border: none !important;
   box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.05);
