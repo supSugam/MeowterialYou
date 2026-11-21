@@ -15,6 +15,7 @@ import type { MaterialSchemeColors } from '../types/theme.js';
 export interface ThemeWriteOptions {
   extensionDir: string;
   scheme: MaterialSchemeColors;
+  darkScheme?: MaterialSchemeColors;
   isDark: boolean;
   wallpaperPath: string;
   isShellThemeEnabled: boolean;
@@ -27,6 +28,11 @@ export interface ThemeWriteOptions {
   isTopDark?: boolean;
 }
 
+function loadMacAddon(dataDir: string, filename: string): string {
+  const path = GLib.build_filenamev([dataDir, 'templates', 'addons', 'macbuttons', filename]);
+  return GLib.file_test(path, GLib.FileTest.EXISTS) ? '\n' + readTextFile(path) : '';
+}
+
 export function writeGeneratedThemes(options: ThemeWriteOptions): void {
   const home = getHomeDirectory();
   const themeSuffix = options.isDark ? 'dark' : 'light';
@@ -37,6 +43,7 @@ export function writeGeneratedThemes(options: ThemeWriteOptions): void {
     GLib.build_filenamev([home, '.themes', themeName]),
   ];
   const gtkAssetsSrc = GLib.build_filenamev([dataDir, 'assets', themeName, 'gtk-3.0', 'assets']);
+  const darkScheme = options.darkScheme ?? options.scheme;
 
   // 1. GNOME Shell Theme
   if (options.isShellThemeEnabled) {
@@ -46,8 +53,6 @@ export function writeGeneratedThemes(options: ThemeWriteOptions): void {
     let shellCss = substituteTemplate(shellRaw, options.scheme, options.wallpaperPath);
 
     if (options.isTransparentPanelEnabled) {
-      // Use wallpaper brightness (not GNOME theme mode) to pick overlay colors.
-      // e.g. light theme + dark wallpaper → shell_dark.css (white borders/icons).
       const isPanelRegionDark = options.isTopDark ?? options.isDark;
       const addonName = isPanelRegionDark ? 'shell_dark.css' : 'shell_light.css';
       const addonPath = GLib.build_filenamev([
@@ -73,35 +78,29 @@ export function writeGeneratedThemes(options: ThemeWriteOptions): void {
 
   // 2. GTK4 Theme (writes config override for Libadwaita & theme folder for Chrome Wayland)
   if (options.isGtk4Enabled) {
-    const gtk4TemplateName = options.isDark ? 'gtk4-dark.css' : 'gtk4.css';
-    const gtk4TemplatePath = GLib.build_filenamev([dataDir, 'templates', gtk4TemplateName]);
-    let gtk4Css = substituteTemplate(readTextFile(gtk4TemplatePath), options.scheme);
+    const gtk4ActiveTemplate = options.isDark ? 'gtk4-dark.css' : 'gtk4.css';
+    const gtk4ActivePath = GLib.build_filenamev([dataDir, 'templates', gtk4ActiveTemplate]);
+    const gtk4DarkPath = GLib.build_filenamev([dataDir, 'templates', 'gtk4-dark.css']);
 
-    if (options.isMacButtonsEnabled) {
-      const macAddon = options.isDark ? 'gtk_dark.css' : 'gtk_light.css';
-      const macPath = GLib.build_filenamev([dataDir, 'templates', 'addons', 'macbuttons', macAddon]);
-      if (GLib.file_test(macPath, GLib.FileTest.EXISTS)) {
-        gtk4Css += '\n' + readTextFile(macPath);
-      }
-    }
+    const macActiveAddon = options.isMacButtonsEnabled
+      ? loadMacAddon(dataDir, options.isDark ? 'gtk_dark.css' : 'gtk_light.css')
+      : '';
+    const macDarkAddon = options.isMacButtonsEnabled
+      ? loadMacAddon(dataDir, 'gtk_dark.css')
+      : '';
 
-    // Libadwaita config override — applies to all native GTK4/Libadwaita apps
-    writeTextFile(GLib.build_filenamev([home, '.config', 'gtk-4.0', 'gtk.css']), gtk4Css);
-    writeTextFile(GLib.build_filenamev([home, '.config', 'gtk-4.0', 'gtk-dark.css']), gtk4Css);
+    const gtk4ActiveCss = substituteTemplate(readTextFile(gtk4ActivePath), options.scheme) + macActiveAddon;
+    const gtk4DarkCss = substituteTemplate(readTextFile(gtk4DarkPath), darkScheme) + macDarkAddon;
 
-    // Chrome Wayland GTK4 theme from original addon template
+    // In light mode, gtk.css is light and gtk-dark.css is dark. In dark mode, both are dark.
+    writeTextFile(GLib.build_filenamev([home, '.config', 'gtk-4.0', 'gtk.css']), gtk4ActiveCss);
+    writeTextFile(GLib.build_filenamev([home, '.config', 'gtk-4.0', 'gtk-dark.css']), gtk4DarkCss);
+
+    // Chrome Wayland GTK4 theme
     const chromeTemplateName = options.isDark ? 'gtk_4_chrome_dark.css' : 'gtk_4_chrome_light.css';
     const chromePath = GLib.build_filenamev([dataDir, 'templates', 'addons', 'chrome_gtk4', chromeTemplateName]);
     if (GLib.file_test(chromePath, GLib.FileTest.EXISTS)) {
-      let chromeCss = substituteTemplate(readTextFile(chromePath), options.scheme);
-      if (options.isMacButtonsEnabled) {
-        const macAddon = options.isDark ? 'gtk_dark.css' : 'gtk_light.css';
-        const macPath = GLib.build_filenamev([dataDir, 'templates', 'addons', 'macbuttons', macAddon]);
-        if (GLib.file_test(macPath, GLib.FileTest.EXISTS)) {
-          chromeCss += '\n' + readTextFile(macPath);
-        }
-      }
-
+      const chromeCss = substituteTemplate(readTextFile(chromePath), options.scheme) + macActiveAddon;
       for (const base of themeBases) {
         const g4 = GLib.build_filenamev([base, 'gtk-4.0']);
         writeTextFile(GLib.build_filenamev([g4, 'gtk.css']), chromeCss);
@@ -111,25 +110,29 @@ export function writeGeneratedThemes(options: ThemeWriteOptions): void {
     }
   }
 
-  // 3. GTK3 Theme (writes both gtk.css and gtk-dark.css)
+  // 3. GTK3 Theme (writes config override & theme folder)
   if (options.isGtk3Enabled) {
-    const gtk3TemplateName = options.isDark ? 'gtk3-dark.css' : 'gtk3.css';
-    const gtk3TemplatePath = GLib.build_filenamev([dataDir, 'templates', gtk3TemplateName]);
-    let gtk3Css = substituteTemplate(readTextFile(gtk3TemplatePath), options.scheme);
+    const gtk3ActiveTemplate = options.isDark ? 'gtk3-dark.css' : 'gtk3.css';
+    const gtk3ActivePath = GLib.build_filenamev([dataDir, 'templates', gtk3ActiveTemplate]);
+    const gtk3DarkPath = GLib.build_filenamev([dataDir, 'templates', 'gtk3-dark.css']);
 
-    if (options.isMacButtonsEnabled) {
-      const macGtk3Addon = options.isDark ? 'gtk_3_dark.css' : 'gtk_3_light.css';
-      const macPath = GLib.build_filenamev([dataDir, 'templates', 'addons', 'macbuttons', macGtk3Addon]);
-      gtk3Css += '\n' + readTextFile(macPath);
-    }
+    const macGtk3Active = options.isMacButtonsEnabled
+      ? loadMacAddon(dataDir, options.isDark ? 'gtk_3_dark.css' : 'gtk_3_light.css')
+      : '';
+    const macGtk3Dark = options.isMacButtonsEnabled
+      ? loadMacAddon(dataDir, 'gtk_3_dark.css')
+      : '';
 
-    writeTextFile(GLib.build_filenamev([home, '.config', 'gtk-3.0', 'gtk.css']), gtk3Css);
-    writeTextFile(GLib.build_filenamev([home, '.config', 'gtk-3.0', 'gtk-dark.css']), gtk3Css);
+    const gtk3ActiveCss = substituteTemplate(readTextFile(gtk3ActivePath), options.scheme) + macGtk3Active;
+    const gtk3DarkCss = substituteTemplate(readTextFile(gtk3DarkPath), darkScheme) + macGtk3Dark;
+
+    writeTextFile(GLib.build_filenamev([home, '.config', 'gtk-3.0', 'gtk.css']), gtk3ActiveCss);
+    writeTextFile(GLib.build_filenamev([home, '.config', 'gtk-3.0', 'gtk-dark.css']), gtk3DarkCss);
 
     for (const base of themeBases) {
       const g3 = GLib.build_filenamev([base, 'gtk-3.0']);
-      writeTextFile(GLib.build_filenamev([g3, 'gtk.css']), gtk3Css);
-      writeTextFile(GLib.build_filenamev([g3, 'gtk-dark.css']), gtk3Css);
+      writeTextFile(GLib.build_filenamev([g3, 'gtk.css']), gtk3ActiveCss);
+      writeTextFile(GLib.build_filenamev([g3, 'gtk-dark.css']), gtk3DarkCss);
       copyDirectoryRecursive(gtkAssetsSrc, GLib.build_filenamev([g3, 'assets']));
     }
   }

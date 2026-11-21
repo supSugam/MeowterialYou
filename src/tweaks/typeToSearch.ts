@@ -1,19 +1,12 @@
 /**
  * Type-to-search behavior controller for GNOME Shell Overview.
+ *
+ * Operates purely on searchEntry opacity to avoid mutating Clutter actor
+ * geometry or interfering with GNOME Shell's ControlsManager layout animations.
  */
 
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import Clutter from 'gi://Clutter';
-
-interface AnimatableActor extends Clutter.Actor {
-  ease(options: {
-    height?: number;
-    opacity?: number;
-    mode?: Clutter.AnimationMode;
-    duration?: number;
-    onComplete?: () => void;
-  }): void;
-}
 
 interface SearchControllerType {
   searchActive: boolean;
@@ -21,10 +14,17 @@ interface SearchControllerType {
   disconnect(id: number): void;
 }
 
-const SEARCH_ANIMATION_MODE = Clutter.AnimationMode.EASE_OUT_QUAD;
-const REVEAL_DURATION_MS = 120;
-const HIDE_DURATION_MS = 100;
-const DEFAULT_ENTRY_HEIGHT = 36;
+interface AnimatableEntry extends Clutter.Actor {
+  ease(options: {
+    opacity?: number;
+    mode?: Clutter.AnimationMode;
+    duration?: number;
+    onComplete?: () => void;
+  }): void;
+}
+
+const FADE_DURATION_MS = 120;
+const FADE_MODE = Clutter.AnimationMode.EASE_OUT_QUAD;
 
 export class TypeToSearchController {
   private _searchSignalId: number | null = null;
@@ -42,16 +42,16 @@ export class TypeToSearchController {
 
     this._overviewShowingId = Main.overview.connect('showing', () => {
       if (!searchController.searchActive) {
-        this._setSearchVisible(false, false);
+        this._setSearchOpacity(0, false);
       }
     });
 
     this._searchSignalId = searchController.connect('notify::search-active', () => {
-      this._setSearchVisible(searchController.searchActive, true);
+      this._setSearchOpacity(searchController.searchActive ? 255 : 0, true);
     });
 
     if (Main.overview.visible && !searchController.searchActive) {
-      this._setSearchVisible(false, true);
+      this._setSearchOpacity(0, false);
     }
   }
 
@@ -70,63 +70,38 @@ export class TypeToSearchController {
     }
 
     this._isEnabled = false;
-    this._resetSearchEntry();
+    this._restoreSearchEntry();
   }
 
-  private _resolveParentActor(): AnimatableActor | null {
-    const searchEntry = Main.overview.searchEntry;
-    const parentActor = searchEntry?.get_parent();
-    return parentActor ? (parentActor as unknown as AnimatableActor) : null;
+  private _getSearchEntry(): AnimatableEntry | null {
+    const entry = Main.overview.searchEntry;
+    return entry ? (entry as unknown as AnimatableEntry) : null;
   }
 
-  private _resetSearchEntry(): void {
-    const parentActor = this._resolveParentActor();
-    if (!parentActor) return;
+  private _restoreSearchEntry(): void {
+    const entry = this._getSearchEntry();
+    if (!entry) return;
 
-    parentActor.remove_all_transitions();
-    parentActor.set_height(-1);
-    parentActor.opacity = 255;
-    parentActor.visible = true;
+    entry.remove_all_transitions();
+    entry.opacity = 255;
+    entry.visible = true;
   }
 
-  private _setSearchVisible(isVisible: boolean, shouldAnimate: boolean): void {
-    const parentActor = this._resolveParentActor();
-    const searchEntry = Main.overview.searchEntry;
-    if (!parentActor || !searchEntry) return;
+  private _setSearchOpacity(targetOpacity: number, shouldAnimate: boolean): void {
+    const entry = this._getSearchEntry();
+    if (!entry) return;
 
-    parentActor.remove_all_transitions();
+    entry.remove_all_transitions();
 
     if (!shouldAnimate) {
-      parentActor.set_height(isVisible ? -1 : 0);
-      parentActor.opacity = isVisible ? 255 : 0;
-      parentActor.visible = isVisible;
+      entry.opacity = targetOpacity;
       return;
     }
 
-    if (isVisible) {
-      parentActor.visible = true;
-      const [, preferredHeight] = searchEntry.get_preferred_height(-1);
-      const targetHeight = preferredHeight > 0 ? preferredHeight : DEFAULT_ENTRY_HEIGHT;
-
-      parentActor.ease({
-        height: targetHeight,
-        opacity: 255,
-        mode: SEARCH_ANIMATION_MODE,
-        duration: REVEAL_DURATION_MS,
-        onComplete: () => {
-          parentActor.set_height(-1);
-        },
-      });
-    } else {
-      parentActor.ease({
-        height: 0,
-        opacity: 0,
-        mode: SEARCH_ANIMATION_MODE,
-        duration: HIDE_DURATION_MS,
-        onComplete: () => {
-          parentActor.visible = false;
-        },
-      });
-    }
+    entry.ease({
+      opacity: targetOpacity,
+      mode: FADE_MODE,
+      duration: FADE_DURATION_MS,
+    });
   }
 }

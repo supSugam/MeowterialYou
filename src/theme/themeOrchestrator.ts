@@ -83,10 +83,14 @@ export class ThemeOrchestrator {
         variant,
         extraction.isTopDark
       );
+      const darkScheme = isDark
+        ? scheme
+        : generateMaterialScheme(extraction.seedArgb, true, variant, extraction.isTopDark);
 
       writeGeneratedThemes({
         extensionDir: this._extensionDir,
         scheme,
+        darkScheme,
         isDark,
         wallpaperPath,
         isTopDark: extraction.isTopDark,

@@ -1,6 +1,6 @@
 /* Material You color definitions for GTK4 - Light Theme */
 @define-color accent_bg_color @{primary.hex};
-@define-color accent_fg_color white;
+@define-color accent_fg_color @{onPrimary.hex};
 @define-color accent_color @{primary.hex};
 @define-color destructive_bg_color @{error.hex};
 @define-color destructive_fg_color @{onError.hex};
@@ -12,33 +12,33 @@
 @define-color warning_fg_color @{onSecondary.hex};
 @define-color warning_color @{secondary.hex};
 @define-color error_bg_color @{errorContainer.hex};
-@define-color error_fg_color @{onSurface.hex};
+@define-color error_fg_color @{onErrorContainer.hex};
 @define-color error_color @{error.hex};
 @define-color window_bg_color @{surface.hex};
 @define-color window_fg_color @{onSurface.hex};
-@define-color view_bg_color @{surfaceVariant.hex};
-@define-color view_fg_color @{onSurfaceVariant.hex};
+@define-color view_bg_color @{surface.hex};
+@define-color view_fg_color @{onSurface.hex};
 @define-color headerbar_bg_color @{surfaceContainer.hex};
-@define-color sidebar_bg_color @{surfaceVariant.hex};
-@define-color headerbar_fg_color @{onSurfaceVariant.hex};
-@define-color headerbar_border_color rgba(0, 0, 0, 0.15);
+@define-color sidebar_bg_color @{surfaceContainerLow.hex};
+@define-color headerbar_fg_color @{onSurface.hex};
+@define-color headerbar_border_color rgba(0, 0, 0, 0.08);
 @define-color headerbar_backdrop_color @{surfaceContainer.hex};
-@define-color card_bg_color @{surfaceVariant.hex};
-@define-color card_fg_color @{onSurfaceVariant.hex};
+@define-color card_bg_color @{surfaceContainerLowest.hex};
+@define-color card_fg_color @{onSurface.hex};
 @define-color popover_bg_color @{surfaceContainer.hex};
-@define-color popover_fg_color @{onSurfaceVariant.hex};
-@define-color shade_color rgba(0, 0, 0, 0.07);
-@define-color scrollbar_outline_color @{outline.hex};
+@define-color popover_fg_color @{onSurface.hex};
+@define-color shade_color rgba(0, 0, 0, 0.04);
+@define-color scrollbar_outline_color @{outlineVariant.hex};
 
 /* Theme compatibility variables */
 @define-color theme_bg_color @{surface.hex};
-@define-color theme_base_color @{surfaceVariant.hex};
+@define-color theme_base_color @{surface.hex};
 @define-color theme_fg_color @{onSurface.hex};
 @define-color theme_text_color @{onSurface.hex};
 @define-color theme_selected_bg_color @{primary.hex};
-@define-color theme_selected_fg_color white;
+@define-color theme_selected_fg_color @{onPrimary.hex};
 @define-color insensitive_fg_color alpha(@{onSurface.hex}, 0.5);
-@define-color borders alpha(@{outline.hex}, 0.3);
+@define-color borders alpha(@{outlineVariant.hex}, 0.3);
 
 /* DING Transparency Fix for GTK4 */
 window.ding-window,

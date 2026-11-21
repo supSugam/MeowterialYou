@@ -27,12 +27,15 @@ export function applyGnomeSystemSettings(
   }
   Gio.Settings.sync();
 
-  // 3. GTK Theme toggle to broadcast change
-  if (interfaceSettings.get_string('gtk-theme') === themeName) {
-    interfaceSettings.set_string('gtk-theme', 'Adwaita');
-  }
-  interfaceSettings.set_string('gtk-theme', themeName);
-  pulseChromiumWindowFocus();
+  // 3. GTK Theme bounce to force running apps to reload ~/.config/gtk-4.0/gtk.css
+  interfaceSettings.set_string('gtk-theme', 'Adwaita');
+  Gio.Settings.sync();
+  GLib.timeout_add(GLib.PRIORITY_DEFAULT, 80, () => {
+    interfaceSettings.set_string('gtk-theme', themeName);
+    Gio.Settings.sync();
+    pulseChromiumWindowFocus();
+    return GLib.SOURCE_REMOVE;
+  });
 
   // 4. GNOME Shell Theme toggle via user-theme extension
   const defaultSource = Gio.SettingsSchemaSource.get_default();
