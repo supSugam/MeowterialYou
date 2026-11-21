@@ -780,8 +780,8 @@ stage {
 .calendar-day-base:selected,
 .calendar .calendar-day:active,
 .calendar .calendar-day:selected {
-  background-color: @{secondaryContainer.hex} !important;
-  color: @{onSecondaryContainer.hex} !important;
+  background-color: @{primary.hex} !important;
+  color: @{onPrimary.hex} !important;
   font-weight: 700 !important;
 }
 
@@ -795,6 +795,7 @@ stage {
 }
 
 .calendar .calendar-day.calendar-today:hover,
+.calendar .calendar-day:selected:hover,
 .calendar-today:hover {
   background-color: @{secondary.hex} !important;
   color: @{onSecondary.hex} !important;
@@ -848,6 +849,11 @@ stage {
 
 .weather-button .weather-forecast-time { color: @{onSurfaceVariant.hex}; }
 
+.events-button .events-box .events-list .event-placeholder {
+  color: @{onSurfaceVariant.hex} !important;
+  font-style: italic;
+}
+
 
 /* message-list */
 .message-list {
@@ -861,6 +867,15 @@ stage {
   height: 1px;
   min-height: 20em;
   margin: 0 auto;
+}
+
+.message-list .message-list-placeholder {
+  color: @{onSurfaceVariant.hex} !important;
+  font-weight: 700;
+}
+
+.message-list .message-list-placeholder > StIcon {
+  color: @{onSurfaceVariant.hex} !important;
 }
 
 .message-list-sections:ltr {
