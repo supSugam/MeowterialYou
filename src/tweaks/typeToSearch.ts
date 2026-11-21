@@ -56,6 +56,8 @@ export class TypeToSearchController {
   }
 
   disable(): void {
+    if (!this._isEnabled) return;
+
     if (this._overviewShowingId !== null) {
       Main.overview.disconnect(this._overviewShowingId);
       this._overviewShowingId = null;

@@ -3,6 +3,7 @@
  */
 
 import Gio from 'gi://Gio';
+import GLib from 'gi://GLib';
 import { extractColorsFromWallpaper, type ExtractionResult } from '../color/wallpaperExtractor.js';
 import { generateMaterialScheme } from '../color/schemeGenerator.js';
 import { writeGeneratedThemes } from './themeWriter.js';
@@ -23,6 +24,8 @@ export class ThemeOrchestrator {
   private _interfaceSettings: Gio.Settings;
   private _onExtractionCompleted?: (extraction: ExtractionResult, isDark: boolean) => void;
   private _isApplying: boolean = false;
+  private _reapplyPending: boolean = false;
+  private _pendingForce: boolean = false;
   private _systemSignalId: number | null = null;
 
   constructor(options: OrchestratorOptions) {
@@ -62,7 +65,13 @@ export class ThemeOrchestrator {
   }
 
   async applyTheme(force: boolean = false): Promise<boolean> {
-    if (this._isApplying || (!force && this._settings.get_boolean('paused'))) {
+    if (this._isApplying) {
+      this._reapplyPending = true;
+      this._pendingForce = this._pendingForce || force;
+      return false;
+    }
+
+    if (!force && this._settings.get_boolean('paused')) {
       return false;
     }
 
@@ -83,14 +92,10 @@ export class ThemeOrchestrator {
         variant,
         extraction.isTopDark
       );
-      const darkScheme = isDark
-        ? scheme
-        : generateMaterialScheme(extraction.seedArgb, true, variant, extraction.isTopDark);
 
       writeGeneratedThemes({
         extensionDir: this._extensionDir,
         scheme,
-        darkScheme,
         isDark,
         wallpaperPath,
         isTopDark: extraction.isTopDark,
@@ -119,6 +124,15 @@ export class ThemeOrchestrator {
       return false;
     } finally {
       this._isApplying = false;
+      if (this._reapplyPending) {
+        this._reapplyPending = false;
+        const pendingForce = this._pendingForce;
+        this._pendingForce = false;
+        GLib.idle_add(GLib.PRIORITY_DEFAULT_IDLE, () => {
+          void this.applyTheme(pendingForce);
+          return GLib.SOURCE_REMOVE;
+        });
+      }
     }
   }
 }

@@ -27,6 +27,17 @@ export function writeTextFile(filePath: string, content: string): void {
   file.replace_contents(bytes, null, false, Gio.FileCreateFlags.REPLACE_DESTINATION, null);
 }
 
+export function deleteFile(filePath: string): void {
+  const file = Gio.File.new_for_path(filePath);
+  if (file.query_exists(null)) {
+    try {
+      file.delete(null);
+    } catch {
+      // Ignore errors if file was already removed
+    }
+  }
+}
+
 export function copyDirectoryRecursive(sourcePath: string, destinationPath: string): void {
   const sourceDir = Gio.File.new_for_path(sourcePath);
   if (!sourceDir.query_exists(null)) {
