@@ -4,7 +4,12 @@
 
 import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
+import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import type { WindowButtonPosition } from '../types/theme.js';
+
+// Cast to the APIs we call directly. Using Main.setThemeStylesheet + Main.loadTheme
+// bypasses the gsettings name bounce ('' → themeName) that caused the Adwaita flash.
+const shellMain = Main as unknown as { setThemeStylesheet(p: string | null): void; loadTheme(): void };
 
 export function applyGnomeSystemSettings(
   isDark: boolean,
@@ -37,19 +42,23 @@ export function applyGnomeSystemSettings(
     return GLib.SOURCE_REMOVE;
   });
 
-  // 4. GNOME Shell Theme toggle via user-theme extension
-  const defaultSource = Gio.SettingsSchemaSource.get_default();
-  if (defaultSource && defaultSource.lookup('org.gnome.shell.extensions.user-theme', true)) {
+  // 4. GNOME Shell theme — reload CSS directly in-process to avoid the
+  // Adwaita flash caused by the old gsettings name bounce (name → '' → name).
+  // Main.setThemeStylesheet + Main.loadTheme is exactly what user-theme calls
+  // internally when its name setting changes; we do it ourselves so GNOME Shell
+  // picks up the freshly written CSS without momentarily unloading the theme.
+  const cssPath = resolveThemeStylesheet(themeName);
+  if (cssPath) {
+    shellMain.setThemeStylesheet(cssPath);
+    shellMain.loadTheme();
+  }
+
+  // Keep user-theme gsettings in sync (no bounce) so it doesn't override our
+  // direct reload when its own changed::name signal fires on next change.
+  const schemaSource = Gio.SettingsSchemaSource.get_default();
+  if (schemaSource && schemaSource.lookup('org.gnome.shell.extensions.user-theme', true)) {
     const userThemeSettings = new Gio.Settings({ schema: 'org.gnome.shell.extensions.user-theme' });
-    if (userThemeSettings.get_string('name') === themeName) {
-      userThemeSettings.set_string('name', '');
-      Gio.Settings.sync();
-      GLib.idle_add(GLib.PRIORITY_DEFAULT_IDLE, () => {
-        userThemeSettings.set_string('name', themeName);
-        Gio.Settings.sync();
-        return GLib.SOURCE_REMOVE;
-      });
-    } else {
+    if (userThemeSettings.get_string('name') !== themeName) {
       userThemeSettings.set_string('name', themeName);
       Gio.Settings.sync();
     }
@@ -57,6 +66,21 @@ export function applyGnomeSystemSettings(
 
   // 5. Terminate stale extensions daemon if preferences window is not open
   terminateStaleDaemons();
+}
+
+function resolveThemeStylesheet(themeName: string): string | null {
+  const searchDirs: string[] = [
+    GLib.build_filenamev([GLib.get_home_dir(), '.themes']),
+    GLib.build_filenamev([GLib.get_user_data_dir(), 'themes']),
+    ...GLib.get_system_data_dirs().map((dir: string) => GLib.build_filenamev([dir, 'themes'])),
+  ];
+  for (const dir of searchDirs) {
+    const cssPath = GLib.build_filenamev([dir, themeName, 'gnome-shell', 'gnome-shell.css']);
+    if (GLib.file_test(cssPath, GLib.FileTest.EXISTS)) {
+      return cssPath;
+    }
+  }
+  return null;
 }
 
 function terminateStaleDaemons(): void {
