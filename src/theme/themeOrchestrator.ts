@@ -27,6 +27,8 @@ export class ThemeOrchestrator {
   private _reapplyPending: boolean = false;
   private _pendingForce: boolean = false;
   private _systemSignalId: number | null = null;
+  private _lastWallpaperPath: string | null = null;
+  private _lastIsDark: boolean | null = null;
 
   constructor(options: OrchestratorOptions) {
     this._extensionDir = options.extensionDir;
@@ -86,6 +88,14 @@ export class ThemeOrchestrator {
         return false;
       }
 
+      // Skip the expensive extraction + CSS write pipeline when nothing has
+      // changed. This prevents the 3-5s freeze triggered by transient signals
+      // (e.g. night-light toggling color-scheme on screen blank/unblank)
+      // that reach applyTheme when the theme is already correctly applied.
+      if (!force && wallpaperPath === this._lastWallpaperPath && isDark === this._lastIsDark) {
+        return false;
+      }
+
       const extraction = await extractColorsFromWallpaper(wallpaperPath);
       this._onExtractionCompleted?.(extraction, isDark);
       const variant = this._settings.get_string('scheme-variant') as SchemeVariant;
@@ -111,6 +121,9 @@ export class ThemeOrchestrator {
 
       const position = this._settings.get_string('window-button-position') as WindowButtonPosition;
       applyGnomeSystemSettings(isDark, position);
+
+      this._lastWallpaperPath = wallpaperPath;
+      this._lastIsDark = isDark;
 
       if (this._settings.get_boolean('themed-icons-enabled')) {
         generateThemedIcons({
