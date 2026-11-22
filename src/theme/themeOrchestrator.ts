@@ -10,7 +10,14 @@ import { writeGeneratedThemes } from './themeWriter.js';
 import { applyGnomeSystemSettings } from './systemReload.js';
 import { generateThemedIcons } from '../icons/iconGenerator.js';
 import { getCurrentWallpaperPath } from '../wallpaper/wallpaperHelper.js';
-import type { SchemeVariant, WindowButtonPosition } from '../types/theme.js';
+import {
+  doesThemeExistOnDisk,
+  getThemeCriteria,
+  isCacheUpToDate,
+  loadThemeCache,
+  saveThemeCache,
+  toExtractionResult,
+} from './themeCache.js';
 
 export interface OrchestratorOptions {
   extensionDir: string;
@@ -27,8 +34,6 @@ export class ThemeOrchestrator {
   private _reapplyPending: boolean = false;
   private _pendingForce: boolean = false;
   private _systemSignalId: number | null = null;
-  private _lastWallpaperPath: string | null = null;
-  private _lastIsDark: boolean | null = null;
 
   constructor(options: OrchestratorOptions) {
     this._extensionDir = options.extensionDir;
@@ -40,16 +45,10 @@ export class ThemeOrchestrator {
   connectSystemModeListener(onModeChanged: () => void): void {
     this.disconnectSystemModeListener();
     this._systemSignalId = this._interfaceSettings.connect('changed::color-scheme', () => {
-      if (this._isApplying) {
-        return;
-      }
-      const isSystemDark = this._interfaceSettings.get_string('color-scheme') === 'prefer-dark';
-      const currentApplierDark = this.isDarkMode();
-      if (isSystemDark === currentApplierDark) {
-        return;
-      }
-
-      this._settings.set_string('theme-mode', isSystemDark ? 'dark' : 'light');
+      if (this._isApplying) return;
+      const isSysDark = this._interfaceSettings.get_string('color-scheme') === 'prefer-dark';
+      if (isSysDark === this.isDarkMode()) return;
+      this._settings.set_string('theme-mode', isSysDark ? 'dark' : 'light');
       onModeChanged();
     });
   }
@@ -88,20 +87,20 @@ export class ThemeOrchestrator {
         return false;
       }
 
-      // Skip the expensive extraction + CSS write pipeline when nothing has
-      // changed. This prevents the 3-5s freeze triggered by transient signals
-      // (e.g. night-light toggling color-scheme on screen blank/unblank)
-      // that reach applyTheme when the theme is already correctly applied.
-      if (!force && wallpaperPath === this._lastWallpaperPath && isDark === this._lastIsDark) {
-        return false;
+      const criteria = getThemeCriteria(this._settings, wallpaperPath, isDark);
+      const cache = loadThemeCache();
+
+      if (!force && isCacheUpToDate(cache, criteria) && doesThemeExistOnDisk(isDark)) {
+        this._onExtractionCompleted?.(toExtractionResult(cache!), isDark);
+        applyGnomeSystemSettings(isDark, criteria.windowButtonPosition, false);
+        return true;
       }
 
       const extraction = await extractColorsFromWallpaper(wallpaperPath);
       this._onExtractionCompleted?.(extraction, isDark);
-      const variant = this._settings.get_string('scheme-variant') as SchemeVariant;
-      const topDark = extraction.isTopDark;
-      const lightScheme = generateMaterialScheme(extraction.seedArgb, false, variant, topDark);
-      const darkScheme = generateMaterialScheme(extraction.seedArgb, true, variant, topDark);
+      const { seedArgb, isTopDark } = extraction;
+      const lightScheme = generateMaterialScheme(seedArgb, false, criteria.variant, isTopDark);
+      const darkScheme = generateMaterialScheme(seedArgb, true, criteria.variant, isTopDark);
       const scheme = isDark ? darkScheme : lightScheme;
 
       writeGeneratedThemes({
@@ -111,29 +110,26 @@ export class ThemeOrchestrator {
         darkScheme,
         isDark,
         wallpaperPath,
-        isTopDark: extraction.isTopDark,
+        isTopDark,
         isShellThemeEnabled: this._settings.get_boolean('shell-theme-enabled'),
         isGtk3Enabled: this._settings.get_boolean('gtk3-enabled'),
         isGtk4Enabled: this._settings.get_boolean('gtk4-enabled'),
-        isMacButtonsEnabled: this._settings.get_string('window-button-style') === 'mac',
-        isTransparentPanelEnabled: this._settings.get_boolean('transparent-panel'),
+        isMacButtonsEnabled: criteria.windowButtonStyle === 'mac',
+        isTransparentPanelEnabled: criteria.transparentPanel,
       });
 
-      const position = this._settings.get_string('window-button-position') as WindowButtonPosition;
-      applyGnomeSystemSettings(isDark, position);
+      applyGnomeSystemSettings(isDark, criteria.windowButtonPosition, true);
 
-      this._lastWallpaperPath = wallpaperPath;
-      this._lastIsDark = isDark;
-
-      if (this._settings.get_boolean('themed-icons-enabled')) {
+      if (criteria.themedIconsEnabled) {
         generateThemedIcons({
           extensionDir: this._extensionDir,
           scheme,
           isDark,
-          baseIconTheme: this._settings.get_string('base-icon-theme'),
+          baseIconTheme: criteria.baseIconTheme,
         });
       }
 
+      saveThemeCache({ ...criteria, ...extraction });
       return true;
     } catch (error) {
       console.error('MeowterialYou: Failed to apply theme', error);

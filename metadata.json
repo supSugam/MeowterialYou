@@ -12,5 +12,9 @@
   ],
   "url": "https://github.com/supSugam/MeowterialYou",
   "version": 1,
+  "session-modes": [
+    "user",
+    "unlock-dialog"
+  ],
   "settings-schema": "org.gnome.shell.extensions.meowterialyou"
 }

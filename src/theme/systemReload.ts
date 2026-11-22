@@ -13,7 +13,8 @@ const shellMain = Main as unknown as { setThemeStylesheet(p: string | null): voi
 
 export function applyGnomeSystemSettings(
   isDark: boolean,
-  windowButtonPosition: WindowButtonPosition = 'right'
+  windowButtonPosition: WindowButtonPosition = 'right',
+  shouldBounceGtk: boolean = true
 ): void {
   const themeSuffix = isDark ? 'dark' : 'light';
   const themeName = `MeowterialYou-${themeSuffix}`;
@@ -22,7 +23,9 @@ export function applyGnomeSystemSettings(
   const wmSettings = new Gio.Settings({ schema: 'org.gnome.desktop.wm.preferences' });
   const buttonLayout =
     windowButtonPosition === 'left' ? 'close,minimize,maximize:' : ':minimize,maximize,close';
-  wmSettings.set_string('button-layout', buttonLayout);
+  if (wmSettings.get_string('button-layout') !== buttonLayout) {
+    wmSettings.set_string('button-layout', buttonLayout);
+  }
 
   // 2. Color scheme sync
   const interfaceSettings = new Gio.Settings({ schema: 'org.gnome.desktop.interface' });
@@ -32,29 +35,29 @@ export function applyGnomeSystemSettings(
     Gio.Settings.sync();
   }
 
-  // 3. GTK Theme bounce to force running apps to reload ~/.config/gtk-4.0/gtk.css
-  interfaceSettings.set_string('gtk-theme', 'Adwaita');
-  Gio.Settings.sync();
-  GLib.timeout_add(GLib.PRIORITY_DEFAULT, 80, () => {
+  // 3. GTK Theme apply/bounce
+  if (shouldBounceGtk) {
+    interfaceSettings.set_string('gtk-theme', 'Adwaita');
+    Gio.Settings.sync();
+    GLib.timeout_add(GLib.PRIORITY_DEFAULT, 80, () => {
+      interfaceSettings.set_string('gtk-theme', themeName);
+      Gio.Settings.sync();
+      pulseChromiumWindowFocus();
+      return GLib.SOURCE_REMOVE;
+    });
+  } else if (interfaceSettings.get_string('gtk-theme') !== themeName) {
     interfaceSettings.set_string('gtk-theme', themeName);
     Gio.Settings.sync();
-    pulseChromiumWindowFocus();
-    return GLib.SOURCE_REMOVE;
-  });
+  }
 
-  // 4. GNOME Shell theme — reload CSS directly in-process to avoid the
-  // Adwaita flash caused by the old gsettings name bounce (name → '' → name).
-  // Main.setThemeStylesheet + Main.loadTheme is exactly what user-theme calls
-  // internally when its name setting changes; we do it ourselves so GNOME Shell
-  // picks up the freshly written CSS without momentarily unloading the theme.
+  // 4. GNOME Shell theme — reload CSS directly in-process without gsettings bounce
   const cssPath = resolveThemeStylesheet(themeName);
   if (cssPath) {
     shellMain.setThemeStylesheet(cssPath);
     shellMain.loadTheme();
   }
 
-  // Keep user-theme gsettings in sync (no bounce) so it doesn't override our
-  // direct reload when its own changed::name signal fires on next change.
+  // Keep user-theme gsettings in sync without triggering a reload bounce
   const schemaSource = Gio.SettingsSchemaSource.get_default();
   if (schemaSource && schemaSource.lookup('org.gnome.shell.extensions.user-theme', true)) {
     const userThemeSettings = new Gio.Settings({ schema: 'org.gnome.shell.extensions.user-theme' });
@@ -69,16 +72,14 @@ export function applyGnomeSystemSettings(
 }
 
 function resolveThemeStylesheet(themeName: string): string | null {
-  const searchDirs: string[] = [
+  const searchDirs = [
     GLib.build_filenamev([GLib.get_home_dir(), '.themes']),
     GLib.build_filenamev([GLib.get_user_data_dir(), 'themes']),
     ...GLib.get_system_data_dirs().map((dir: string) => GLib.build_filenamev([dir, 'themes'])),
   ];
   for (const dir of searchDirs) {
     const cssPath = GLib.build_filenamev([dir, themeName, 'gnome-shell', 'gnome-shell.css']);
-    if (GLib.file_test(cssPath, GLib.FileTest.EXISTS)) {
-      return cssPath;
-    }
+    if (GLib.file_test(cssPath, GLib.FileTest.EXISTS)) return cssPath;
   }
   return null;
 }

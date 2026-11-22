@@ -6,6 +6,7 @@
 
 import Gio from 'gi://Gio';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
+import { loadThemeCache } from '../theme/themeCache.js';
 
 const CLASS_OPAQUE = 'meowterialyou-panel-opaque';
 const CLASS_TRANS_DARK = 'meowterialyou-panel-trans-dark';
@@ -26,6 +27,11 @@ export class PanelContrastController {
 
   constructor(settings: Gio.Settings) {
     this._settings = settings;
+    const cache = loadThemeCache();
+    if (cache) {
+      this._isTopDark = cache.isTopDark;
+      this._isBottomDark = cache.isBottomDark;
+    }
   }
 
   enable(): void {
