@@ -16,6 +16,10 @@ export function getTargetHomeDirectories(): string[] {
   if (!dirs.includes(realHome) && GLib.file_test(realHome, GLib.FileTest.IS_DIR)) {
     dirs.push(realHome);
   }
+  const profileHome = `/home/${username}/.config/antigravity-profiles/${username}.xd`;
+  if (!dirs.includes(profileHome) && GLib.file_test(profileHome, GLib.FileTest.IS_DIR)) {
+    dirs.push(profileHome);
+  }
   return dirs;
 }
 

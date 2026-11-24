@@ -59,12 +59,39 @@ export function generateMaterialScheme(
   const getHex = (dynamicColor: { getArgb(s: DynamicScheme): number }): string =>
     convertArgbToHex(dynamicColor.getArgb(scheme));
 
-  const panelScheme =
-    isTopDark !== undefined && isTopDark !== isDark
-      ? createDynamicScheme(hct, isTopDark, variant)
-      : scheme;
+  const hue = hct.hue;
+  const panelBackground = convertArgbToHex(
+    Hct.from(
+      hue,
+      Math.min(Math.max(hct.chroma * (isDark ? 0.7 : 0.5), isDark ? 18 : 12), isDark ? 32 : 24),
+      isDark ? 16 : 90
+    ).toInt()
+  );
+  const panelForeground = convertArgbToHex(
+    Hct.from(hue, 8, isDark ? 95 : 14).toInt()
+  );
+  const panelPillBackground = convertArgbToHex(
+    Hct.from(
+      hue,
+      Math.min(Math.max(hct.chroma * (isDark ? 0.8 : 0.6), isDark ? 22 : 16), isDark ? 36 : 28),
+      isDark ? 25 : 82
+    ).toInt()
+  );
+  const panelPillForeground = convertArgbToHex(
+    Hct.from(
+      hue,
+      Math.min(hct.chroma, isDark ? 12 : 18),
+      isDark ? 92 : 16
+    ).toInt()
+  );
+
+  const isPanelBackgroundDark = isTopDark ?? isDark;
   const panelTextColor = convertArgbToHex(
-    MaterialDynamicColors.onSurface.getArgb(panelScheme)
+    Hct.from(
+      hue,
+      Math.min(hct.chroma, isPanelBackgroundDark ? 8 : 10),
+      isPanelBackgroundDark ? 94 : 12
+    ).toInt()
   );
 
   return {
@@ -104,6 +131,10 @@ export function generateMaterialScheme(
     surfaceContainer: getHex(MaterialDynamicColors.surfaceContainer),
     surfaceContainerHigh: getHex(MaterialDynamicColors.surfaceContainerHigh),
     surfaceContainerHighest: getHex(MaterialDynamicColors.surfaceContainerHighest),
+    panelBackground,
+    panelForeground,
+    panelPillBackground,
+    panelPillForeground,
     panelTextColor,
   };
 }

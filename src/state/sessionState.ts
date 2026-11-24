@@ -58,39 +58,45 @@ export class SessionStateManager {
   }
 
   restoreOriginalState(): void {
-    const state = this._loadSavedState();
-    if (!state) {
-      return;
-    }
-
-    const interfaceSettings = new Gio.Settings({ schema: 'org.gnome.desktop.interface' });
-    const wmSettings = new Gio.Settings({ schema: 'org.gnome.desktop.wm.preferences' });
-
-    if (state.gtkTheme) {
-      interfaceSettings.set_string('gtk-theme', state.gtkTheme);
-    }
-    if (state.iconTheme) {
-      interfaceSettings.set_string('icon-theme', state.iconTheme);
-    }
-    if (state.buttonLayout) {
-      wmSettings.set_string('button-layout', state.buttonLayout);
-    }
-
-    if (state.shellTheme !== undefined) {
-      try {
-        const defaultSource = Gio.SettingsSchemaSource.get_default();
-        if (defaultSource && defaultSource.lookup('org.gnome.shell.extensions.user-theme', true)) {
-          const userThemeSettings = new Gio.Settings({
-            schema: 'org.gnome.shell.extensions.user-theme',
-          });
-          userThemeSettings.set_string('name', state.shellTheme);
-        }
-      } catch {
-        // User theme extension not found
+    try {
+      const state = this._loadSavedState();
+      if (!state) {
+        return;
       }
-    }
 
-    this._deleteBackup();
+      const interfaceSettings = new Gio.Settings({ schema: 'org.gnome.desktop.interface' });
+      const wmSettings = new Gio.Settings({ schema: 'org.gnome.desktop.wm.preferences' });
+
+      if (state.gtkTheme) {
+        interfaceSettings.set_string('gtk-theme', state.gtkTheme);
+      }
+      if (state.iconTheme) {
+        interfaceSettings.set_string('icon-theme', state.iconTheme);
+      }
+      if (state.buttonLayout) {
+        wmSettings.set_string('button-layout', state.buttonLayout);
+      }
+
+      if (state.shellTheme !== undefined) {
+        try {
+          const defaultSource = Gio.SettingsSchemaSource.get_default();
+          if (defaultSource && defaultSource.lookup('org.gnome.shell.extensions.user-theme', true)) {
+            const userThemeSettings = new Gio.Settings({
+              schema: 'org.gnome.shell.extensions.user-theme',
+            });
+            if (userThemeSettings.get_string('name') !== state.shellTheme) {
+              userThemeSettings.set_string('name', state.shellTheme);
+            }
+          }
+        } catch {
+          // User theme extension not found or inactive
+        }
+      }
+
+      this._deleteBackup();
+    } catch (error) {
+      console.warn('MeowterialYou: Failed to restore session state', error);
+    }
   }
 
   private _hasExistingBackup(): boolean {

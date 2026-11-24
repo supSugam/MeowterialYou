@@ -28,15 +28,15 @@ stage {
 
 /* panel */
 
-#panel{
-  background-color: @{surfaceContainer.hex};
-  color: @{onSurface.hex};
+#panel {
+  background-color: @{panelBackground.hex} !important;
+  color: @{panelForeground.hex} !important;
   height: 38px;
   font-size: 14px;
 }
 
-#panel:overview{
-  background-color: transparent;
+#panel:overview {
+  background-color: transparent !important;
 }
 
 #panel .screencast-indicator,
@@ -60,7 +60,7 @@ stage {
 }
 
 .panel-button {
-  color: @{onSurface.hex};
+  color: @{panelForeground.hex};
   border-radius: 14px;
   border: 4px solid transparent;
   transition-duration: 100ms;
@@ -77,7 +77,7 @@ stage {
 .panel-button:active .clock,
 .panel-button:focus,
 .panel-button:checked {
-  box-shadow: inset 0 0 0 100px rgba(255, 255, 255, 0.08), inset 0 0 0 1px rgba(255, 255, 255, 0.05);
+  box-shadow: inset 0 0 0 100px rgba(255, 255, 255, 0.08);
 }
 
 #panel .power-status.panel-status-indicators-box {
@@ -97,137 +97,12 @@ stage {
 .meowterialyou-app-indicator,
 .meowterialyou-app-indicator StIcon,
 .meowterialyou-app-indicator .system-status-icon {
-  color: @{onSurface.hex} !important;
+  color: @{panelForeground.hex} !important;
   background-color: transparent;
   box-shadow: none;
 }
 
-/* Explicit class for opaque panel */
-#panel.meowterialyou-panel-opaque .panel-button,
-#panel.meowterialyou-panel-opaque #panelLeft .panel-button,
-#panel.meowterialyou-panel-opaque #panelCenter .panel-button,
-#panel.meowterialyou-panel-opaque #panelRight .panel-button,
-#panel.meowterialyou-panel-opaque #panelLeft .panel-button StLabel,
-#panel.meowterialyou-panel-opaque #panelLeft .panel-button StIcon,
-#panel.meowterialyou-panel-opaque #panelRight .panel-button StLabel,
-#panel.meowterialyou-panel-opaque #panelRight .panel-button StIcon,
-#panel.meowterialyou-panel-opaque #panelLeft .panel-button .panel-button-label,
-#panel.meowterialyou-panel-opaque #panelRight .panel-button .system-status-icon,
-#panel.meowterialyou-panel-opaque .meowterialyou-app-indicator,
-#panel.meowterialyou-panel-opaque .meowterialyou-app-indicator StIcon,
-#panel.meowterialyou-panel-opaque .meowterialyou-app-indicator .system-status-icon {
-  color: @{onSurface.hex} !important;
-}
 
-/* Transparent panel over Dark Wallpaper Region: Pure white high-contrast text & icons */
-#panel.meowterialyou-panel-trans-dark #panelLeft .panel-button,
-#panel.meowterialyou-panel-trans-dark #panelRight .panel-button,
-#panel.meowterialyou-panel-trans-dark #panelCenter .panel-button,
-#panel.meowterialyou-panel-trans-dark #panelLeft .panel-button StLabel,
-#panel.meowterialyou-panel-trans-dark #panelLeft .panel-button StIcon,
-#panel.meowterialyou-panel-trans-dark #panelRight .panel-button StLabel,
-#panel.meowterialyou-panel-trans-dark #panelRight .panel-button StIcon,
-#panel.meowterialyou-panel-trans-dark #panelCenter .panel-button StLabel,
-#panel.meowterialyou-panel-trans-dark #panelCenter .panel-button StIcon,
-#panel.meowterialyou-panel-trans-dark #panelLeft .panel-button .panel-button-label,
-#panel.meowterialyou-panel-trans-dark #panelRight .panel-button .system-status-icon,
-#panel.meowterialyou-panel-trans-dark #panelCenter .panel-button .system-status-icon,
-#panel.meowterialyou-panel-trans-dark #panelCenter .panel-button .clock-label,
-#panel.meowterialyou-panel-trans-dark #panelCenter .panel-button .weather_label,
-#panel.meowterialyou-panel-trans-dark #panelCenter .panel-button .custom-weather-icon-spacing,
-#panel.meowterialyou-panel-trans-dark #panelCenter .panel-button.clock-display,
-#panel.meowterialyou-panel-trans-dark #panelCenter .panel-button.clock-display StLabel,
-#panel.meowterialyou-panel-trans-dark #panelCenter .panel-button.clock-display StIcon,
-#panel.meowterialyou-panel-trans-dark #panelCenter .panel-button.clock-display .clock-label,
-#panel.meowterialyou-panel-trans-dark #panelCenter .panel-button.clock-display .weather_label,
-#panel.meowterialyou-panel-trans-dark #panelCenter .panel-button.clock-display .system-status-icon,
-#panel.meowterialyou-panel-trans-dark #panelCenter .clock,
-#panel.meowterialyou-panel-trans-dark #panelCenter .clock StLabel,
-#panel.meowterialyou-panel-trans-dark #panelCenter .clock StIcon,
-#panel.meowterialyou-panel-trans-dark #panelCenter .clock .clock-label,
-#panel.meowterialyou-panel-trans-dark #panelCenter .clock .weather_label,
-#panel.meowterialyou-panel-trans-dark #panelCenter .clock .system-status-icon,
-#panel.meowterialyou-panel-trans-dark .panel-button.meowterialyou-center-island,
-#panel.meowterialyou-panel-trans-dark .panel-button.meowterialyou-center-island StLabel,
-#panel.meowterialyou-panel-trans-dark .panel-button.meowterialyou-center-island StIcon,
-#panel.meowterialyou-panel-trans-dark .panel-button.meowterialyou-center-island .system-status-icon,
-#panel.meowterialyou-panel-trans-dark .panel-button.meowterialyou-center-island StScrollView StLabel,
-#panel.meowterialyou-panel-trans-dark .panel-button.meowterialyou-center-island .panel-controls-box StIcon,
-#panel.meowterialyou-panel-trans-dark .panel-button.meowterialyou-center-island .panel-controls-box .system-status-icon,
-#panel.meowterialyou-panel-trans-dark #panelCenter .panel-button.meowterialyou-center-island StLabel,
-#panel.meowterialyou-panel-trans-dark #panelCenter .panel-button.meowterialyou-center-island StIcon,
-#panel.meowterialyou-panel-trans-dark #panelCenter .panel-button.meowterialyou-center-island .system-status-icon,
-#panel.meowterialyou-panel-trans-dark #panelCenter .panel-button.meowterialyou-center-island StScrollView StLabel,
-#panel.meowterialyou-panel-trans-dark #panelCenter .panel-button.meowterialyou-center-island .panel-controls-box StIcon,
-#panel.meowterialyou-panel-trans-dark #panelCenter .panel-button.meowterialyou-center-island .panel-controls-box .system-status-icon,
-#panel.meowterialyou-panel-trans-dark .panel-button .appindicator-icon,
-#panel.meowterialyou-panel-trans-dark .panel-button .status-notifier-icon,
-#panel.meowterialyou-panel-trans-dark .panel-status-indicators-box StIcon,
-#panel.meowterialyou-panel-trans-dark .meowterialyou-app-indicator,
-#panel.meowterialyou-panel-trans-dark .meowterialyou-app-indicator StIcon,
-#panel.meowterialyou-panel-trans-dark .meowterialyou-app-indicator .system-status-icon {
-  color: #ffffff !important;
-}
-
-#panel.meowterialyou-panel-trans-dark .panel-button.meowterialyou-center-island .colored-icon,
-#panel.meowterialyou-panel-trans-dark #panelCenter .panel-button.meowterialyou-center-island .colored-icon {
-  -st-icon-style: requested;
-}
-
-/* Transparent panel over Light Wallpaper Region: Dark text & icons */
-#panel.meowterialyou-panel-trans-light #panelLeft .panel-button,
-#panel.meowterialyou-panel-trans-light #panelRight .panel-button,
-#panel.meowterialyou-panel-trans-light #panelCenter .panel-button,
-#panel.meowterialyou-panel-trans-light #panelLeft .panel-button StLabel,
-#panel.meowterialyou-panel-trans-light #panelLeft .panel-button StIcon,
-#panel.meowterialyou-panel-trans-light #panelRight .panel-button StLabel,
-#panel.meowterialyou-panel-trans-light #panelRight .panel-button StIcon,
-#panel.meowterialyou-panel-trans-light #panelCenter .panel-button StLabel,
-#panel.meowterialyou-panel-trans-light #panelCenter .panel-button StIcon,
-#panel.meowterialyou-panel-trans-light #panelLeft .panel-button .panel-button-label,
-#panel.meowterialyou-panel-trans-light #panelRight .panel-button .system-status-icon,
-#panel.meowterialyou-panel-trans-light #panelCenter .panel-button .system-status-icon,
-#panel.meowterialyou-panel-trans-light #panelCenter .panel-button .clock-label,
-#panel.meowterialyou-panel-trans-light #panelCenter .panel-button .weather_label,
-#panel.meowterialyou-panel-trans-light #panelCenter .panel-button .custom-weather-icon-spacing,
-#panel.meowterialyou-panel-trans-light #panelCenter .panel-button.clock-display,
-#panel.meowterialyou-panel-trans-light #panelCenter .panel-button.clock-display StLabel,
-#panel.meowterialyou-panel-trans-light #panelCenter .panel-button.clock-display StIcon,
-#panel.meowterialyou-panel-trans-light #panelCenter .panel-button.clock-display .clock-label,
-#panel.meowterialyou-panel-trans-light #panelCenter .panel-button.clock-display .weather_label,
-#panel.meowterialyou-panel-trans-light #panelCenter .panel-button.clock-display .system-status-icon,
-#panel.meowterialyou-panel-trans-light #panelCenter .clock,
-#panel.meowterialyou-panel-trans-light #panelCenter .clock StLabel,
-#panel.meowterialyou-panel-trans-light #panelCenter .clock StIcon,
-#panel.meowterialyou-panel-trans-light #panelCenter .clock .clock-label,
-#panel.meowterialyou-panel-trans-light #panelCenter .clock .weather_label,
-#panel.meowterialyou-panel-trans-light #panelCenter .clock .system-status-icon,
-#panel.meowterialyou-panel-trans-light .panel-button.meowterialyou-center-island,
-#panel.meowterialyou-panel-trans-light .panel-button.meowterialyou-center-island StLabel,
-#panel.meowterialyou-panel-trans-light .panel-button.meowterialyou-center-island StIcon,
-#panel.meowterialyou-panel-trans-light .panel-button.meowterialyou-center-island .system-status-icon,
-#panel.meowterialyou-panel-trans-light .panel-button.meowterialyou-center-island StScrollView StLabel,
-#panel.meowterialyou-panel-trans-light .panel-button.meowterialyou-center-island .panel-controls-box StIcon,
-#panel.meowterialyou-panel-trans-light .panel-button.meowterialyou-center-island .panel-controls-box .system-status-icon,
-#panel.meowterialyou-panel-trans-light #panelCenter .panel-button.meowterialyou-center-island StLabel,
-#panel.meowterialyou-panel-trans-light #panelCenter .panel-button.meowterialyou-center-island StIcon,
-#panel.meowterialyou-panel-trans-light #panelCenter .panel-button.meowterialyou-center-island .system-status-icon,
-#panel.meowterialyou-panel-trans-light #panelCenter .panel-button.meowterialyou-center-island StScrollView StLabel,
-#panel.meowterialyou-panel-trans-light #panelCenter .panel-button.meowterialyou-center-island .panel-controls-box StIcon,
-#panel.meowterialyou-panel-trans-light #panelCenter .panel-button.meowterialyou-center-island .panel-controls-box .system-status-icon,
-#panel.meowterialyou-panel-trans-light .panel-button .appindicator-icon,
-#panel.meowterialyou-panel-trans-light .panel-button .status-notifier-icon,
-#panel.meowterialyou-panel-trans-light .panel-status-indicators-box StIcon,
-#panel.meowterialyou-panel-trans-light .meowterialyou-app-indicator,
-#panel.meowterialyou-panel-trans-light .meowterialyou-app-indicator StIcon,
-#panel.meowterialyou-panel-trans-light .meowterialyou-app-indicator .system-status-icon {
-  color: #1d1a20 !important;
-}
-
-#panel.meowterialyou-panel-trans-light .panel-button.meowterialyou-center-island .colored-icon,
-#panel.meowterialyou-panel-trans-light #panelCenter .panel-button.meowterialyou-center-island .colored-icon {
-  -st-icon-style: requested;
-}
 
 #panelLeft .panel-button:hover,
 #panelLeft .panel-button:active,
@@ -244,8 +119,8 @@ stage {
 #panel #panelActivities.panel-button,
 #panelLeft #panelActivities.panel-button,
 #panel #panelActivities {
-  background-color: @{secondaryContainer.hex} !important;
-  color: @{onSecondaryContainer.hex} !important;
+  background-color: @{panelPillBackground.hex} !important;
+  color: @{panelPillForeground.hex} !important;
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.05) !important;
 }
 
@@ -253,7 +128,7 @@ stage {
 #panelLeft #panelActivities.panel-button StLabel,
 #panel #panelActivities.panel-button StIcon,
 #panelLeft #panelActivities.panel-button StIcon {
-  color: @{onSecondaryContainer.hex} !important;
+  color: @{panelPillForeground.hex} !important;
 }
 
 #panel #panelActivities.panel-button:hover,
@@ -261,8 +136,8 @@ stage {
 #panel #panelActivities.panel-button:overview,
 #panel #panelActivities.panel-button:focus,
 #panel #panelActivities.panel-button:checked {
-  background-color: @{secondaryContainer.hex} !important;
-  box-shadow: inset 0 0 0 100px rgba(255, 255, 255, 0.08), inset 0 0 0 1px rgba(255, 255, 255, 0.05) !important;
+  background-color: @{panelPillBackground.hex} !important;
+  box-shadow: inset 0 0 0 100px rgba(255, 255, 255, 0.08) !important;
 }
 
 /* Retain pill background for Quick Settings */
@@ -270,8 +145,8 @@ stage {
 #panel #panelRight .panel-button.meowterialyou-quick-settings-button,
 #panelRight .meowterialyou-quick-settings-button,
 #panel #panelRight .meowterialyou-quick-settings-button {
-  background-color: @{secondaryContainer.hex} !important;
-  color: @{onSecondaryContainer.hex} !important;
+  background-color: @{panelPillBackground.hex} !important;
+  color: @{panelPillForeground.hex} !important;
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.05) !important;
 }
 
@@ -281,7 +156,7 @@ stage {
 #panel #panelRight .panel-button.meowterialyou-quick-settings-button StLabel,
 #panel #panelRight .panel-button.meowterialyou-quick-settings-button StIcon,
 #panel #panelRight .panel-button.meowterialyou-quick-settings-button .system-status-icon {
-  color: @{onSecondaryContainer.hex} !important;
+  color: @{panelPillForeground.hex} !important;
 }
 
 
@@ -289,8 +164,8 @@ stage {
 #panelRight .panel-button.meowterialyou-quick-settings-button:active,
 #panelRight .panel-button.meowterialyou-quick-settings-button:focus,
 #panelRight .panel-button.meowterialyou-quick-settings-button:checked {
-  background-color: @{secondaryContainer.hex} !important;
-  box-shadow: inset 0 0 0 100px rgba(255, 255, 255, 0.08), inset 0 0 0 1px rgba(255, 255, 255, 0.05) !important;
+  background-color: @{panelPillBackground.hex} !important;
+  box-shadow: inset 0 0 0 100px rgba(255, 255, 255, 0.08) !important;
 }
 
 /* date-menu-mod */
@@ -307,8 +182,8 @@ stage {
 #panel #panelCenter .clock,
 #panel #panelCenter .panel-button .clock,
 #panel .clock {
-  background-color: @{secondaryContainer.hex} !important;
-  color: @{onSecondaryContainer.hex} !important;
+  background-color: @{panelPillBackground.hex} !important;
+  color: @{panelPillForeground.hex} !important;
   border-radius: 14px;
   border: 4px solid transparent;
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.05) !important;
@@ -321,14 +196,14 @@ stage {
 #panel #panelCenter .panel-button:checked .clock,
 .panel-button:hover .clock,
 .panel-button:active .clock {
-  background-color: @{secondaryContainer.hex} !important;
-  box-shadow: inset 0 0 0 100px rgba(255, 255, 255, 0.08), inset 0 0 0 1px rgba(255, 255, 255, 0.05) !important;
+  background-color: @{panelPillBackground.hex} !important;
+  box-shadow: inset 0 0 0 100px rgba(255, 255, 255, 0.08) !important;
 }
 
 /* Center Island Pills — any non-clock extension in #panelCenter */
 #panel .panel-button.meowterialyou-center-island {
-  background-color: @{secondaryContainer.hex} !important;
-  color: @{onSecondaryContainer.hex} !important;
+  background-color: @{panelPillBackground.hex} !important;
+  color: @{panelPillForeground.hex} !important;
   border-radius: 14px;
   border: 4px solid transparent;
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.05) !important;
@@ -339,8 +214,8 @@ stage {
 #panel .panel-button.meowterialyou-center-island:active,
 #panel .panel-button.meowterialyou-center-island:focus,
 #panel .panel-button.meowterialyou-center-island:checked {
-  background-color: @{secondaryContainer.hex} !important;
-  box-shadow: inset 0 0 0 100px rgba(255, 255, 255, 0.08), inset 0 0 0 1px rgba(255, 255, 255, 0.05) !important;
+  background-color: @{panelPillBackground.hex} !important;
+  box-shadow: inset 0 0 0 100px rgba(255, 255, 255, 0.08) !important;
 }
 
 #panel .panel-button.meowterialyou-center-island StLabel,
@@ -355,7 +230,7 @@ stage {
 #panel #panelCenter .panel-button.meowterialyou-center-island StScrollView StLabel,
 #panel #panelCenter .panel-button.meowterialyou-center-island .panel-controls-box StIcon,
 #panel #panelCenter .panel-button.meowterialyou-center-island .panel-controls-box .system-status-icon {
-  color: @{onSecondaryContainer.hex} !important;
+  color: @{panelPillForeground.hex} !important;
 }
 
 /* Colored player/app icons keep their brand color */
@@ -392,7 +267,7 @@ stage {
   margin: 0 !important;
 }
 
-/* Force onSurface color for all text & icons inside clock pill across all states */
+/* Force pill foreground color for all text & icons inside clock pill across all states */
 #panel #panelCenter .panel-button,
 #panel #panelCenter .panel-button StLabel,
 #panel #panelCenter .panel-button StIcon,
@@ -414,27 +289,6 @@ stage {
 #panel #panelCenter .clock .weather_label,
 #panel #panelCenter .clock .system-status-icon,
 #panel #panelCenter .clock .custom-weather-icon-spacing,
-#panel.meowterialyou-panel-opaque #panelCenter .panel-button,
-#panel.meowterialyou-panel-opaque #panelCenter .panel-button StLabel,
-#panel.meowterialyou-panel-opaque #panelCenter .panel-button StIcon,
-#panel.meowterialyou-panel-opaque #panelCenter .panel-button .clock-label,
-#panel.meowterialyou-panel-opaque #panelCenter .panel-button .weather_label,
-#panel.meowterialyou-panel-opaque #panelCenter .panel-button .system-status-icon,
-#panel.meowterialyou-panel-opaque #panelCenter .panel-button .custom-weather-icon-spacing,
-#panel.meowterialyou-panel-opaque #panelCenter .panel-button.clock-display,
-#panel.meowterialyou-panel-opaque #panelCenter .panel-button.clock-display StLabel,
-#panel.meowterialyou-panel-opaque #panelCenter .panel-button.clock-display StIcon,
-#panel.meowterialyou-panel-opaque #panelCenter .panel-button.clock-display .clock-label,
-#panel.meowterialyou-panel-opaque #panelCenter .panel-button.clock-display .weather_label,
-#panel.meowterialyou-panel-opaque #panelCenter .panel-button.clock-display .system-status-icon,
-#panel.meowterialyou-panel-opaque #panelCenter .panel-button.clock-display .custom-weather-icon-spacing,
-#panel.meowterialyou-panel-opaque #panelCenter .clock,
-#panel.meowterialyou-panel-opaque #panelCenter .clock StLabel,
-#panel.meowterialyou-panel-opaque #panelCenter .clock StIcon,
-#panel.meowterialyou-panel-opaque #panelCenter .clock .clock-label,
-#panel.meowterialyou-panel-opaque #panelCenter .clock .weather_label,
-#panel.meowterialyou-panel-opaque #panelCenter .clock .system-status-icon,
-#panel.meowterialyou-panel-opaque #panelCenter .clock .custom-weather-icon-spacing,
 #panel .clock,
 #panel .clock StLabel,
 #panel .clock StIcon,
@@ -449,7 +303,7 @@ stage {
 .clock-display .clock-label,
 .clock-display .weather_label,
 .clock-display .system-status-icon {
-  color: @{onSecondaryContainer.hex} !important;
+  color: @{panelPillForeground.hex} !important;
 }
 
 /* clock fix by Aylur's widgets */
@@ -1436,12 +1290,15 @@ StScrollBar {
   spacing: 12px;
 }
 
-#overviewGroup, .workspace-animation {
-  background-color:  @{surface.hex};
+#overviewGroup,
+#overview,
+.workspace-animation {
+  background-color: @{panelBackground.hex};
 }
 
 /* Blur My Shell compatibility: prevent visible edges when blur is active */
 .blurred-overview #overviewGroup,
+.blurred-overview #overview,
 .blurred-overview .workspace-animation {
   background-color: transparent !important;
 }

@@ -18,7 +18,7 @@ export default class MeowterialYouPreferences extends ExtensionPreferences {
     const settings = this.getSettings();
 
     this._liveCss = new LiveCssManager();
-    this._liveCss.attach(window);
+    this._liveCss.attach(window, settings);
 
     window.add(createGeneralPage(settings));
     window.add(createAppearancePage(settings));

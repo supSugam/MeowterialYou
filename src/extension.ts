@@ -33,8 +33,7 @@ export default class MeowterialYouExtension extends Extension {
     this._orchestrator = new ThemeOrchestrator({
       extensionDir: this.path,
       settings: this._settings,
-      onExtractionCompleted: (ext, isDark) => {
-        this._tweaksManager.updatePanelContrast(ext.isTopDark, ext.isBottomDark);
+      onExtractionCompleted: (_ext, isDark) => {
         this._tweaksManager.syncBlurMyShell(isDark);
       },
     });
@@ -44,17 +43,12 @@ export default class MeowterialYouExtension extends Extension {
     this._setupMonitor();
     this._setupSettingsListeners();
 
-    this._orchestrator.connectSystemModeListener(() => {
-      void this._triggerThemeUpdate(true);
-    });
-
+    this._orchestrator.connectSystemModeListener(() => void this._triggerThemeUpdate(true));
     this._triggerThemeUpdate();
   }
 
   disable(): void {
-    for (const signalId of this._signalIds) {
-      this._settings.disconnect(signalId);
-    }
+    for (const signalId of this._signalIds) this._settings.disconnect(signalId);
     this._signalIds = [];
 
     this._orchestrator?.destroy();
@@ -62,12 +56,14 @@ export default class MeowterialYouExtension extends Extension {
     this._monitor.stop();
     this._cycler.stop();
 
-    if (this._indicator) {
-      this._indicator.destroy();
-      this._indicator = null;
-    }
+    this._indicator?.destroy();
+    this._indicator = null;
 
-    this._sessionState.restoreOriginalState();
+    try {
+      this._sessionState?.restoreOriginalState();
+    } catch (error) {
+      console.warn('MeowterialYou: Error during restoreOriginalState', error);
+    }
   }
 
   private _setupIndicator(): void {
@@ -135,7 +131,7 @@ export default class MeowterialYouExtension extends Extension {
 
     for (const key of themeReapplyKeys) {
       this._signalIds.push(
-        this._settings.connect(`changed::${key}`, () => void this._triggerThemeUpdate())
+        this._settings.connect(`changed::${key}`, () => void this._triggerThemeUpdate(true))
       );
     }
   }

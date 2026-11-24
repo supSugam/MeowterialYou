@@ -7,7 +7,7 @@ import GLib from 'gi://GLib';
 import { darkenColorHex } from '../color/colorConverter.js';
 import {
   copyDirectoryRecursive,
-  getHomeDirectory,
+  getTargetHomeDirectories,
   readTextFile,
   writeTextFile,
 } from '../theme/fileHelper.js';
@@ -61,10 +61,9 @@ function recolorFolderSvg(svgContent: string, colors: CalculatedFolderColors): s
 }
 
 export function generateThemedIcons(options: IconGenerateOptions): void {
-  const home = getHomeDirectory();
-  const iconThemeDir = GLib.build_filenamev([home, '.local', 'share', 'icons', 'Meowaita']);
-  const placesDestDir = GLib.build_filenamev([iconThemeDir, 'places', 'scalable']);
-  const appsDestDir = GLib.build_filenamev([iconThemeDir, 'apps', 'scalable']);
+  const targetDirs = getTargetHomeDirectories().map(home =>
+    GLib.build_filenamev([home, '.local', 'share', 'icons', 'Meowaita'])
+  );
 
   // 1. Create index.theme with multi-theme fallback hierarchy
   const baseTheme =
@@ -73,59 +72,50 @@ export function generateThemedIcons(options: IconGenerateOptions): void {
     (theme): theme is string => Boolean(theme) && theme !== 'Meowaita'
   );
   const uniqueInherits = Array.from(new Set(fallbacks)).join(',');
-  const indexThemeContent = `[Icon Theme]
-Name=Meowaita
-Comment=Material You dynamic icon theme
-Inherits=${uniqueInherits}
-Example=folder
-Directories=apps/scalable,places/scalable
+  const indexThemeContent = `[Icon Theme]\nName=Meowaita\nComment=Material You dynamic icon theme\nInherits=${uniqueInherits}\nExample=folder\nDirectories=apps/scalable,places/scalable\n\n[apps/scalable]\nSize=96\nContext=Applications\nMinSize=16\nMaxSize=128\nType=Scalable\n\n[places/scalable]\nSize=96\nContext=Places\nMinSize=16\nMaxSize=128\nType=Scalable\n`;
 
-[apps/scalable]
-Size=96
-Context=Applications
-MinSize=16
-MaxSize=128
-Type=Scalable
-
-[places/scalable]
-Size=96
-Context=Places
-MinSize=16
-MaxSize=128
-Type=Scalable
-`;
-  writeTextFile(GLib.build_filenamev([iconThemeDir, 'index.theme']), indexThemeContent);
-
-  // 2. Copy bundled custom app icons (200+ icons)
   const sourceAppsDir = GLib.build_filenamev([options.extensionDir, 'data', 'icons', 'apps', 'scalable']);
-  copyDirectoryRecursive(sourceAppsDir, appsDestDir);
-
-  // 3. Recolor folder SVGs
   const sourceIconsDir = GLib.build_filenamev([options.extensionDir, 'data', 'icons', 'places', 'scalable']);
-  const sourceDir = Gio.File.new_for_path(sourceIconsDir);
-  if (sourceDir.query_exists(null)) {
-    const folderColors = calculateFolderColors(options.scheme.primary, options.isDark);
-    const enumerator = sourceDir.enumerate_children('standard::name', Gio.FileQueryInfoFlags.NOFOLLOW_SYMLINKS, null);
+  const folderColors = calculateFolderColors(options.scheme.primary, options.isDark);
 
-    let fileInfo: Gio.FileInfo | null;
-    while ((fileInfo = enumerator.next_file(null)) !== null) {
-      const fileName = fileInfo.get_name();
-      if (!fileName.endsWith('.svg')) continue;
+  for (const iconThemeDir of targetDirs) {
+    writeTextFile(GLib.build_filenamev([iconThemeDir, 'index.theme']), indexThemeContent);
+    copyDirectoryRecursive(sourceAppsDir, GLib.build_filenamev([iconThemeDir, 'apps', 'scalable']));
 
-      const sourcePath = GLib.build_filenamev([sourceIconsDir, fileName]);
-      const targetPath = GLib.build_filenamev([placesDestDir, fileName]);
-      const recoloredSvg = recolorFolderSvg(readTextFile(sourcePath), folderColors);
-      writeTextFile(targetPath, recoloredSvg);
+    const placesDestDir = GLib.build_filenamev([iconThemeDir, 'places', 'scalable']);
+    const sourceDir = Gio.File.new_for_path(sourceIconsDir);
+    if (sourceDir.query_exists(null)) {
+      const enumerator = sourceDir.enumerate_children('standard::name', Gio.FileQueryInfoFlags.NOFOLLOW_SYMLINKS, null);
+      let fileInfo: Gio.FileInfo | null;
+      while ((fileInfo = enumerator.next_file(null)) !== null) {
+        const fileName = fileInfo.get_name();
+        if (!fileName.endsWith('.svg')) continue;
+        const sourcePath = GLib.build_filenamev([sourceIconsDir, fileName]);
+        const targetPath = GLib.build_filenamev([placesDestDir, fileName]);
+        writeTextFile(targetPath, recolorFolderSvg(readTextFile(sourcePath), folderColors));
+      }
+    }
+
+    try {
+      GLib.spawn_command_line_async(`gtk-update-icon-cache -f -t "${iconThemeDir}"`);
+    } catch {
+      // Ignore cache update failure
     }
   }
 
-  // 4. Update GTK icon cache & apply
-  try {
-    GLib.spawn_command_line_async(`gtk-update-icon-cache -f -t "${iconThemeDir}"`);
-  } catch {
-    // Ignore cache update failure
-  }
-
+  // 4. Apply & pulse icon-theme so running GTK apps reload cached SVG pixbufs
   const interfaceSettings = new Gio.Settings({ schema: 'org.gnome.desktop.interface' });
-  interfaceSettings.set_string('icon-theme', 'Meowaita');
+  if (interfaceSettings.get_string('icon-theme') === 'Meowaita') {
+    const fallbackTheme = baseTheme ?? 'Adwaita';
+    interfaceSettings.set_string('icon-theme', fallbackTheme);
+    Gio.Settings.sync();
+    GLib.timeout_add(GLib.PRIORITY_DEFAULT, 50, () => {
+      interfaceSettings.set_string('icon-theme', 'Meowaita');
+      Gio.Settings.sync();
+      return GLib.SOURCE_REMOVE;
+    });
+  } else {
+    interfaceSettings.set_string('icon-theme', 'Meowaita');
+    Gio.Settings.sync();
+  }
 }

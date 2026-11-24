@@ -1,8 +1,11 @@
 /* ===== Transparent Panel Addon (Dark Mode) ===== */
 
 /* Panel background */
-#panel:not(.dashtopanelBottom), #panel:not(.dashtopanelMainPanel) {
+#panel,
+#panel:overview {
   background-color: transparent !important;
+  background-gradient-direction: none !important;
+  box-shadow: none !important;
 }
 
 /* All panel buttons */
@@ -55,7 +58,7 @@
 #panel .panel-button.meowterialyou-center-island:focus,
 #panel .panel-button.meowterialyou-center-island:checked {
   background-color: transparent !important;
-  box-shadow: inset 0 0 0 100px rgba(255, 255, 255, 0.08), inset 0 0 0 1px rgba(255, 255, 255, 0.15) !important;
+  box-shadow: inset 0 0 0 100px rgba(255, 255, 255, 0.08) !important;
 }
 
 /* Panel Activities Button styling - subtle inset border always visible */
@@ -72,7 +75,7 @@
 #panel #panelActivities.panel-button:focus,
 #panel #panelActivities.panel-button:checked {
   background-color: transparent !important;
-  box-shadow: inset 0 0 0 100px rgba(255, 255, 255, 0.08), inset 0 0 0 1px rgba(255, 255, 255, 0.15) !important;
+  box-shadow: inset 0 0 0 100px rgba(255, 255, 255, 0.08) !important;
 }
 
 #panelActivities.panel-button .workspace-dot {
@@ -97,7 +100,7 @@
 #panel #panelRight .panel-button.meowterialyou-quick-settings-button:focus,
 #panel #panelRight .panel-button.meowterialyou-quick-settings-button:checked {
   background-color: transparent !important;
-  box-shadow: inset 0 0 0 100px rgba(255, 255, 255, 0.08), inset 0 0 0 1px rgba(255, 255, 255, 0.15) !important;
+  box-shadow: inset 0 0 0 100px rgba(255, 255, 255, 0.08) !important;
 }
 
 /* Text/icon colors based on wallpaper brightness */
@@ -140,4 +143,79 @@
 #panel .panel-button.meowterialyou-center-island .colored-icon,
 #panel #panelCenter .panel-button.meowterialyou-center-island .colored-icon {
   -st-icon-style: requested;
+}
+
+/* ===== Overview State Overrides (High-Contrast Mode Protection) ===== */
+#panel:overview .panel-button,
+#panel.in-overview .panel-button,
+#panel:overview .panel-button StLabel,
+#panel.in-overview .panel-button StLabel,
+#panel:overview .panel-button StIcon,
+#panel.in-overview .panel-button StIcon,
+#panel:overview .clock,
+#panel.in-overview .clock,
+#panel:overview .clock StLabel,
+#panel.in-overview .clock StLabel,
+#panel:overview .clock StIcon,
+#panel.in-overview .clock StIcon,
+#panel:overview #panelActivities,
+#panel.in-overview #panelActivities,
+#panel:overview #panelActivities StLabel,
+#panel.in-overview #panelActivities StLabel,
+#panel:overview #panelRight .panel-button.meowterialyou-quick-settings-button StLabel,
+#panel.in-overview #panelRight .panel-button.meowterialyou-quick-settings-button StLabel,
+#panel:overview #panelRight .panel-button.meowterialyou-quick-settings-button StIcon,
+#panel.in-overview #panelRight .panel-button.meowterialyou-quick-settings-button StIcon,
+#panel:overview #panelRight .panel-button.meowterialyou-quick-settings-button .system-status-icon,
+#panel.in-overview #panelRight .panel-button.meowterialyou-quick-settings-button .system-status-icon,
+#panel:overview .panel-button.meowterialyou-center-island,
+#panel.in-overview .panel-button.meowterialyou-center-island,
+#panel:overview .panel-button.meowterialyou-center-island StLabel,
+#panel.in-overview .panel-button.meowterialyou-center-island StLabel,
+#panel:overview .panel-button.meowterialyou-center-island StIcon,
+#panel.in-overview .panel-button.meowterialyou-center-island StIcon,
+#panel:overview .panel-button.meowterialyou-center-island .system-status-icon,
+#panel.in-overview .panel-button.meowterialyou-center-island .system-status-icon,
+#panel:overview .panel-button.meowterialyou-center-island StScrollView StLabel,
+#panel.in-overview .panel-button.meowterialyou-center-island StScrollView StLabel,
+#panel:overview .panel-button.meowterialyou-center-island .panel-controls-box StIcon,
+#panel.in-overview .panel-button.meowterialyou-center-island .panel-controls-box StIcon,
+#panel:overview .panel-button.meowterialyou-center-island .panel-controls-box .system-status-icon,
+#panel.in-overview .panel-button.meowterialyou-center-island .panel-controls-box .system-status-icon {
+  color: @{panelForeground.hex} !important;
+}
+
+#panel:overview #panelActivities.panel-button .workspace-dot,
+#panel.in-overview #panelActivities.panel-button .workspace-dot {
+  background-color: @{panelForeground.hex} !important;
+}
+
+#panel:overview #panelCenter .clock,
+#panel.in-overview #panelCenter .clock,
+#panel:overview #panelCenter .panel-button .clock,
+#panel.in-overview #panelCenter .panel-button .clock,
+#panel:overview .panel-button .clock,
+#panel.in-overview .panel-button .clock,
+#panel:overview #panelCenter .panel-button,
+#panel.in-overview #panelCenter .panel-button,
+#panel:overview .panel-button.meowterialyou-center-island,
+#panel.in-overview .panel-button.meowterialyou-center-island,
+#panel:overview #panelActivities.panel-button,
+#panel.in-overview #panelActivities.panel-button,
+#panel:overview #panelRight .panel-button.meowterialyou-quick-settings-button,
+#panel.in-overview #panelRight .panel-button.meowterialyou-quick-settings-button {
+  background-color: transparent !important;
+  box-shadow: inset 0 0 0 1px @{panelForeground.rgba16} !important;
+}
+
+#panel:overview .panel-button:hover,
+#panel.in-overview .panel-button:hover,
+#panel:overview .panel-button:active,
+#panel.in-overview .panel-button:active,
+#panel:overview .panel-button:focus,
+#panel.in-overview .panel-button:focus,
+#panel:overview .panel-button:checked,
+#panel.in-overview .panel-button:checked {
+  background-color: transparent !important;
+  box-shadow: inset 0 0 0 100px @{panelForeground.rgba12} !important;
 }

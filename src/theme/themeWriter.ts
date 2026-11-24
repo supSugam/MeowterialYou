@@ -5,7 +5,6 @@
 import GLib from 'gi://GLib';
 import {
   copyDirectoryRecursive,
-  deleteFile,
   getTargetHomeDirectories,
   readTextFile,
   writeTextFile,
@@ -33,18 +32,6 @@ function loadMacAddon(dataDir: string, filename: string): string {
   return GLib.file_test(path, GLib.FileTest.EXISTS) ? '\n' + readTextFile(path) : '';
 }
 
-const MAC_DARK_OVERRIDE = `
-@media (prefers-color-scheme: dark) {
-  windowcontrols > button.minimize:backdrop:not(.suggested-action):not(.destructive-action) > image,
-  windowcontrols > button.maximize:backdrop:not(.suggested-action):not(.destructive-action) > image,
-  windowcontrols > button.close:backdrop:not(.suggested-action):not(.destructive-action) > image {
-    background-color: rgba(250, 244, 237, 0.3);
-  }
-  button.titlebutton:backdrop:not(.suggested-action):not(.destructive-action) {
-    background-color: rgba(250, 244, 237, 0.3);
-  }
-}`;
-
 export function writeGeneratedThemes(options: ThemeWriteOptions): void {
   const themeSuffix = options.isDark ? 'dark' : 'light';
   const themeName = `MeowterialYou-${themeSuffix}`;
@@ -55,6 +42,7 @@ export function writeGeneratedThemes(options: ThemeWriteOptions): void {
     themeBases.push(GLib.build_filenamev([dir, '.themes', themeName]));
   }
   const gtkAssetsSrc = GLib.build_filenamev([dataDir, 'assets', themeName, 'gtk-3.0', 'assets']);
+  const iniContent = `[Settings]\ngtk-application-prefer-dark-theme=${options.isDark ? 1 : 0}\ngtk-theme-name=${themeName}\n`;
 
   // 1. GNOME Shell Theme
   if (options.isShellThemeEnabled) {
@@ -79,27 +67,30 @@ export function writeGeneratedThemes(options: ThemeWriteOptions): void {
     }
   }
 
-  // 2. GTK4 Theme (unified light + dark prefers-color-scheme stylesheet)
+  // 2. GTK4 Theme (unified mode-matching stylesheets)
   if (options.isGtk4Enabled) {
-    const gtk4Raw = readTextFile(GLib.build_filenamev([dataDir, 'templates', 'gtk4.css']));
-    let gtk4Css = substituteTemplate(gtk4Raw, options.lightScheme, '', 'light');
-    gtk4Css = substituteTemplate(gtk4Css, options.darkScheme, '', 'dark');
-
-    if (options.isMacButtonsEnabled) {
-      gtk4Css += loadMacAddon(dataDir, 'gtk_light.css') + MAC_DARK_OVERRIDE;
-    }
+    const g4LightRaw = readTextFile(GLib.build_filenamev([dataDir, 'templates', 'gtk4.css']));
+    const g4DarkRaw = readTextFile(GLib.build_filenamev([dataDir, 'templates', 'gtk4-dark.css']));
+    const macLight = options.isMacButtonsEnabled ? loadMacAddon(dataDir, 'gtk_light.css') : '';
+    const macDark = options.isMacButtonsEnabled ? loadMacAddon(dataDir, 'gtk_dark.css') : '';
+    let g4LightCss = substituteTemplate(g4LightRaw, options.lightScheme, '', 'light');
+    g4LightCss = substituteTemplate(g4LightCss, options.lightScheme) + macLight;
+    let g4DarkCss = substituteTemplate(g4DarkRaw, options.darkScheme, '', 'dark');
+    g4DarkCss = substituteTemplate(g4DarkCss, options.darkScheme) + macDark;
+    const activeG4Css = options.isDark ? g4DarkCss : g4LightCss;
 
     for (const targetDir of getTargetHomeDirectories()) {
       const g4Dir = GLib.build_filenamev([targetDir, '.config', 'gtk-4.0']);
-      writeTextFile(GLib.build_filenamev([g4Dir, 'gtk.css']), gtk4Css);
-      deleteFile(GLib.build_filenamev([g4Dir, 'gtk-dark.css']));
+      writeTextFile(GLib.build_filenamev([g4Dir, 'gtk.css']), activeG4Css);
+      writeTextFile(GLib.build_filenamev([g4Dir, 'gtk-dark.css']), g4DarkCss);
+      writeTextFile(GLib.build_filenamev([g4Dir, 'settings.ini']), iniContent);
     }
 
     const chromeTmpl = options.isDark ? 'gtk_4_chrome_dark.css' : 'gtk_4_chrome_light.css';
     const chromePath = GLib.build_filenamev([dataDir, 'templates', 'addons', 'chrome_gtk4', chromeTmpl]);
     if (GLib.file_test(chromePath, GLib.FileTest.EXISTS)) {
-      const macAddon = options.isMacButtonsEnabled ? loadMacAddon(dataDir, options.isDark ? 'gtk_dark.css' : 'gtk_light.css') : '';
-      const chromeCss = substituteTemplate(readTextFile(chromePath), options.scheme) + macAddon;
+      const macChrome = options.isMacButtonsEnabled ? (options.isDark ? macDark : macLight) : '';
+      const chromeCss = substituteTemplate(readTextFile(chromePath), options.scheme) + macChrome;
       for (const base of themeBases) {
         const g4 = GLib.build_filenamev([base, 'gtk-4.0']);
         writeTextFile(GLib.build_filenamev([g4, 'gtk.css']), chromeCss);
@@ -109,7 +100,7 @@ export function writeGeneratedThemes(options: ThemeWriteOptions): void {
     }
   }
 
-  // 3. GTK3 Theme (light gtk.css and dark gtk-dark.css)
+  // 3. GTK3 Theme (unified mode-matching stylesheets)
   if (options.isGtk3Enabled) {
     const g3LightRaw = readTextFile(GLib.build_filenamev([dataDir, 'templates', 'gtk3.css']));
     const g3DarkRaw = readTextFile(GLib.build_filenamev([dataDir, 'templates', 'gtk3-dark.css']));
@@ -117,18 +108,19 @@ export function writeGeneratedThemes(options: ThemeWriteOptions): void {
     const macDark = options.isMacButtonsEnabled ? loadMacAddon(dataDir, 'gtk_3_dark.css') : '';
     const g3LightCss = substituteTemplate(g3LightRaw, options.lightScheme) + macLight;
     const g3DarkCss = substituteTemplate(g3DarkRaw, options.darkScheme) + macDark;
+    const activeG3Css = options.isDark ? g3DarkCss : g3LightCss;
 
     for (const targetDir of getTargetHomeDirectories()) {
       const g3Dir = GLib.build_filenamev([targetDir, '.config', 'gtk-3.0']);
-      writeTextFile(GLib.build_filenamev([g3Dir, 'gtk.css']), g3LightCss);
+      writeTextFile(GLib.build_filenamev([g3Dir, 'gtk.css']), activeG3Css);
       writeTextFile(GLib.build_filenamev([g3Dir, 'gtk-dark.css']), g3DarkCss);
+      writeTextFile(GLib.build_filenamev([g3Dir, 'settings.ini']), iniContent);
     }
 
     for (const base of themeBases) {
       const g3 = GLib.build_filenamev([base, 'gtk-3.0']);
-      const activeCss = options.isDark ? g3DarkCss : g3LightCss;
-      writeTextFile(GLib.build_filenamev([g3, 'gtk.css']), activeCss);
-      writeTextFile(GLib.build_filenamev([g3, 'gtk-dark.css']), activeCss);
+      writeTextFile(GLib.build_filenamev([g3, 'gtk.css']), activeG3Css);
+      writeTextFile(GLib.build_filenamev([g3, 'gtk-dark.css']), activeG3Css);
       copyDirectoryRecursive(gtkAssetsSrc, GLib.build_filenamev([g3, 'assets']));
     }
   }

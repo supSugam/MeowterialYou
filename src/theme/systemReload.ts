@@ -4,12 +4,12 @@
 
 import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
-import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import type { WindowButtonPosition } from '../types/theme.js';
+import { reloadShellThemeSafely, resolveThemeStylesheet } from './shellThemeReload.js';
 
-// Cast to the APIs we call directly. Using Main.setThemeStylesheet + Main.loadTheme
-// bypasses the gsettings name bounce ('' → themeName) that caused the Adwaita flash.
-const shellMain = Main as unknown as { setThemeStylesheet(p: string | null): void; loadTheme(): void };
+export function isColorSchemePulsing(): boolean {
+  return false;
+}
 
 export function applyGnomeSystemSettings(
   isDark: boolean,
@@ -35,7 +35,7 @@ export function applyGnomeSystemSettings(
     Gio.Settings.sync();
   }
 
-  // 3. GTK Theme apply/bounce
+  // 3. GTK Theme apply/bounce (GTK3 & Chromium)
   if (shouldBounceGtk) {
     interfaceSettings.set_string('gtk-theme', 'Adwaita');
     Gio.Settings.sync();
@@ -50,45 +50,15 @@ export function applyGnomeSystemSettings(
     Gio.Settings.sync();
   }
 
-  // 4. GNOME Shell theme — reload CSS directly in-process without gsettings bounce
+  // 4. GNOME Shell theme — reload CSS directly in-process
   const cssPath = resolveThemeStylesheet(themeName);
-  if (cssPath) {
-    shellMain.setThemeStylesheet(cssPath);
-    shellMain.loadTheme();
-  }
+  reloadShellThemeSafely(cssPath);
 
-  // Keep user-theme gsettings in sync without triggering a reload bounce
-  const schemaSource = Gio.SettingsSchemaSource.get_default();
-  if (schemaSource && schemaSource.lookup('org.gnome.shell.extensions.user-theme', true)) {
-    const userThemeSettings = new Gio.Settings({ schema: 'org.gnome.shell.extensions.user-theme' });
-    if (userThemeSettings.get_string('name') !== themeName) {
-      userThemeSettings.set_string('name', themeName);
-      Gio.Settings.sync();
-    }
-  }
-
-  // 5. Terminate stale extensions daemon if preferences window is not open
   terminateStaleDaemons();
 }
 
-function resolveThemeStylesheet(themeName: string): string | null {
-  const searchDirs = [
-    GLib.build_filenamev([GLib.get_home_dir(), '.themes']),
-    GLib.build_filenamev([GLib.get_user_data_dir(), 'themes']),
-    ...GLib.get_system_data_dirs().map((dir: string) => GLib.build_filenamev([dir, 'themes'])),
-  ];
-  for (const dir of searchDirs) {
-    const cssPath = GLib.build_filenamev([dir, themeName, 'gnome-shell', 'gnome-shell.css']);
-    if (GLib.file_test(cssPath, GLib.FileTest.EXISTS)) return cssPath;
-  }
-  return null;
-}
-
 function terminateStaleDaemons(): void {
-  if (isExtensionPrefsWindowOpen()) {
-    return;
-  }
-
+  if (isExtensionPrefsWindowOpen()) return;
   try {
     GLib.spawn_command_line_async('pkill -f org.gnome.Shell.Extensions');
   } catch (error) {
@@ -97,9 +67,7 @@ function terminateStaleDaemons(): void {
 }
 
 function isExtensionPrefsWindowOpen(): boolean {
-  if (typeof global === 'undefined' || !global.display) {
-    return false;
-  }
+  if (typeof global === 'undefined' || !global.display) return false;
   try {
     const display = global.display as unknown as {
       get_tab_list(mode: number, workspace: unknown): Array<{
@@ -109,10 +77,7 @@ function isExtensionPrefsWindowOpen(): boolean {
     };
     if (typeof display.get_tab_list === 'function') {
       const windows = display.get_tab_list(3, null);
-      return windows.some(window => {
-        const wmClass = window.get_wm_class()?.toLowerCase() ?? '';
-        return wmClass.includes('extensions');
-      });
+      return windows.some(w => (w.get_wm_class()?.toLowerCase() ?? '').includes('extensions'));
     }
   } catch (error) {
     console.warn('MeowterialYou: Could not inspect open windows', error);
@@ -121,20 +86,13 @@ function isExtensionPrefsWindowOpen(): boolean {
 }
 
 function pulseChromiumWindowFocus(): void {
-  // Wait for GTK theme toggle to finish settling in Chrome (~850ms)
   GLib.timeout_add(GLib.PRIORITY_DEFAULT, 850, () => {
     try {
       if (typeof global !== 'undefined' && global.display) {
         const focusWindow = global.display.focus_window;
         if (focusWindow) {
           const wmClass = focusWindow.get_wm_class()?.toLowerCase() ?? '';
-          const isChromium =
-            wmClass.includes('chrome') ||
-            wmClass.includes('chromium') ||
-            wmClass.includes('brave') ||
-            wmClass.includes('vivaldi') ||
-            wmClass.includes('edge');
-          if (isChromium) {
+          if (/chrome|chromium|brave|vivaldi|edge/.test(wmClass)) {
             const timestamp = global.get_current_time();
             global.display.unset_input_focus(timestamp);
             global.display.set_input_focus(focusWindow, timestamp);

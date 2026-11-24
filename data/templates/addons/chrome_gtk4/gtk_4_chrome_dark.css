@@ -94,8 +94,7 @@ dnd {
 }
 
 /* Selection colors */
-selection,
-*::selection {
+selection {
     background-color: alpha(@{primary.hex}, 0.3);
     color: @{onSurface.hex};
 }

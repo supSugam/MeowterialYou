@@ -14,11 +14,12 @@ async function build() {
   }
   fs.mkdirSync(DIST_DIR, { recursive: true });
 
-  // Bundle extension.ts and prefs.ts
+  // Bundle extension.ts, prefs.ts, and cli.ts
   await esbuild.build({
     entryPoints: {
       extension: 'src/extension.ts',
       prefs: 'src/prefs.ts',
+      cli: 'src/cli.ts',
     },
     outdir: 'dist',
     bundle: true,

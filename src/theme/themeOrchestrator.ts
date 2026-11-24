@@ -7,16 +7,12 @@ import GLib from 'gi://GLib';
 import { extractColorsFromWallpaper, type ExtractionResult } from '../color/wallpaperExtractor.js';
 import { generateMaterialScheme } from '../color/schemeGenerator.js';
 import { writeGeneratedThemes } from './themeWriter.js';
-import { applyGnomeSystemSettings } from './systemReload.js';
+import { applyGnomeSystemSettings, isColorSchemePulsing } from './systemReload.js';
 import { generateThemedIcons } from '../icons/iconGenerator.js';
 import { getCurrentWallpaperPath } from '../wallpaper/wallpaperHelper.js';
 import {
-  doesThemeExistOnDisk,
-  getThemeCriteria,
-  isCacheUpToDate,
-  loadThemeCache,
-  saveThemeCache,
-  toExtractionResult,
+  doesThemeExistOnDisk, getThemeCriteria, isCacheUpToDate,
+  loadThemeCache, saveThemeCache, toExtractionResult,
 } from './themeCache.js';
 
 export interface OrchestratorOptions {
@@ -30,9 +26,9 @@ export class ThemeOrchestrator {
   private _settings: Gio.Settings;
   private _interfaceSettings: Gio.Settings;
   private _onExtractionCompleted?: (extraction: ExtractionResult, isDark: boolean) => void;
-  private _isApplying: boolean = false;
-  private _reapplyPending: boolean = false;
-  private _pendingForce: boolean = false;
+  private _isApplying = false;
+  private _reapplyPending = false;
+  private _pendingForce = false;
   private _systemSignalId: number | null = null;
 
   constructor(options: OrchestratorOptions) {
@@ -45,7 +41,7 @@ export class ThemeOrchestrator {
   connectSystemModeListener(onModeChanged: () => void): void {
     this.disconnectSystemModeListener();
     this._systemSignalId = this._interfaceSettings.connect('changed::color-scheme', () => {
-      if (this._isApplying) return;
+      if (this._isApplying || isColorSchemePulsing()) return;
       const isSysDark = this._interfaceSettings.get_string('color-scheme') === 'prefer-dark';
       if (isSysDark === this.isDarkMode()) return;
       this._settings.set_string('theme-mode', isSysDark ? 'dark' : 'light');
@@ -74,25 +70,24 @@ export class ThemeOrchestrator {
       this._pendingForce = this._pendingForce || force;
       return false;
     }
-
-    if (!force && this._settings.get_boolean('paused')) {
-      return false;
-    }
+    if (!force && this._settings.get_boolean('paused')) return false;
 
     this._isApplying = true;
     try {
       const isDark = this.isDarkMode();
       const wallpaperPath = getCurrentWallpaperPath(isDark);
-      if (!wallpaperPath) {
-        return false;
-      }
+      if (!wallpaperPath) return false;
 
       const criteria = getThemeCriteria(this._settings, wallpaperPath, isDark);
       const cache = loadThemeCache();
 
       if (!force && isCacheUpToDate(cache, criteria) && doesThemeExistOnDisk(isDark)) {
         this._onExtractionCompleted?.(toExtractionResult(cache!), isDark);
-        applyGnomeSystemSettings(isDark, criteria.windowButtonPosition, false);
+        try {
+          applyGnomeSystemSettings(isDark, criteria.windowButtonPosition, false);
+        } catch (error) {
+          console.warn('MeowterialYou: Warning applying cached system settings', error);
+        }
         return true;
       }
 
@@ -105,12 +100,8 @@ export class ThemeOrchestrator {
 
       writeGeneratedThemes({
         extensionDir: this._extensionDir,
-        scheme,
-        lightScheme,
-        darkScheme,
-        isDark,
-        wallpaperPath,
-        isTopDark,
+        scheme, lightScheme, darkScheme,
+        isDark, wallpaperPath, isTopDark,
         isShellThemeEnabled: this._settings.get_boolean('shell-theme-enabled'),
         isGtk3Enabled: this._settings.get_boolean('gtk3-enabled'),
         isGtk4Enabled: this._settings.get_boolean('gtk4-enabled'),
@@ -118,15 +109,22 @@ export class ThemeOrchestrator {
         isTransparentPanelEnabled: criteria.transparentPanel,
       });
 
-      applyGnomeSystemSettings(isDark, criteria.windowButtonPosition, true);
+      try {
+        applyGnomeSystemSettings(isDark, criteria.windowButtonPosition, true);
+      } catch (error) {
+        console.warn('MeowterialYou: Warning applying system settings', error);
+      }
 
       if (criteria.themedIconsEnabled) {
-        generateThemedIcons({
-          extensionDir: this._extensionDir,
-          scheme,
-          isDark,
-          baseIconTheme: criteria.baseIconTheme,
-        });
+        try {
+          generateThemedIcons({
+            extensionDir: this._extensionDir,
+            scheme, isDark,
+            baseIconTheme: criteria.baseIconTheme,
+          });
+        } catch (error) {
+          console.warn('MeowterialYou: Warning generating themed icons', error);
+        }
       }
 
       saveThemeCache({ ...criteria, ...extraction });
