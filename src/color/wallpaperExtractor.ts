@@ -4,6 +4,7 @@
 
 import GdkPixbuf from 'gi://GdkPixbuf';
 import { QuantizerCelebi, Score } from '@material/material-color-utilities';
+import type { WallpaperImageStats } from '../types/theme.js';
 
 const TARGET_EXTRACTION_SIZE = 128;
 const FALLBACK_SEED_COLOR_ARGB = 0xff4285f4; // Google Blue
@@ -13,6 +14,7 @@ export interface ExtractionResult {
   paletteColorsArgb: number[];
   isTopDark: boolean;
   isBottomDark: boolean;
+  imageStats?: WallpaperImageStats;
 }
 
 export function extractColorsFromWallpaper(wallpaperPath: string): ExtractionResult {
@@ -40,6 +42,13 @@ export function extractColorsFromWallpaper(wallpaperPath: string): ExtractionRes
   let topPixelCount = 0;
   let bottomLuminanceSum = 0;
   let bottomPixelCount = 0;
+  let rSum = 0;
+  let gSum = 0;
+  let bSum = 0;
+  let brightnessSum = 0;
+  let brightnessSqSum = 0;
+  let saturationSum = 0;
+  let totalPixels = 0;
 
   for (let y = 0; y < height; y++) {
     const rowStart = y * rowstride;
@@ -62,6 +71,17 @@ export function extractColorsFromWallpaper(wallpaperPath: string): ExtractionRes
         bottomPixelCount++;
       }
 
+      const perceivedBrightness = 0.299 * r + 0.587 * g + 0.114 * b;
+      const maxChannel = Math.max(r, g, b);
+      const minChannel = Math.min(r, g, b);
+      rSum += r;
+      gSum += g;
+      bSum += b;
+      brightnessSum += perceivedBrightness;
+      brightnessSqSum += perceivedBrightness * perceivedBrightness;
+      saturationSum += maxChannel > 0 ? (maxChannel - minChannel) / maxChannel : 0;
+      totalPixels++;
+
       // Only extract opaque pixels
       if (a >= 255) {
         pixels.push(((255 << 24) | (r << 16) | (g << 8) | b) >>> 0);
@@ -74,6 +94,16 @@ export function extractColorsFromWallpaper(wallpaperPath: string): ExtractionRes
 
   const avgBottomLuminance = bottomPixelCount > 0 ? bottomLuminanceSum / bottomPixelCount : 128;
   const isBottomDark = avgBottomLuminance < 140;
+
+  const count = Math.max(1, totalPixels);
+  const avgBrightness = brightnessSum / count;
+  const rawVariance = Math.max(0, brightnessSqSum / count - avgBrightness * avgBrightness);
+  const imageStats: WallpaperImageStats = {
+    brightness: avgBrightness,
+    variance: Math.min(rawVariance / 5000, 1.0),
+    saturation: saturationSum / count,
+    averageRgb: [Math.round(rSum / count), Math.round(gSum / count), Math.round(bSum / count)],
+  };
 
   const colorMap = QuantizerCelebi.quantize(pixels, 128);
   const rankedColors = Score.score(colorMap, {
@@ -89,5 +119,6 @@ export function extractColorsFromWallpaper(wallpaperPath: string): ExtractionRes
     paletteColorsArgb: rankedColors,
     isTopDark,
     isBottomDark,
+    imageStats,
   };
 }

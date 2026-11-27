@@ -334,6 +334,34 @@ stage {
 }
 
 /* POPOVERS */
+#uiGroup.bms-popup-surface-dark .popup-menu-boxpointer .popup-menu-content,
+#uiGroup.bms-popup-background-dark .popup-menu-boxpointer .popup-menu-content,
+#uiGroup.bms-popup-surface-light .popup-menu-boxpointer .popup-menu-content,
+#uiGroup.bms-popup-background-light .popup-menu-boxpointer .popup-menu-content,
+#uiGroup.bms-popup-surface-dark .popup-menu .popup-menu-content,
+#uiGroup.bms-popup-background-dark .popup-menu .popup-menu-content,
+#uiGroup.bms-popup-surface-light .popup-menu .popup-menu-content,
+#uiGroup.bms-popup-background-light .popup-menu .popup-menu-content,
+#uiGroup.bms-popup-surface-dark .popup-menu-content,
+#uiGroup.bms-popup-background-dark .popup-menu-content,
+#uiGroup.bms-popup-surface-light .popup-menu-content,
+#uiGroup.bms-popup-background-light .popup-menu-content,
+#uiGroup.bms-popup-surface-dark .quick-settings,
+#uiGroup.bms-popup-background-dark .quick-settings,
+#uiGroup.bms-popup-surface-light .quick-settings,
+#uiGroup.bms-popup-background-light .quick-settings,
+#uiGroup.bms-popup-surface-dark .quick-toggle-menu,
+#uiGroup.bms-popup-background-dark .quick-toggle-menu,
+#uiGroup.bms-popup-surface-light .quick-toggle-menu,
+#uiGroup.bms-popup-background-light .quick-toggle-menu,
+#uiGroup.bms-popup-surface-dark .bms-popup-blur-target,
+#uiGroup.bms-popup-background-dark .bms-popup-blur-target,
+#uiGroup.bms-popup-surface-light .bms-popup-blur-target,
+#uiGroup.bms-popup-background-light .bms-popup-blur-target,
+#uiGroup.bms-popup-surface-dark .candidate-popup-content,
+#uiGroup.bms-popup-background-dark .candidate-popup-content,
+#uiGroup.bms-popup-surface-light .candidate-popup-content,
+#uiGroup.bms-popup-background-light .candidate-popup-content,
 .bms-popup-surface-dark .popup-menu-boxpointer .popup-menu-content,
 .bms-popup-background-dark .popup-menu-boxpointer .popup-menu-content,
 .bms-popup-surface-dark .popup-menu .popup-menu-content,
@@ -368,6 +396,69 @@ stage {
   border-radius: 20px;
   border: 1px solid rgba(0, 0, 0, 0.08) !important;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08) !important;
+}
+
+#uiGroup.bms-popup-surface-dark .osd-window,
+#uiGroup.bms-popup-background-dark .osd-window,
+#uiGroup.bms-popup-surface-light .osd-window,
+#uiGroup.bms-popup-background-light .osd-window,
+#uiGroup.bms-popup-surface-dark .resize-popup,
+#uiGroup.bms-popup-background-dark .resize-popup,
+#uiGroup.bms-popup-surface-light .resize-popup,
+#uiGroup.bms-popup-background-light .resize-popup,
+#uiGroup.bms-popup-surface-dark .switcher-list,
+#uiGroup.bms-popup-background-dark .switcher-list,
+#uiGroup.bms-popup-surface-light .switcher-list,
+#uiGroup.bms-popup-background-light .switcher-list,
+#uiGroup.bms-popup-surface-dark .workspace-switcher,
+#uiGroup.bms-popup-background-dark .workspace-switcher,
+#uiGroup.bms-popup-surface-light .workspace-switcher,
+#uiGroup.bms-popup-background-light .workspace-switcher {
+  color: @{onSurface.hex} !important;
+  background-color: @{surfaceContainer.hex} !important;
+  background: @{surfaceContainer.hex} !important;
+  border: 1px solid rgba(0, 0, 0, 0.08) !important;
+}
+
+#uiGroup.bms-popup-surface-dark .popup-menu-content.bms-popup-blurred,
+#uiGroup.bms-popup-background-dark .popup-menu-content.bms-popup-blurred,
+#uiGroup.bms-popup-surface-light .popup-menu-content.bms-popup-blurred,
+#uiGroup.bms-popup-background-light .popup-menu-content.bms-popup-blurred,
+#uiGroup.bms-popup-surface-dark .quick-settings.bms-popup-blurred,
+#uiGroup.bms-popup-background-dark .quick-settings.bms-popup-blurred,
+#uiGroup.bms-popup-surface-light .quick-settings.bms-popup-blurred,
+#uiGroup.bms-popup-background-light .quick-settings.bms-popup-blurred,
+#uiGroup.bms-popup-surface-dark .quick-toggle-menu.bms-popup-blurred,
+#uiGroup.bms-popup-background-dark .quick-toggle-menu.bms-popup-blurred,
+#uiGroup.bms-popup-surface-light .quick-toggle-menu.bms-popup-blurred,
+#uiGroup.bms-popup-background-light .quick-toggle-menu.bms-popup-blurred,
+#uiGroup.bms-popup-surface-dark .candidate-popup-content.bms-popup-blurred,
+#uiGroup.bms-popup-background-dark .candidate-popup-content.bms-popup-blurred,
+#uiGroup.bms-popup-surface-light .candidate-popup-content.bms-popup-blurred,
+#uiGroup.bms-popup-background-light .candidate-popup-content.bms-popup-blurred,
+#uiGroup.bms-popup-surface-dark .bms-popup-blur-target.bms-popup-blurred,
+#uiGroup.bms-popup-background-dark .bms-popup-blur-target.bms-popup-blurred,
+#uiGroup.bms-popup-surface-light .bms-popup-blur-target.bms-popup-blurred,
+#uiGroup.bms-popup-background-light .bms-popup-blur-target.bms-popup-blurred,
+#uiGroup.bms-popup-surface-dark .osd-window.bms-popup-blurred,
+#uiGroup.bms-popup-background-dark .osd-window.bms-popup-blurred,
+#uiGroup.bms-popup-surface-light .osd-window.bms-popup-blurred,
+#uiGroup.bms-popup-background-light .osd-window.bms-popup-blurred,
+#uiGroup.bms-popup-surface-dark .resize-popup.bms-popup-blurred,
+#uiGroup.bms-popup-background-dark .resize-popup.bms-popup-blurred,
+#uiGroup.bms-popup-surface-light .resize-popup.bms-popup-blurred,
+#uiGroup.bms-popup-background-light .resize-popup.bms-popup-blurred,
+#uiGroup.bms-popup-surface-dark .switcher-list.bms-popup-blurred,
+#uiGroup.bms-popup-background-dark .switcher-list.bms-popup-blurred,
+#uiGroup.bms-popup-surface-light .switcher-list.bms-popup-blurred,
+#uiGroup.bms-popup-background-light .switcher-list.bms-popup-blurred,
+#uiGroup.bms-popup-surface-dark .workspace-switcher.bms-popup-blurred,
+#uiGroup.bms-popup-background-dark .workspace-switcher.bms-popup-blurred,
+#uiGroup.bms-popup-surface-light .workspace-switcher.bms-popup-blurred,
+#uiGroup.bms-popup-background-light .workspace-switcher.bms-popup-blurred {
+  color: @{onSurface.hex} !important;
+  background-color: @{surfaceContainer.rgba80} !important;
+  background: @{surfaceContainer.rgba80} !important;
 }
 
 #uiGroup.bms-popup-surface-dark .popup-menu-item,
@@ -503,6 +594,8 @@ stage {
 
 #uiGroup.bms-popup-surface-dark .popup-sub-menu,
 #uiGroup.bms-popup-background-dark .popup-sub-menu,
+#uiGroup.bms-popup-surface-light .popup-sub-menu,
+#uiGroup.bms-popup-background-light .popup-sub-menu,
 #uiGroup .popup-sub-menu,
 .bms-popup-surface-dark .popup-sub-menu,
 .bms-popup-background-dark .popup-sub-menu,
@@ -513,6 +606,14 @@ stage {
   box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.03);
   border-radius: 0 0 12px 12px;
   margin: 0 0 2px 0;
+}
+
+#uiGroup.bms-popup-surface-dark .popup-sub-menu.bms-popup-blurred,
+#uiGroup.bms-popup-background-dark .popup-sub-menu.bms-popup-blurred,
+#uiGroup.bms-popup-surface-light .popup-sub-menu.bms-popup-blurred,
+#uiGroup.bms-popup-background-light .popup-sub-menu.bms-popup-blurred {
+  background-color: @{surfaceContainerHighest.rgba85} !important;
+  background: @{surfaceContainerHighest.rgba85} !important;
 }
 
 #uiGroup.bms-popup-surface-dark .popup-sub-menu .popup-menu-item,
@@ -607,7 +708,7 @@ stage {
 
 .datemenu-today-button:hover {
   transition-duration: 100ms;
-  box-shadow: inset 0 0 0 100px rgba(0, 0, 0, 0.1), inset 0 0 0 1px rgba(0, 0, 0, 0.05);
+  box-shadow: inset 0 0 0 100px rgba(0, 0, 0, 0.1);
 }
 
 .datemenu-today-button:focus {
@@ -738,7 +839,7 @@ stage {
 .weather-button:hover,
 .media-message:hover {
   /* background-color: transparent; */
-  box-shadow: inset 0 0 0 100px rgba(0, 0, 0, 0.1), inset 0 0 0 1px rgba(0, 0, 0, 0.05) !important;
+  box-shadow: inset 0 0 0 100px rgba(0, 0, 0, 0.1) !important;
   transition-duration: 100ms;
 }
 
@@ -835,15 +936,27 @@ stage {
   box-shadow: inset 0 0 0 2px @{secondary.hex} !important;
 }
 
+#uiGroup.bms-popup-surface-dark .message-list .message,
+#uiGroup.bms-popup-background-dark .message-list .message,
+#uiGroup.bms-popup-surface-light .message-list .message,
+#uiGroup.bms-popup-background-light .message-list .message,
 .message-list .message {
-  background-color: @{surfaceVariant.hex};
+  background-color: @{surfaceVariant.hex} !important;
+  color: @{onSurface.hex} !important;
   box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.03);
   transition-duration: 100ms;
 }
 
+#uiGroup.bms-popup-surface-dark .message-list .message.bms-popup-blurred,
+#uiGroup.bms-popup-background-dark .message-list .message.bms-popup-blurred,
+#uiGroup.bms-popup-surface-light .message-list .message.bms-popup-blurred,
+#uiGroup.bms-popup-background-light .message-list .message.bms-popup-blurred {
+  background-color: @{surfaceVariant.rgba85} !important;
+}
+
 .message-list .message:hover {
   /* background-color: @{inverseOnSurface.hex}; removed */
-  box-shadow: inset 0 0 0 100px rgba(0, 0, 0, 0.1), inset 0 0 0 1px rgba(0, 0, 0, 0.05);
+  box-shadow: inset 0 0 0 100px rgba(0, 0, 0, 0.1);
 }
 
 .message .message-body,
@@ -869,7 +982,7 @@ stage {
 
 .message-close-button:hover,
 .message-expand-button:hover {
-  box-shadow: inset 0 0 0 100px rgba(0, 0, 0, 0.1), inset 0 0 0 1px rgba(0, 0, 0, 0.05);
+  box-shadow: inset 0 0 0 100px rgba(0, 0, 0, 0.1);
 }
 
 .message-close-button:active,
@@ -891,7 +1004,7 @@ stage {
   transition-duration: 100ms;
 }
 .message-media-control:hover {
-  box-shadow: inset 0 0 0 100px rgba(0, 0, 0, 0.1), inset 0 0 0 1px rgba(0, 0, 0, 0.05);
+  box-shadow: inset 0 0 0 100px rgba(0, 0, 0, 0.1);
   color: @{onSurface.hex};
 }
 .message-media-control:insensitive {
@@ -968,7 +1081,7 @@ stage {
 }
 
 .dnd-button:hover .toggle-switch {
-  box-shadow: inset 0 0 0 100px rgba(0, 0, 0, 0.1), inset 0 0 0 1px rgba(0, 0, 0, 0.05);
+  box-shadow: inset 0 0 0 100px rgba(0, 0, 0, 0.1);
 }
 
 .dnd-button .toggle-switch:checked {
@@ -993,18 +1106,49 @@ stage {
 .button {
   color: @{onSurface.hex};
   background-color: @{surfaceVariant.hex};
-  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.03);
+  box-shadow: inset 0 0 0 1px @{outlineVariant.rgba16};
+  transition-duration: 150ms;
+}
+
+.button:focus {
+  box-shadow: inset 0 0 0 2px @{primary.hex} !important;
+  color: @{onSurface.hex} !important;
 }
 
 .button:insensitive {
-  box-shadow: none;
-  color: @{onSurfaceVariant.hex};
+  box-shadow: none !important;
+  color: @{outline.hex} !important;
 }
 
-.button:hover,
+.button:hover {
+  background-color: @{surfaceVariant.hex};
+  box-shadow: inset 0 0 0 100px rgba(0, 0, 0, 0.05);
+  color: @{onSurface.hex};
+}
+
 .button:active {
-  /* background-color:  @{inverseOnSurface.hex}; removed */
-  box-shadow: inset 0 0 0 100px rgba(0, 0, 0, 0.1), inset 0 0 0 1px rgba(0, 0, 0, 0.05);
+  box-shadow: inset 0 0 0 100px rgba(0, 0, 0, 0.12);
+}
+
+.button.default,
+.button:default {
+  background-color: @{primary.hex} !important;
+  color: @{onPrimary.hex} !important;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.2) !important;
+}
+
+.button.default:hover,
+.button:default:hover {
+  background-color: @{primary.hex} !important;
+  box-shadow: inset 0 0 0 100px rgba(255, 255, 255, 0.18) !important;
+  color: @{onPrimary.hex} !important;
+}
+
+.button.default:focus,
+.button:default:focus {
+  box-shadow: inset 0 0 0 2px @{onPrimary.hex} !important;
+  background-color: @{primary.hex} !important;
+  color: @{onPrimary.hex} !important;
 }
 
 .message-list-clear-button {
@@ -1039,35 +1183,42 @@ stage {
 
 .icon-button:hover {
   /* background-color: rgba(0, 0, 0, 0.15); removed */
-  box-shadow: inset 0 0 0 100px rgba(0, 0, 0, 0.1), inset 0 0 0 1px rgba(0, 0, 0, 0.05);
+  box-shadow: inset 0 0 0 100px rgba(0, 0, 0, 0.1);
 }
 
 .quick-toggle,
+.quick-toggle-has-menu,
 .quick-menu-toggle .quick-toggle {
   color: @{onSurface.hex};
-  /* border-radius: 15px; */
+  border-radius: 15px !important;
   background-color: @{surfaceVariant.hex};
   transition-duration: 100ms;
 }
 
+.quick-toggle-has-menu .quick-toggle:ltr,
 .quick-menu-toggle .quick-toggle:ltr {
-  border-radius: 15px 0 0 15px;
+  border-radius: 15px 0 0 15px !important;
 }
+.quick-toggle-has-menu .quick-toggle:rtl,
 .quick-menu-toggle .quick-toggle:rtl {
-  border-radius: 0 15px 15px 0;
+  border-radius: 0 15px 15px 0 !important;
 }
+.quick-toggle-has-menu .quick-toggle:last-child,
 .quick-menu-toggle .quick-toggle:last-child {
-  border-radius: 15px;
+  border-radius: 15px !important;
 }
 
+.quick-toggle-has-menu .quick-toggle-menu-button:ltr,
 .quick-menu-toggle .quick-toggle-menu-button:ltr {
-  border-radius: 0 15px 15px 0;
+  border-radius: 0 15px 15px 0 !important;
 }
+.quick-toggle-has-menu .quick-toggle-menu-button:rtl,
 .quick-menu-toggle .quick-toggle-menu-button:rtl {
-  border-radius: 15px 0 0 15px;
+  border-radius: 15px 0 0 15px !important;
 }
 
 /* Base style for arrow button */
+.quick-toggle-has-menu .quick-toggle-menu-button,
 .quick-menu-toggle .quick-toggle-menu-button {
   background-color: @{surfaceVariant.hex};
   transition-duration: 100ms;
@@ -1079,7 +1230,7 @@ stage {
 .quick-menu-toggle .quick-toggle:hover,
 .quick-menu-toggle .quick-toggle-menu-button:hover {
   /* background-color: rgba(0, 0, 0, 0.15); removed */
-  box-shadow: inset 0 0 0 100px rgba(0, 0, 0, 0.1), inset 0 0 0 1px rgba(0, 0, 0, 0.05) !important;
+  box-shadow: inset 0 0 0 100px rgba(0, 0, 0, 0.1) !important;
 }
 
 .quick-toggle:checked,
@@ -1138,7 +1289,8 @@ stage {
 
 .icon-button:focus,
 .quick-toggle:focus,
-.slider-bin:focus {
+.slider-bin:focus,
+.button:focus {
   box-shadow: inset 0 0 0 2px @{primary.hex} !important;
 }
 
@@ -1243,23 +1395,34 @@ stage {
 
 /* Notifications Banner/Popup */
 
+#uiGroup.bms-popup-surface-dark .notification-banner,
+#uiGroup.bms-popup-background-dark .notification-banner,
+#uiGroup.bms-popup-surface-light .notification-banner,
+#uiGroup.bms-popup-background-light .notification-banner,
 .notification-banner {
   width: 34em;
   min-height: 64px;
-  color: @{onSurface.hex};
-  background-color: @{surfaceVariant.hex};
+  color: @{onSurface.hex} !important;
+  background-color: @{surfaceVariant.hex} !important;
   margin: 4px;
   padding: 6px;
   border-radius: 14px;
-  box-shadow: 0 2px 4px 0 rgba(0, 0, 0, 0.2), inset 0 0 0 1px rgba(255, 255, 255, 0.05);
+  box-shadow: 0 2px 4px 0 rgba(0, 0, 0, 0.2);
   overflow: hidden;
   border: 1px solid @{outlineVariant.hex};
+}
+
+#uiGroup.bms-popup-surface-dark .notification-banner.bms-popup-blurred,
+#uiGroup.bms-popup-background-dark .notification-banner.bms-popup-blurred,
+#uiGroup.bms-popup-surface-light .notification-banner.bms-popup-blurred,
+#uiGroup.bms-popup-background-light .notification-banner.bms-popup-blurred {
+  background-color: @{surfaceVariant.rgba85} !important;
 }
 
 .notification-banner:hover,
 .notification-banner:focus,
 .notification-banner:active {
-  box-shadow: inset 0 0 0 100px rgba(0, 0, 0, 0.1), inset 0 0 0 1px rgba(0, 0, 0, 0.05);
+  box-shadow: inset 0 0 0 100px rgba(0, 0, 0, 0.1);
   transition-duration: 100ms;
 }
 
@@ -1386,55 +1549,59 @@ StScrollBar StButton#hhandle:active {
 /* Overview Tiles - App Grid and Search Results */
 .overview-tile, .grid-search-result {
   color: @{onSurface.hex};
-  background-color: @{surfaceContainer.hex};
-  border-radius: 18px;
+  background-color: transparent;
+  border-radius: 16px;
   padding: 12px;
-  transition-duration: 100ms;
+  transition-duration: 150ms;
 }
 
 .overview-tile:hover, .grid-search-result:hover {
-  color: @{onSurface.hex};
-  background-color: @{surfaceContainerHigh.hex};
-  box-shadow: inset 0 0 0 100px rgba(0, 0, 0, 0.04), inset 0 0 0 1px rgba(0, 0, 0, 0.03);
+  color: @{onSurface.hex} !important;
+  background-color: @{onSurface.rgba08} !important;
+  box-shadow: inset 0 0 0 1px @{outlineVariant.rgba16} !important;
 }
 
 .overview-tile:focus, .grid-search-result:focus {
-  color: @{onSurface.hex};
-  box-shadow: inset 0 0 0 2px @{primary.hex} !important;
-  background-color: @{surfaceContainerHigh.hex};
+  color: @{onSurface.hex} !important;
+  box-shadow: inset 0 0 0 1.5px @{primary.hex} !important;
+  background-color: @{primary.rgba16} !important;
 }
 
 .overview-tile:focus:hover, .grid-search-result:focus:hover {
-  background-color: @{surfaceContainerHighest.hex};
+  background-color: @{primary.rgba24} !important;
+  box-shadow: inset 0 0 0 1.5px @{primary.hex} !important;
 }
 
 .overview-tile:active, .grid-search-result:active {
-  color: @{onSurface.hex};
-  background-color: @{surfaceContainerHighest.hex};
+  color: @{onSurface.hex} !important;
+  background-color: @{primary.rgba32} !important;
+  box-shadow: inset 0 0 0 1.5px @{primary.hex} !important;
 }
 
 .overview-tile:active:hover, .grid-search-result:active:hover {
-  background-color: @{surfaceContainerHighest.hex};
-  box-shadow: inset 0 0 0 100px rgba(0, 0, 0, 0.04);
+  background-color: @{primary.rgba32} !important;
+  box-shadow: inset 0 0 0 1.5px @{primary.hex} !important;
 }
 
 .overview-tile:highlighted, .grid-search-result:highlighted,
 .overview-tile:selected, .grid-search-result:selected,
 .overview-tile:checked, .grid-search-result:checked {
-  color: @{onSurface.hex};
-  background-color: @{surfaceContainerHigh.hex};
-  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.05);
+  color: @{onSurface.hex} !important;
+  background-color: @{primary.rgba16} !important;
+  box-shadow: inset 0 0 0 1.5px @{primary.hex} !important;
 }
 
 .overview-tile:highlighted:hover, .grid-search-result:highlighted:hover,
 .overview-tile:selected:hover, .grid-search-result:selected:hover,
 .overview-tile:checked:hover, .grid-search-result:checked:hover {
-  background-color: @{surfaceContainerHighest.hex};
+  color: @{onSurface.hex} !important;
+  background-color: @{primary.rgba24} !important;
+  box-shadow: inset 0 0 0 1.5px @{primary.hex} !important;
 }
 
 .overview-tile:insensitive, .grid-search-result:insensitive {
   color: @{outline.hex};
-  background-color: @{surfaceContainer.hex};
+  background-color: transparent;
 }
 
 .overview-tile:drop, .grid-search-result:drop {
@@ -1760,18 +1927,20 @@ StEntry:focus {
 
 /* Search entry styling */
 .search-entry {
+  background-color: @{surfaceContainer.hex} !important;
+  color: @{onSurface.hex} !important;
   border-radius: 999px;
   margin-top: 24px;
   margin-bottom: 12px;
   width: 24em;
   padding: 8px 16px;
   border: none !important;
-  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.05);
+  box-shadow: inset 0 0 0 1px @{outlineVariant.rgba16} !important;
 }
 
 .search-entry:hover {
   border: none !important;
-  box-shadow: inset 0 0 0 1px @{outline.hex};
+  box-shadow: inset 0 0 0 1px @{outline.rgba32} !important;
 }
 
 .search-entry:focus, .search-entry:active {
@@ -1790,13 +1959,13 @@ StEntry:focus {
 }
 
 .search-section-content {
-  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.05);
-  border-radius: 15px;
-  border: none;
-  background-color: rgba(255, 255, 255, 0.65);
-  color: @{onSurface.hex};
-  padding: 8px;
-  margin: 4px 12px;
+  box-shadow: inset 0 0 0 1px @{outlineVariant.rgba16} !important;
+  border-radius: 20px !important;
+  border: none !important;
+  background-color: @{surfaceContainer.rgba40} !important;
+  color: @{onSurface.hex} !important;
+  padding: 12px 16px !important;
+  margin: 0 12px !important;
 }
 
 .list-search-result .list-search-result-title {
@@ -1842,30 +2011,52 @@ StEntry:focus {
   color: @{onSurface.hex};
   background-color: transparent;
   border-radius: 12px;
-  transition-duration: 100ms;
+  transition-duration: 150ms;
+  padding: 8px 12px;
 }
 
 .list-search-result:hover, .search-provider-icon:hover {
-  background-color: rgba(0, 0, 0, 0.06);
+  color: @{onSurface.hex} !important;
+  background-color: @{onSurface.rgba08} !important;
+  box-shadow: inset 0 0 0 1px @{outlineVariant.rgba16} !important;
 }
 
 .list-search-result:focus, .search-provider-icon:focus {
-  color: @{onSurface.hex};
-  box-shadow: inset 0 0 0 2px @{primary.hex} !important;
-  background-color: rgba(0, 0, 0, 0.04);
+  color: @{onSurface.hex} !important;
+  box-shadow: inset 0 0 0 1.5px @{primary.hex} !important;
+  background-color: @{primary.rgba16} !important;
 }
 
-.list-search-result:active, .search-provider-icon:active,
+.list-search-result:focus:hover, .search-provider-icon:focus:hover {
+  background-color: @{primary.rgba24} !important;
+  box-shadow: inset 0 0 0 1.5px @{primary.hex} !important;
+}
+
+.list-search-result:active, .search-provider-icon:active {
+  color: @{onSurface.hex} !important;
+  background-color: @{primary.rgba32} !important;
+  box-shadow: inset 0 0 0 1.5px @{primary.hex} !important;
+}
+
+.list-search-result:active:hover, .search-provider-icon:active:hover {
+  background-color: @{primary.rgba32} !important;
+  box-shadow: inset 0 0 0 1.5px @{primary.hex} !important;
+}
+
+.list-search-result:highlighted, .search-provider-icon:highlighted,
 .list-search-result:selected, .search-provider-icon:selected,
-.list-search-result:checked, .search-provider-icon:checked,
-.list-search-result:highlighted, .search-provider-icon:highlighted {
-  background-color: rgba(0, 0, 0, 0.08);
-  color: @{onSurface.hex};
+.list-search-result:checked, .search-provider-icon:checked {
+  color: @{onSurface.hex} !important;
+  background-color: @{primary.rgba16} !important;
+  box-shadow: inset 0 0 0 1.5px @{primary.hex} !important;
 }
 
-.list-search-result:drop, .search-provider-icon:drop {
-  background-color: @{primaryContainer.hex};
-  box-shadow: inset 0 0 0 2px @{primary.hex};
+.list-search-result:highlighted:hover, .search-provider-icon:highlighted:hover,
+.list-search-result:selected:hover, .search-provider-icon:selected:hover,
+.list-search-result:checked:hover, .search-provider-icon:checked:hover {
+  color: @{onSurface.hex} !important;
+  background-color: @{primary.rgba24} !important;
+  box-shadow: inset 0 0 0 1.5px @{primary.hex} !important;
 }
 
 .list-search-result:insensitive, .search-provider-icon:insensitive {
@@ -1873,129 +2064,192 @@ StEntry:focus {
   background-color: transparent;
 }
 
-/* OSD */
-.modal-dialog {
-  border-radius: 18px;
-  background-color: @{surfaceContainerHigh.hex};
-  border: none;
-  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.03);
-  color: @{onSurface.hex};
+.list-search-result:drop, .search-provider-icon:drop {
+  background-color: @{primaryContainer.hex};
+  box-shadow: inset 0 0 0 2px @{primary.hex};
 }
 
-.switcher-list,
-.resize-popup,
-.workspace-switcher,
-.osd-window {
-  border-radius: 18px;
-  background: @{surfaceContainerHigh.hex};
-  color: @{onSurface.hex};
-  box-shadow: 0 0px 8px 0 rgba(0, 0, 0, 0.05);
-  border: none;
-  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.07);
+/* Dialogs, Alerts & OSD */
+#uiGroup.bms-popup-surface-dark .modal-dialog,
+#uiGroup.bms-popup-background-dark .modal-dialog,
+#uiGroup.bms-popup-surface-light .modal-dialog,
+#uiGroup.bms-popup-background-light .modal-dialog,
+.modal-dialog,
+.modal-dialog.close-dialog,
+.modal-dialog.end-session-dialog {
+  border-radius: 24px !important;
+  background-color: @{surfaceContainer.hex} !important;
+  border: 1px solid @{outlineVariant.rgba24} !important;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.14) !important;
+  color: @{onSurface.hex} !important;
+  padding: 24px !important;
 }
 
-.ws-switcher-indicator {
-  background-color: @{onSurfaceVariant.hex};
+#uiGroup.bms-popup-surface-dark .modal-dialog.bms-popup-blurred,
+#uiGroup.bms-popup-background-dark .modal-dialog.bms-popup-blurred,
+#uiGroup.bms-popup-surface-light .modal-dialog.bms-popup-blurred,
+#uiGroup.bms-popup-background-light .modal-dialog.bms-popup-blurred {
+  background-color: @{surfaceContainer.rgba80} !important;
 }
 
-.switcher-list .item-box:hover,
-.switcher-list .item-box:focus,
-.switcher-list .item-box:selected {
-  background-color: @{surfaceVariant.hex};
-  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.03);
+.modal-dialog .modal-dialog-content-box {
+  padding-top: 8px;
+  spacing: 16px;
 }
 
+.modal-dialog .modal-dialog-button-box {
+  padding-top: 12px;
+  spacing: 12px;
+}
+
+.modal-dialog .modal-dialog-button-box .modal-dialog-button,
+.modal-dialog .modal-dialog-button,
+.modal-dialog-button,
 .modal-dialog-linked-button,
 .notification-button,
 .hotplug-notification-item {
-  padding: 10px 0 !important;
+  padding: 10px 24px !important;
   border-radius: 12px !important;
-  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.03);
-  background-color: @{surfaceVariant.hex};
-  color: @{onSurface.hex};
-  font-weight: 500;
-  transition-duration: 100ms;
+  box-shadow: inset 0 0 0 1px @{outlineVariant.rgba16} !important;
+  background-color: @{surfaceVariant.hex} !important;
+  color: @{onSurface.hex} !important;
+  font-weight: 600;
+  transition-duration: 150ms;
 }
 
-.modal-dialog-linked-button:first-child,
-.notification-button:first-child,
-.hotplug-notification-item:first-child {
-  margin: 0 6px 12px 12px !important;
-}
-
-.modal-dialog-linked-button:last-child,
-.notification-button:last-child,
-.hotplug-notification-item:last-child {
-  margin: 0 12px 12px 6px !important;
-}
-
-.modal-dialog-linked-button:first-child:last-child,
-.notification-button:first-child:last-child,
-.hotplug-notification-item:first-child:last-child {
-  margin: 0 12px 12px 12px !important;
-}
-
-.modal-dialog-linked-button,
-.notification-button,
-.hotplug-notification-item {
-  margin: 0 6px 12px 6px !important;
-}
-
-.modal-dialog-linked-button:focus,
-.notification-button:focus {
-  background: @{surfaceVariant.hex};
-  color: @{onSurface.hex};
-}
-
+.modal-dialog .modal-dialog-button-box .modal-dialog-button:hover,
+.modal-dialog .modal-dialog-button:hover,
+.modal-dialog-button:hover,
 .modal-dialog-linked-button:hover,
-.notification-button:hover {
-  box-shadow: inset 0 0 0 100px rgba(0, 0, 0, 0.15) !important;
-  color: @{onSurface.hex};
+.notification-button:hover,
+.hotplug-notification-item:hover {
+  background-color: @{surfaceVariant.hex} !important;
+  box-shadow: inset 0 0 0 100px rgba(0, 0, 0, 0.05) !important;
+  color: @{onSurface.hex} !important;
 }
 
-/* Primary action button - themed for contrast on primary background */
+.modal-dialog .modal-dialog-button-box .modal-dialog-button:focus,
+.modal-dialog .modal-dialog-button:focus,
+.modal-dialog-button:focus,
+.modal-dialog-linked-button:focus,
+.notification-button:focus,
+.hotplug-notification-item:focus {
+  box-shadow: inset 0 0 0 2px @{primary.hex} !important;
+  color: @{onSurface.hex} !important;
+}
+
+.modal-dialog .modal-dialog-button-box .modal-dialog-button:default,
+.modal-dialog .modal-dialog-button:default,
+.modal-dialog-button:default,
+.modal-dialog-button.default,
 .modal-dialog-linked-button:last-child,
 .notification-button:last-child {
-  color: @{onPrimary.hex};
-  background-color: @{primary.hex};
+  background-color: @{primary.hex} !important;
+  color: @{onPrimary.hex} !important;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.2) !important;
 }
 
-.modal-dialog-linked-button:last-child:focus,
-.notification-button:last-child:focus {
-  color: @{onPrimary.hex};
-  background-color: @{secondary.hex};
-}
-
+.modal-dialog .modal-dialog-button-box .modal-dialog-button:default:hover,
+.modal-dialog .modal-dialog-button:default:hover,
+.modal-dialog-button:default:hover,
+.modal-dialog-button.default:hover,
 .modal-dialog-linked-button:last-child:hover,
 .notification-button:last-child:hover {
-  color: @{onPrimary.hex};
-  box-shadow: inset 0 0 0 100px rgba(0, 0, 0, 0.15) !important;
+  background-color: @{primary.hex} !important;
+  box-shadow: inset 0 0 0 100px rgba(255, 255, 255, 0.18) !important;
+  color: @{onPrimary.hex} !important;
 }
 
-.modal-dialog .modal-dialog-linked-button:focus,
-.hotplug-notification-item:focus,
-.notification-banner .notification-button:focus {
-  transition-duration: 100ms;
-  box-shadow: inset 0 0 0 1px @{outline.hex} !important;
-}
-.modal-dialog .modal-dialog-linked-button:focus:hover,
-.hotplug-notification-item:focus:hover,
-.notification-banner .notification-button:focus:hover,
-.modal-dialog .modal-dialog-linked-button:focus:active,
-.hotplug-notification-item:focus:active,
-.notification-banner .notification-button:focus:active {
-  box-shadow: inset 0 0 0 1px @{onSurfaceVariant.hex} !important;
+.modal-dialog .modal-dialog-button-box .modal-dialog-button:default:focus,
+.modal-dialog .modal-dialog-button:default:focus,
+.modal-dialog-button:default:focus,
+.modal-dialog-button.default:focus,
+.modal-dialog-linked-button:last-child:focus,
+.notification-button:last-child:focus {
+  box-shadow: inset 0 0 0 2px @{onPrimary.hex} !important;
+  background-color: @{primary.hex} !important;
+  color: @{onPrimary.hex} !important;
 }
 
-.modal-dialog .modal-dialog-linked-button:insensitive,
-.hotplug-notification-item:insensitive,
-.notification-banner .notification-button:insensitive {
-  color: @{onSurfaceVariant.hex};
-  background-color: @{secondary.hex};
+.modal-dialog .modal-dialog-button-box .modal-dialog-button:destructive-action,
+.modal-dialog .modal-dialog-button:destructive-action,
+.modal-dialog-button.destructive-action,
+.button.destructive-action {
+  background-color: @{error.hex} !important;
+  color: @{onError.hex} !important;
+}
+
+.modal-dialog .modal-dialog-button-box .modal-dialog-button:destructive-action:hover,
+.modal-dialog .modal-dialog-button:destructive-action:hover,
+.modal-dialog-button.destructive-action:hover,
+.button.destructive-action:hover {
+  background-color: @{error.hex} !important;
+  box-shadow: inset 0 0 0 100px rgba(0, 0, 0, 0.08) !important;
+  color: @{onError.hex} !important;
+}
+
+.modal-dialog .modal-dialog-button-box .modal-dialog-button:destructive-action:focus,
+.modal-dialog .modal-dialog-button:destructive-action:focus,
+.modal-dialog-button.destructive-action:focus,
+.button.destructive-action:focus {
+  box-shadow: inset 0 0 0 2px @{onError.hex}, inset 0 0 0 4px @{error.hex} !important;
+  background-color: @{error.hex} !important;
+  color: @{onError.hex} !important;
+}
+
+.modal-dialog .modal-dialog-button-box .modal-dialog-button:insensitive,
+.modal-dialog .modal-dialog-button:insensitive,
+.modal-dialog-button:insensitive,
+.modal-dialog-linked-button:insensitive,
+.notification-button:insensitive,
+.hotplug-notification-item:insensitive {
+  color: @{outline.hex} !important;
+  background-color: @{surfaceVariant.rgba50} !important;
+  box-shadow: none !important;
+}
+
+.end-session-dialog .end-session-dialog-battery-warning,
+.end-session-dialog .dialog-list-title {
+  color: @{onSecondaryContainer.hex} !important;
+  background-color: @{secondaryContainer.hex} !important;
+  padding: 10px !important;
+  border-radius: 12px !important;
+  margin: 6px 0 !important;
+}
+
+.dialog-list .dialog-list-box .dialog-list-item .dialog-list-item-title {
+  font-weight: bold;
+  color: @{onSurface.hex} !important;
+}
+
+.dialog-list .dialog-list-box .dialog-list-item .dialog-list-item-description {
+  color: @{onSurfaceVariant.hex} !important;
+}
+
+.message-dialog-content .message-dialog-title {
+  font-weight: bold;
+  color: @{onSurface.hex} !important;
+}
+
+.message-dialog-content .message-dialog-description {
+  color: @{onSurfaceVariant.hex} !important;
 }
 
 .prompt-dialog-password-entry {
-  background-color: @{surfaceVariant.hex};
+  background-color: @{surfaceVariant.hex} !important;
+  color: @{onSurface.hex} !important;
+  border-radius: 12px !important;
+  padding: 10px 14px !important;
+  box-shadow: inset 0 0 0 1px @{outlineVariant.rgba16} !important;
+}
+
+.prompt-dialog-password-entry:focus {
+  box-shadow: inset 0 0 0 2px @{primary.hex} !important;
+}
+
+.audio-device-selection-dialog .audio-selection-box .audio-selection-device:focus {
+  box-shadow: inset 0 0 0 2px @{primary.hex} !important;
+  background-color: @{surfaceVariant.hex} !important;
 }
 
 .nm-dialog-scroll-view {
@@ -2006,129 +2260,201 @@ StEntry:focus {
 }
 
 /* screenshot ui */
+#uiGroup.bms-popup-surface-dark .screenshot-ui-panel,
+#uiGroup.bms-popup-background-dark .screenshot-ui-panel,
+#uiGroup.bms-popup-surface-light .screenshot-ui-panel,
+#uiGroup.bms-popup-background-light .screenshot-ui-panel,
 .screenshot-ui-panel {
-  border-radius: 22px;
-  background-color: @{surface.hex};
-  border: 0; /* ubuntu fix */
-  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.07);
-  color: @{onSurface.hex};
+  border-radius: 28px;
+  background-color: @{surfaceContainer.hex} !important;
+  border: 1px solid @{outlineVariant.rgba32};
+  box-shadow: none;
+  color: @{onSurface.hex} !important;
+  padding: 18px;
+  padding-bottom: 12px;
+  margin-bottom: 4em;
+  spacing: 12px;
+}
+
+#uiGroup.bms-popup-surface-dark .screenshot-ui-panel.bms-popup-blurred,
+#uiGroup.bms-popup-background-dark .screenshot-ui-panel.bms-popup-blurred,
+#uiGroup.bms-popup-surface-light .screenshot-ui-panel.bms-popup-blurred,
+#uiGroup.bms-popup-background-light .screenshot-ui-panel.bms-popup-blurred {
+  background-color: @{surfaceContainer.rgba80} !important;
+}
+
+.screenshot-ui-type-button {
+  min-width: 48px;
+  padding: 12px 18px;
 }
 
 .screenshot-ui-show-pointer-button,
 .screenshot-ui-type-button {
-  border-radius: 15px;
+  border-radius: 14px;
+  background-color: @{surfaceContainerHighest.hex} !important;
   transition-duration: 100ms;
-}
-
-.screenshot-ui-show-pointer-button:checked,
-.screenshot-ui-type-button:checked,
-.screenshot-ui-show-pointer-button:checked:hover,
-.screenshot-ui-type-button:checked:hover,
-.screenshot-ui-show-pointer-button:checked:focus,
-.screenshot-ui-type-button:checked:focus {
-  background-color: @{surfaceVariant.hex};
-  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.03);
-  color: @{onSurface.hex};
+  color: @{onSurface.hex} !important;
+  box-shadow: none;
 }
 
 .screenshot-ui-show-pointer-button:hover,
-.screenshot-ui-type-button:hover,
+.screenshot-ui-type-button:hover {
+  background-color: @{surfaceContainerHighest.hex} !important;
+  color: @{onSurface.hex} !important;
+  box-shadow: inset 0 0 0 100px rgba(0, 0, 0, 0.05);
+}
+
 .screenshot-ui-show-pointer-button:focus,
 .screenshot-ui-type-button:focus {
-  background: @{surfaceVariant.hex};
-  color: @{onSurface.hex};
+  box-shadow: inset 0 0 0 2px @{primary.hex};
+  color: @{onSurface.hex} !important;
+}
+
+.screenshot-ui-show-pointer-button:checked,
+.screenshot-ui-type-button:checked {
+  background-color: @{primaryContainer.hex} !important;
+  color: @{onPrimaryContainer.hex} !important;
+  box-shadow: none;
+}
+
+.screenshot-ui-show-pointer-button:checked:hover,
+.screenshot-ui-type-button:checked:hover {
+  background-color: @{primaryContainer.hex} !important;
+  color: @{onPrimaryContainer.hex} !important;
+  box-shadow: inset 0 0 0 100px rgba(255, 255, 255, 0.18);
+}
+
+.screenshot-ui-show-pointer-button:checked:focus,
+.screenshot-ui-type-button:checked:focus {
+  box-shadow: inset 0 0 0 2px @{primary.hex};
 }
 
 .screenshot-ui-show-pointer-button:insensitive,
 .screenshot-ui-type-button:insensitive {
-  color: @{outline.hex};
-}
-
-.screenshot-ui-show-pointer-button:hover,
-.screenshot-ui-type-button:hover,
-.screenshot-ui-show-pointer-button:active,
-.screenshot-ui-type-button:active {
-  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.03);
+  color: @{outline.hex} !important;
 }
 
 .screenshot-ui-window-selector {
-  background-color: @{surfaceVariant.hex};
+  background-color: @{surfaceContainer.hex} !important;
 }
 
 .screenshot-ui-window-selector-window:hover
   .screenshot-ui-window-selector-window-border {
-  border-color: @{primary.hex};
+  border-color: @{primary.rgba50} !important;
 }
 
 .screenshot-ui-window-selector-window:checked
   .screenshot-ui-window-selector-window-border {
-  border-color: @{primary.hex};
-  background-color: @{surfaceVariant.rgba50};
+  border-color: @{primary.hex} !important;
+  background-color: @{primary.rgba16} !important;
 }
 
 .screenshot-ui-window-selector-window:checked
   .screenshot-ui-window-selector-check {
-  color: @{onPrimary.hex};
-  background-color: @{primary.hex};
+  color: @{onPrimary.hex} !important;
+  background-color: @{primary.hex} !important;
 }
 
 .screenshot-ui-capture-button {
   width: 36px;
   height: 36px;
-  border-radius: 99px;
-  border: 4px @{secondary.hex};
+  border-radius: 999px;
+  border: 4px @{primary.hex} !important;
   padding: 4px;
 }
+
 .screenshot-ui-capture-button .screenshot-ui-capture-button-circle {
-  background-color: @{secondary.hex};
+  background-color: @{primary.hex} !important;
   transition-duration: 100ms;
-  border-radius: 99px;
+  border-radius: 999px;
 }
-.screenshot-ui-capture-button .screenshot-ui-capture-button-circle:hover,
-.screenshot-ui-capture-button .screenshot-ui-capture-button-circle:focus {
-  background-color: @{secondaryContainer.hex};
-}
+
 .screenshot-ui-capture-button:hover .screenshot-ui-capture-button-circle,
 .screenshot-ui-capture-button:focus .screenshot-ui-capture-button-circle {
-  background-color: @{secondaryContainer.hex};
+  background-color: @{primaryContainer.hex} !important;
 }
+
+.screenshot-ui-capture-button:active .screenshot-ui-capture-button-circle {
+  background-color: @{primary.rgba75} !important;
+}
+
+.screenshot-ui-capture-button:focus {
+  box-shadow: inset 0 0 0 2px @{primary.hex};
+}
+
 .screenshot-ui-capture-button:cast .screenshot-ui-capture-button-circle {
-  background-color: #c01c28;
+  background-color: @{error.hex} !important;
 }
+
 .screenshot-ui-capture-button:cast:hover .screenshot-ui-capture-button-circle,
 .screenshot-ui-capture-button:cast:focus .screenshot-ui-capture-button-circle {
-  background-color: #d61f2d;
+  background-color: @{errorContainer.hex} !important;
 }
+
 .screenshot-ui-capture-button:cast:active .screenshot-ui-capture-button-circle {
-  background-color: #a11722;
+  background-color: @{error.hex} !important;
 }
 
 .screenshot-ui-shot-cast-container {
-  background-color: @{surfaceVariant.hex};
-  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.03);
+  background-color: @{surfaceContainerHighest.hex} !important;
+  border-radius: 999px;
+  padding: 3px;
+  spacing: 3px;
+  border: 1px solid @{outlineVariant.rgba24};
+  box-shadow: none;
 }
 
 .screenshot-ui-shot-cast-button {
+  padding: 6px 14px;
+  border-radius: 999px;
+  color: @{onSurfaceVariant.hex} !important;
   background-color: transparent;
   transition-duration: 100ms;
+  box-shadow: none;
 }
 
-.screenshot-ui-shot-cast-button:hover,
-.screenshot-ui-shot-cast-button:focus,
+.screenshot-ui-shot-cast-button:hover {
+  background-color: @{surfaceVariant.hex} !important;
+  color: @{onSurface.hex} !important;
+}
+
 .screenshot-ui-shot-cast-button:active {
-  background-color: @{surfaceVariant.hex};
+  background-color: @{surfaceContainerHigh.hex} !important;
+  color: @{onSurface.hex} !important;
 }
 
 .screenshot-ui-shot-cast-button:checked {
-  background-color: @{secondary.hex};
-  color: @{onSecondary.hex};
+  background-color: @{primary.hex} !important;
+  color: @{onPrimary.hex} !important;
+  box-shadow: none;
+}
+
+.screenshot-ui-shot-cast-button:focus {
+  box-shadow: inset 0 0 0 2px @{primary.hex};
+}
+
+.screenshot-ui-area-selector .screenshot-ui-area-indicator-selection {
+  border: 2px @{primary.hex} !important;
+}
+
+.screenshot-ui-area-selector-handle {
+  border-radius: 999px;
+  background-color: @{primary.hex} !important;
+  box-shadow: none;
+  width: 24px;
+  height: 24px;
+}
+
+.screenshot-ui-screen-selector:checked {
+  border: 2px @{primary.hex} !important;
 }
 
 .screenshot-ui-tooltip {
-  color: @{onSurface.hex};
-  background-color: @{surface.hex};
-  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.03);
-  border-radius: 10px;
+  color: @{onSurface.hex} !important;
+  background-color: @{surfaceContainer.hex} !important;
+  border: 1px solid @{outlineVariant.rgba24};
+  box-shadow: none;
+  border-radius: 12px;
   padding: 6px 12px;
   text-align: center;
   -y-offset: 24px;
@@ -2142,16 +2468,22 @@ StEntry:focus {
 
 .window-close,
 .screenshot-ui-close-button {
-  background-color: @{surface.hex};
-  color: @{onSurface.hex};
-  border: 1px solid rgba(0, 0, 0, 0.05);
-  box-shadow: 0 2px 4px 0 rgba(0, 0, 0, 0.2);
+  background-color: @{surfaceContainerHighest.hex} !important;
+  color: @{onSurface.hex} !important;
+  border: 1px solid @{outlineVariant.rgba24};
+  box-shadow: none;
   transition-duration: 100ms;
 }
 
 .window-close:hover,
 .screenshot-ui-close-button:hover {
-  background-color: @{surfaceVariant.hex};
+  background-color: @{surfaceVariant.hex} !important;
+  box-shadow: inset 0 0 0 100px rgba(0, 0, 0, 0.05);
+}
+
+.window-close:focus,
+.screenshot-ui-close-button:focus {
+  box-shadow: inset 0 0 0 2px @{primary.hex};
 }
 
 /* Looking Glass | R.I.P. custom colors & light mode */
@@ -2231,10 +2563,10 @@ StEntry:focus {
 
 
 .quick-settings.adjusted .quick-toggle .quick-toggle-menu-button:ltr {
-  border-radius: 0 36px 36px 0;
+  border-radius: 0 15px 15px 0 !important;
 }
 .quick-settings.adjusted .quick-toggle .quick-toggle-menu-button:rtl {
-  border-radius: 36px 0 0 36px;
+  border-radius: 15px 0 0 15px !important;
 }
 
 .usage-level StIcon {

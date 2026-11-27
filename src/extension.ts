@@ -11,6 +11,7 @@ import { WallpaperMonitor } from './wallpaper/wallpaperMonitor.js';
 import { WallpaperCycler } from './wallpaper/wallpaperCycler.js';
 import { MeowterialIndicator, type MeowterialIndicatorType } from './ui/indicator.js';
 import { TweaksManager } from './tweaks/tweaksManager.js';
+import { WidgetsManager } from './widgets/widgetsManager.js';
 
 export default class MeowterialYouExtension extends Extension {
   private _settings!: Gio.Settings;
@@ -20,6 +21,7 @@ export default class MeowterialYouExtension extends Extension {
   private _cycler!: WallpaperCycler;
   private _indicator: MeowterialIndicatorType | null = null;
   private _tweaksManager!: TweaksManager;
+  private _widgetsManager!: WidgetsManager;
   private _signalIds: number[] = [];
 
   enable(): void {
@@ -29,12 +31,15 @@ export default class MeowterialYouExtension extends Extension {
 
     this._tweaksManager = new TweaksManager(this._settings);
     this._tweaksManager.enable();
+    this._widgetsManager = new WidgetsManager(this._settings);
+    this._widgetsManager.enable();
 
     this._orchestrator = new ThemeOrchestrator({
       extensionDir: this.path,
       settings: this._settings,
-      onExtractionCompleted: (_ext, isDark) => {
+      onExtractionCompleted: (_ext, isDark, scheme) => {
         this._tweaksManager.syncBlurMyShell(isDark);
+        this._widgetsManager.updateThemeScheme(scheme);
       },
     });
 
@@ -50,15 +55,13 @@ export default class MeowterialYouExtension extends Extension {
   disable(): void {
     for (const signalId of this._signalIds) this._settings.disconnect(signalId);
     this._signalIds = [];
-
     this._orchestrator?.destroy();
+    this._widgetsManager?.destroy();
     this._tweaksManager?.destroy();
     this._monitor.stop();
     this._cycler.stop();
-
     this._indicator?.destroy();
     this._indicator = null;
-
     try {
       this._sessionState?.restoreOriginalState();
     } catch (error) {
@@ -110,9 +113,7 @@ export default class MeowterialYouExtension extends Extension {
       'wallpaper-cycle-directory', 'wallpaper-cycle-interval',
       'wallpaper-cycle-order', 'wallpaper-cycle-enabled',
     ];
-    for (const key of cyclerKeys) {
-      this._signalIds.push(this._settings.connect(`changed::${key}`, updateCyclerConfig));
-    }
+    for (const key of cyclerKeys) this._signalIds.push(this._settings.connect(`changed::${key}`, updateCyclerConfig));
     updateCyclerConfig();
   }
 
@@ -125,14 +126,16 @@ export default class MeowterialYouExtension extends Extension {
     const themeReapplyKeys = [
       'theme-mode', 'scheme-variant', 'window-button-style',
       'window-button-position', 'themed-icons-enabled', 'base-icon-theme',
+      'themed-cursors-enabled', 'base-cursor-theme', 'themed-cursor-style',
       'gtk3-enabled', 'gtk4-enabled', 'shell-theme-enabled', 'paused',
-      'transparent-panel',
+      'transparent-panel', 'terminal-theming-enabled', 'ghostty-enabled',
+      'vscode-enabled', 'antigravity-app-enabled', 'obsidian-enabled',
+      'fastfetch-enabled', 'fastfetch-manage-layout', 'fastfetch-logo-cycle',
+      'fastfetch-logo-directory', 'shell-prompt-enabled',
     ];
 
     for (const key of themeReapplyKeys) {
-      this._signalIds.push(
-        this._settings.connect(`changed::${key}`, () => void this._triggerThemeUpdate(true))
-      );
+      this._signalIds.push(this._settings.connect(`changed::${key}`, () => void this._triggerThemeUpdate(true)));
     }
   }
 

@@ -1,11 +1,17 @@
 /**
  * Blur My Shell Synchronization Controller.
- * Ensures popups and menus dynamically adapt between light and dark modes
- * when blur-my-shell is enabled on GNOME 46+.
+ * Keeps BMS popup styles and pipelines synchronized with MeowterialYou light/dark state,
+ * including across lock/unlock cycles and runtime enabling/disabling of BMS.
  */
 
-import Gio from 'gi://Gio';
+import type Gio from 'gi://Gio';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
+import {
+  BMS_EXTENSION_UUID,
+  loadBmsPopupSettings,
+  restoreBmsPopupSettings,
+  syncBmsPopupSettings,
+} from './blurMyShellDconf.js';
 
 interface ExtensionInfo {
   state: number;
@@ -14,117 +20,130 @@ interface ExtensionInfo {
 
 interface ExtensionManager {
   lookup(uuid: string): ExtensionInfo | undefined;
+  connect(signal: string, callback: () => void): number;
+  disconnect(id: number): void;
 }
 
-const BMS_UUID = 'blur-my-shell@aunetx';
-const BMS_POPUP_SCHEMA = 'org.gnome.shell.extensions.blur-my-shell.popup';
-
+const EXTENSION_STATE_ENABLED = 1;
 const CLASS_SURFACE_DARK = 'bms-popup-surface-dark';
 const CLASS_SURFACE_LIGHT = 'bms-popup-surface-light';
 const CLASS_BACKGROUND_DARK = 'bms-popup-background-dark';
 const CLASS_BACKGROUND_LIGHT = 'bms-popup-background-light';
 
+const ALL_BMS_POPUP_CLASSES = [
+  CLASS_SURFACE_DARK,
+  CLASS_SURFACE_LIGHT,
+  CLASS_BACKGROUND_DARK,
+  CLASS_BACKGROUND_LIGHT,
+];
+
 export class BlurMyShellSyncController {
   private _bmsPopupSettings: Gio.Settings | null = null;
   private _originalStylePopup: number | null = null;
   private _originalPipeline: string | null = null;
+  private _lastIsDark: boolean | null = null;
+  private _extensionStateChangedId: number | null = null;
 
   enable(): void {
-    this._initSettings();
+    this._ensureSettings();
+    const extensionManager = Main.extensionManager as unknown as ExtensionManager;
+    if (extensionManager && this._extensionStateChangedId === null) {
+      this._extensionStateChangedId = extensionManager.connect('extension-state-changed', () => {
+        this._handleExtensionStateChanged();
+      });
+    }
   }
 
   destroy(): void {
-    this._restoreSettings();
+    if (this._extensionStateChangedId !== null) {
+      try {
+        const extensionManager = Main.extensionManager as unknown as ExtensionManager;
+        extensionManager?.disconnect(this._extensionStateChangedId);
+      } catch {
+        // Ignore teardown disconnect failures
+      }
+      this._extensionStateChangedId = null;
+    }
+
+    if (this._bmsPopupSettings) {
+      restoreBmsPopupSettings(
+        this._bmsPopupSettings,
+        this._originalStylePopup,
+        this._originalPipeline
+      );
+    }
+    this._clearUiGroupClasses();
     this._bmsPopupSettings = null;
+    this._originalStylePopup = null;
+    this._originalPipeline = null;
+    this._lastIsDark = null;
   }
 
   syncThemeMode(isDark: boolean): void {
+    this._lastIsDark = isDark;
+    if (!this._ensureSettings()) {
+      this._clearUiGroupClasses();
+      return;
+    }
+
     this._syncUiGroupClasses(isDark);
-    this._syncBmsPopupSettings(isDark);
+    if (this._bmsPopupSettings) {
+      syncBmsPopupSettings(this._bmsPopupSettings, isDark);
+    }
   }
 
-  private _initSettings(): void {
-    try {
-      const extensionManager = Main.extensionManager as unknown as ExtensionManager;
-      const bms = extensionManager?.lookup(BMS_UUID);
-      if (!bms || bms.state !== 1) {
-        return;
-      }
-
-      const schemaDir = Gio.File.new_for_path(`${bms.dir.get_path()}/schemas`);
-      const schemaDirPath = schemaDir.get_path();
-      if (!schemaDirPath) {
-        return;
-      }
-
-      const source = Gio.SettingsSchemaSource.new_from_directory(
-        schemaDirPath,
-        Gio.SettingsSchemaSource.get_default(),
-        false
-      );
-      const schema = source.lookup(BMS_POPUP_SCHEMA, false);
-      if (schema) {
-        this._bmsPopupSettings = new Gio.Settings({ settings_schema: schema });
-        this._originalStylePopup = this._bmsPopupSettings.get_int('style-popup');
-        this._originalPipeline = this._bmsPopupSettings.get_string('pipeline');
-      }
-    } catch {
-      // Blur My Shell extension or schema is unavailable
+  private _handleExtensionStateChanged(): void {
+    const extensionManager = Main.extensionManager as unknown as ExtensionManager;
+    const bms = extensionManager?.lookup(BMS_EXTENSION_UUID);
+    if (!bms || bms.state !== EXTENSION_STATE_ENABLED) {
+      this._bmsPopupSettings = null;
+      this._clearUiGroupClasses();
+      return;
     }
+
+    if (this._lastIsDark !== null) {
+      this.syncThemeMode(this._lastIsDark);
+    } else {
+      this._ensureSettings();
+    }
+  }
+
+  private _ensureSettings(): boolean {
+    const extensionManager = Main.extensionManager as unknown as ExtensionManager;
+    const bms = extensionManager?.lookup(BMS_EXTENSION_UUID);
+    if (!bms || bms.state !== EXTENSION_STATE_ENABLED) {
+      return false;
+    }
+    if (this._bmsPopupSettings) {
+      return true;
+    }
+
+    const popupSettings = loadBmsPopupSettings(`${bms.dir.get_path()}/schemas`);
+    if (!popupSettings) {
+      return false;
+    }
+
+    this._bmsPopupSettings = popupSettings;
+    this._originalStylePopup = popupSettings.get_int('style-popup');
+    this._originalPipeline = popupSettings.get_string('pipeline');
+    return true;
   }
 
   private _syncUiGroupClasses(isDark: boolean): void {
-    if (isDark) {
-      Main.uiGroup.remove_style_class_name(CLASS_SURFACE_LIGHT);
-      Main.uiGroup.remove_style_class_name(CLASS_BACKGROUND_LIGHT);
-      Main.uiGroup.add_style_class_name(CLASS_SURFACE_DARK);
-      Main.uiGroup.add_style_class_name(CLASS_BACKGROUND_DARK);
-    } else {
-      Main.uiGroup.remove_style_class_name(CLASS_SURFACE_DARK);
-      Main.uiGroup.remove_style_class_name(CLASS_BACKGROUND_DARK);
-      Main.uiGroup.add_style_class_name(CLASS_SURFACE_LIGHT);
-      Main.uiGroup.add_style_class_name(CLASS_BACKGROUND_LIGHT);
-    }
+    const toRemove = isDark
+      ? [CLASS_SURFACE_LIGHT, CLASS_BACKGROUND_LIGHT]
+      : [CLASS_SURFACE_DARK, CLASS_BACKGROUND_DARK];
+    const toAdd = isDark
+      ? [CLASS_SURFACE_DARK, CLASS_BACKGROUND_DARK]
+      : [CLASS_SURFACE_LIGHT, CLASS_BACKGROUND_LIGHT];
+
+    for (const className of toRemove) Main.uiGroup.remove_style_class_name(className);
+    for (const className of toAdd) Main.uiGroup.add_style_class_name(className);
   }
 
-  private _syncBmsPopupSettings(isDark: boolean): void {
-    if (!this._bmsPopupSettings) {
-      return;
-    }
-
-    try {
-      const targetStyle = isDark ? 2 : 1;
-      const targetPipeline = isDark ? 'pipeline_default' : 'pipeline_default_light';
-
-      if (this._bmsPopupSettings.get_int('style-popup') !== targetStyle) {
-        this._bmsPopupSettings.set_int('style-popup', targetStyle);
-      }
-      if (this._bmsPopupSettings.get_string('pipeline') !== targetPipeline) {
-        this._bmsPopupSettings.set_string('pipeline', targetPipeline);
-      }
-    } catch {
-      // Graceful fallback if settings keys fail
-    }
-  }
-
-  private _restoreSettings(): void {
-    if (!this._bmsPopupSettings) {
-      return;
-    }
-
-    try {
-      const restoreStyle =
-        this._originalStylePopup !== null &&
-        this._originalStylePopup !== 1 &&
-        this._originalStylePopup !== 2
-          ? this._originalStylePopup
-          : 3;
-      this._bmsPopupSettings.set_int('style-popup', restoreStyle);
-      if (this._originalPipeline !== null) {
-        this._bmsPopupSettings.set_string('pipeline', this._originalPipeline);
-      }
-    } catch {
-      // Silent restore fallback
+  private _clearUiGroupClasses(): void {
+    for (const className of ALL_BMS_POPUP_CLASSES) {
+      Main.uiGroup.remove_style_class_name(className);
     }
   }
 }

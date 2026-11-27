@@ -14,7 +14,8 @@ export function isColorSchemePulsing(): boolean {
 export function applyGnomeSystemSettings(
   isDark: boolean,
   windowButtonPosition: WindowButtonPosition = 'right',
-  shouldBounceGtk: boolean = true
+  shouldBounceGtk: boolean = true,
+  accentColor?: string
 ): void {
   const themeSuffix = isDark ? 'dark' : 'light';
   const themeName = `MeowterialYou-${themeSuffix}`;
@@ -35,7 +36,12 @@ export function applyGnomeSystemSettings(
     Gio.Settings.sync();
   }
 
-  // 3. GTK Theme apply/bounce (GTK3 & Chromium)
+  // 3. Accent color sync (GNOME 47+)
+  if (accentColor) {
+    syncAccentColor(interfaceSettings, accentColor);
+  }
+
+  // 4. GTK Theme apply/bounce (GTK3 & Chromium)
   if (shouldBounceGtk) {
     interfaceSettings.set_string('gtk-theme', 'Adwaita');
     Gio.Settings.sync();
@@ -50,11 +56,45 @@ export function applyGnomeSystemSettings(
     Gio.Settings.sync();
   }
 
-  // 4. GNOME Shell theme — reload CSS directly in-process
+  // 5. Synchronize user-theme extension if installed so GNOME Shell persists on reboot/reload
+  syncUserThemeSetting(themeName);
+
+  // 6. GNOME Shell theme — reload CSS directly in-process
   const cssPath = resolveThemeStylesheet(themeName);
   reloadShellThemeSafely(cssPath);
 
   terminateStaleDaemons();
+}
+
+function syncAccentColor(interfaceSettings: Gio.Settings, accentColor: string): void {
+  try {
+    const schema = interfaceSettings.settings_schema;
+    if (schema && schema.has_key('accent-color')) {
+      if (interfaceSettings.get_string('accent-color') !== accentColor) {
+        interfaceSettings.set_string('accent-color', accentColor);
+        Gio.Settings.sync();
+      }
+    }
+  } catch (error) {
+    console.warn('MeowterialYou: Failed to synchronize accent-color', error);
+  }
+}
+
+function syncUserThemeSetting(themeName: string): void {
+  try {
+    const defaultSource = Gio.SettingsSchemaSource.get_default();
+    if (defaultSource && defaultSource.lookup('org.gnome.shell.extensions.user-theme', true)) {
+      const userThemeSettings = new Gio.Settings({
+        schema: 'org.gnome.shell.extensions.user-theme',
+      });
+      if (userThemeSettings.get_string('name') !== themeName) {
+        userThemeSettings.set_string('name', themeName);
+        Gio.Settings.sync();
+      }
+    }
+  } catch (error) {
+    console.warn('MeowterialYou: Failed to synchronize user-theme setting', error);
+  }
 }
 
 function terminateStaleDaemons(): void {

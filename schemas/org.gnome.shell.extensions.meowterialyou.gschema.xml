@@ -42,6 +42,31 @@
     <value value="3" nick="ultra-compact" />
   </enum>
 
+  <enum id="org.gnome.shell.extensions.meowterialyou.VisualizerPosition">
+    <value value="0" nick="bottom" />
+    <value value="1" nick="top" />
+    <value value="2" nick="left" />
+    <value value="3" nick="right" />
+  </enum>
+
+  <enum id="org.gnome.shell.extensions.meowterialyou.VisualizerStyle">
+    <value value="0" nick="bars" />
+    <value value="1" nick="mirrored" />
+    <value value="2" nick="wave" />
+  </enum>
+
+  <enum id="org.gnome.shell.extensions.meowterialyou.VisualizerColorMode">
+    <value value="0" nick="vertical" />
+    <value value="1" nick="spectrum" />
+    <value value="2" nick="solid" />
+  </enum>
+
+  <enum id="org.gnome.shell.extensions.meowterialyou.CursorStyle">
+    <value value="0" nick="tinted-fill" />
+    <value value="1" nick="accent-fill" />
+    <value value="2" nick="accent-outline" />
+  </enum>
+
   <schema id="org.gnome.shell.extensions.meowterialyou" path="/org/gnome/shell/extensions/meowterialyou/">
     <key name="theme-mode" enum="org.gnome.shell.extensions.meowterialyou.ThemeMode">
       <default>'dark'</default>
@@ -121,6 +146,24 @@
       <description>Base icon theme that the custom dynamic icon theme inherits from.</description>
     </key>
 
+    <key name="themed-cursors-enabled" type="b">
+      <default>false</default>
+      <summary>Use MeowterialYou Cursor</summary>
+      <description>Repack the selected cursor theme with dynamic Material You wallpaper colors.</description>
+    </key>
+
+    <key name="base-cursor-theme" type="s">
+      <default>''</default>
+      <summary>Base cursor pack</summary>
+      <description>Source Xcursor pack cloned and recolored into MeowterialYou-Cursor.</description>
+    </key>
+
+    <key name="themed-cursor-style" enum="org.gnome.shell.extensions.meowterialyou.CursorStyle">
+      <default>'tinted-fill'</default>
+      <summary>Material You cursor color style</summary>
+      <description>Mapping of fill and outline tones for the repacked cursor pack.</description>
+    </key>
+
     <key name="gtk3-enabled" type="b">
       <default>true</default>
       <summary>GTK3 theming enabled</summary>
@@ -185,6 +228,151 @@
       <default>false</default>
       <summary>Hide window preview close button</summary>
       <description>Hide the floating close button on window previews in overview.</description>
+    </key>
+
+    <key name="terminal-theming-enabled" type="b">
+      <default>false</default>
+      <summary>GNOME Terminal and Console theming</summary>
+      <description>Apply Material You colors and adaptive transparency to GNOME Terminal and GNOME Console.</description>
+    </key>
+
+    <key name="ghostty-enabled" type="b">
+      <default>false</default>
+      <summary>Ghostty terminal theming</summary>
+      <description>Generate Ghostty theme files and manage the theme directive in Ghostty config.</description>
+    </key>
+
+    <key name="vscode-enabled" type="b">
+      <default>false</default>
+      <summary>VS Code and forks theming</summary>
+      <description>Generate and sync the MeowterialYou theme extension to VS Code and verified forks.</description>
+    </key>
+
+    <key name="antigravity-app-enabled" type="b">
+      <default>false</default>
+      <summary>Antigravity App theming</summary>
+      <description>Inject Material You customThemeSeeds and mode settings into standalone Antigravity App config.</description>
+    </key>
+
+    <key name="obsidian-enabled" type="b">
+      <default>false</default>
+      <summary>Obsidian vault theming</summary>
+      <description>Generate Material You CSS themes in discovered Obsidian vaults.</description>
+    </key>
+
+    <key name="fastfetch-enabled" type="b">
+      <default>false</default>
+      <summary>Fastfetch theming enabled</summary>
+      <description>Apply wallpaper-derived Material You colors and auto-sized logos to Fastfetch config.jsonc.</description>
+    </key>
+
+    <key name="fastfetch-manage-layout" type="b">
+      <default>false</default>
+      <summary>Use MeowterialYou Fastfetch preset layout</summary>
+      <description>Apply the grouped 3-section Fastfetch layout instead of keeping existing modules.</description>
+    </key>
+
+    <key name="fastfetch-logo-cycle" type="b">
+      <default>false</default>
+      <summary>Cycle Fastfetch logo</summary>
+      <description>Rotate Fastfetch logo image from the configured logo directory on theme updates.</description>
+    </key>
+
+    <key name="fastfetch-logo-directory" type="s">
+      <default>''</default>
+      <summary>Fastfetch logo directory</summary>
+      <description>Dedicated folder containing logo images for Fastfetch (independent from wallpapers).</description>
+    </key>
+
+    <key name="fastfetch-last-logo" type="s">
+      <default>''</default>
+      <summary>Last Fastfetch logo path</summary>
+      <description>Internal tracker for the currently selected Fastfetch logo file.</description>
+    </key>
+
+    <key name="shell-prompt-enabled" type="b">
+      <default>false</default>
+      <summary>Shell prompt and LS_COLORS styling</summary>
+      <description>Generate Material You prompt.sh (PS1, LS_COLORS, GCC_COLORS, GREP_COLORS) and source it from bashrc/zshrc.</description>
+    </key>
+
+    <key name="visualizer-enabled" type="b">
+      <default>false</default>
+      <summary>Desktop audio visualizer widget</summary>
+      <description>Render a CAVA-driven Material You audio visualizer behind windows on the desktop.</description>
+    </key>
+
+    <key name="visualizer-position" enum="org.gnome.shell.extensions.meowterialyou.VisualizerPosition">
+      <default>'bottom'</default>
+      <summary>Audio visualizer screen edge</summary>
+      <description>Desktop edge where the audio visualizer is anchored: bottom, top, left, or right.</description>
+    </key>
+
+    <key name="visualizer-style" enum="org.gnome.shell.extensions.meowterialyou.VisualizerStyle">
+      <default>'bars'</default>
+      <summary>Audio visualizer style</summary>
+      <description>Rendering style: bars, mirrored, or wave.</description>
+    </key>
+
+    <key name="visualizer-color-mode" enum="org.gnome.shell.extensions.meowterialyou.VisualizerColorMode">
+      <default>'vertical'</default>
+      <summary>Audio visualizer color mode</summary>
+      <description>Color distribution mode: base-to-tip vertical gradient, across-spectrum gradient, or solid accent.</description>
+    </key>
+
+    <key name="visualizer-bar-count" type="i">
+      <range min="12" max="96" />
+      <default>48</default>
+      <summary>Audio visualizer bar count</summary>
+      <description>Number of frequency bands rendered by the CAVA audio visualizer.</description>
+    </key>
+
+    <key name="visualizer-bar-spacing" type="i">
+      <range min="0" max="70" />
+      <default>34</default>
+      <summary>Audio visualizer bar spacing</summary>
+      <description>Spacing percentage between adjacent bars.</description>
+    </key>
+
+    <key name="visualizer-corner-radius" type="i">
+      <range min="0" max="100" />
+      <default>40</default>
+      <summary>Audio visualizer corner radius</summary>
+      <description>Corner roundness percentage for visualizer bars (0 = sharp, 100 = pill).</description>
+    </key>
+
+    <key name="visualizer-thickness" type="i">
+      <range min="40" max="400" />
+      <default>160</default>
+      <summary>Audio visualizer bar reach</summary>
+      <description>Maximum height or width in pixels perpendicular to the screen edge.</description>
+    </key>
+
+    <key name="visualizer-base-padding" type="i">
+      <range min="0" max="240" />
+      <default>16</default>
+      <summary>Audio visualizer base padding</summary>
+      <description>Distance in pixels between the anchored screen edge and the base of the visualizer.</description>
+    </key>
+
+    <key name="visualizer-side-padding" type="i">
+      <range min="0" max="480" />
+      <default>48</default>
+      <summary>Audio visualizer side padding</summary>
+      <description>Distance in pixels between the sides of the visualizer and the perpendicular screen edges.</description>
+    </key>
+
+    <key name="visualizer-opacity" type="i">
+      <range min="15" max="100" />
+      <default>82</default>
+      <summary>Audio visualizer opacity</summary>
+      <description>Maximum opacity percentage of the visualizer.</description>
+    </key>
+
+    <key name="visualizer-pause-fullscreen" type="b">
+      <default>true</default>
+      <summary>Pause audio visualizer in fullscreen</summary>
+      <description>Automatically hide the visualizer and suspend CAVA when a fullscreen window is active on the primary monitor.</description>
     </key>
   </schema>
 </schemalist>

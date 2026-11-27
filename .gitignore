@@ -178,6 +178,7 @@ TODO
 # Node / TypeScript
 node_modules/
 dist/
+backups/
 *.shell-extension.zip
 schemas/gschemas.compiled
 

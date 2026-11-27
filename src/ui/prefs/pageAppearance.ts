@@ -6,6 +6,7 @@ import Adw from 'gi://Adw';
 import Gtk from 'gi://Gtk';
 import Gio from 'gi://Gio';
 import { scanInstalledIconThemes } from '../../icons/iconScanner.js';
+import { createCursorGroup } from './cursorGroup.js';
 
 export function createAppearancePage(settings: Gio.Settings): Adw.PreferencesPage {
   const page = new Adw.PreferencesPage({
@@ -75,6 +76,8 @@ export function createAppearancePage(settings: Gio.Settings): Adw.PreferencesPag
     settings.set_string('base-icon-theme', themeIds[baseThemeRow.get_selected()] ?? 'Meowaita');
   });
   iconsGroup.add(baseThemeRow);
+
+  page.add(createCursorGroup(settings));
 
   return page;
 }

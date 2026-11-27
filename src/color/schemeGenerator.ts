@@ -17,6 +17,7 @@ import {
   type DynamicScheme,
 } from '@material/material-color-utilities';
 import { convertArgbToHex } from './colorConverter.js';
+import { tuneDarkSurfaces } from './surfaceTuning.js';
 import type { MaterialSchemeColors, SchemeVariant } from '../types/theme.js';
 
 function createDynamicScheme(
@@ -94,7 +95,7 @@ export function generateMaterialScheme(
     ).toInt()
   );
 
-  return {
+  const palette: MaterialSchemeColors = {
     primary: getHex(MaterialDynamicColors.primary),
     onPrimary: getHex(MaterialDynamicColors.onPrimary),
     primaryContainer: getHex(MaterialDynamicColors.primaryContainer),
@@ -131,10 +132,13 @@ export function generateMaterialScheme(
     surfaceContainer: getHex(MaterialDynamicColors.surfaceContainer),
     surfaceContainerHigh: getHex(MaterialDynamicColors.surfaceContainerHigh),
     surfaceContainerHighest: getHex(MaterialDynamicColors.surfaceContainerHighest),
+    tertiaryFixedDim: getHex(MaterialDynamicColors.tertiaryFixedDim),
     panelBackground,
     panelForeground,
     panelPillBackground,
     panelPillForeground,
     panelTextColor,
   };
+
+  return isDark ? tuneDarkSurfaces(palette, hct, scheme, variant) : palette;
 }

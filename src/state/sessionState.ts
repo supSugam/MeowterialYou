@@ -9,6 +9,7 @@ import { getHomeDirectory, readTextFile, writeTextFile } from '../theme/fileHelp
 interface SavedSessionState {
   gtkTheme: string;
   iconTheme: string;
+  cursorTheme?: string;
   buttonLayout: string;
   shellTheme: string;
 }
@@ -47,9 +48,19 @@ export class SessionStateManager {
       shellTheme = '';
     }
 
+    let initialGtk = interfaceSettings.get_string('gtk-theme');
+    if (initialGtk.startsWith('MeowterialYou')) {
+      initialGtk = 'Adwaita';
+    }
+    if (shellTheme.startsWith('MeowterialYou')) {
+      shellTheme = '';
+    }
+
+    const currentCursor = interfaceSettings.get_string('cursor-theme');
     this._savedState = {
-      gtkTheme: interfaceSettings.get_string('gtk-theme'),
+      gtkTheme: initialGtk,
       iconTheme: interfaceSettings.get_string('icon-theme'),
+      cursorTheme: currentCursor.startsWith('MeowterialYou') ? 'Adwaita' : currentCursor,
       buttonLayout: wmSettings.get_string('button-layout'),
       shellTheme,
     };
@@ -73,11 +84,14 @@ export class SessionStateManager {
       if (state.iconTheme) {
         interfaceSettings.set_string('icon-theme', state.iconTheme);
       }
+      if (state.cursorTheme && interfaceSettings.get_string('cursor-theme').startsWith('MeowterialYou')) {
+        interfaceSettings.set_string('cursor-theme', state.cursorTheme);
+      }
       if (state.buttonLayout) {
         wmSettings.set_string('button-layout', state.buttonLayout);
       }
 
-      if (state.shellTheme !== undefined) {
+      if (state.shellTheme !== undefined && !state.shellTheme.startsWith('MeowterialYou')) {
         try {
           const defaultSource = Gio.SettingsSchemaSource.get_default();
           if (defaultSource && defaultSource.lookup('org.gnome.shell.extensions.user-theme', true)) {

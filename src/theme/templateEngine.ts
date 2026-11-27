@@ -5,12 +5,34 @@
 import { convertHexToHlsTuple, convertHexToRgbTuple } from '../color/colorConverter.js';
 import type { MaterialSchemeColors } from '../types/theme.js';
 
+export type AlphaFormat = 'rgba' | 'hex8';
+
+export interface TemplateSubstituteOptions {
+  wallpaperPath?: string;
+  prefix?: string;
+  alphaFormat?: AlphaFormat;
+}
+
+const ALPHA_TOKENS: ReadonlyArray<{ suffix: string; opacity: number; hexByte: string }> = [
+  { suffix: 'rgba08', opacity: 0.08, hexByte: '14' },
+  { suffix: 'rgba12', opacity: 0.12, hexByte: '1f' },
+  { suffix: 'rgba16', opacity: 0.16, hexByte: '29' },
+  { suffix: 'rgba24', opacity: 0.24, hexByte: '3d' },
+  { suffix: 'rgba32', opacity: 0.32, hexByte: '52' },
+  { suffix: 'rgba40', opacity: 0.4, hexByte: '66' },
+  { suffix: 'rgba50', opacity: 0.5, hexByte: '80' },
+  { suffix: 'rgba60', opacity: 0.6, hexByte: '99' },
+  { suffix: 'rgba75', opacity: 0.75, hexByte: 'bf' },
+  { suffix: 'rgba80', opacity: 0.8, hexByte: 'cc' },
+  { suffix: 'rgba85', opacity: 0.85, hexByte: 'd9' },
+];
+
 export function substituteTemplate(
   templateContent: string,
   scheme: MaterialSchemeColors,
-  wallpaperPath: string = '',
-  prefix: string = ''
+  options: TemplateSubstituteOptions = {}
 ): string {
+  const { wallpaperPath = '', prefix = '', alphaFormat = 'rgba' } = options;
   let result = templateContent;
 
   if (wallpaperPath) {
@@ -28,20 +50,19 @@ export function substituteTemplate(
     const [r, g, b] = convertHexToRgbTuple(hexValue);
     const [h, l, s] = convertHexToHlsTuple(hexValue);
 
-    // Replacements
     result = result.replaceAll(`@{${tokenPrefix}${key}.hex}`, hexValue);
     result = result.replaceAll(`@{${tokenPrefix}${key}}`, hexStripped);
     result = result.replaceAll(`@{${tokenPrefix}${key}.rgb}`, `rgb(${r}, ${g}, ${b})`);
+    result = result.replaceAll(`@{${tokenPrefix}${key}.rgbTuple}`, `${r}, ${g}, ${b}`);
 
-    // Alpha variants (using standard rgba() because St / libcroco rejects 8-digit hex #rrggbbaa)
-    result = result.replaceAll(`@{${tokenPrefix}${key}.rgba08}`, `rgba(${r}, ${g}, ${b}, 0.08)`);
-    result = result.replaceAll(`@{${tokenPrefix}${key}.rgba12}`, `rgba(${r}, ${g}, ${b}, 0.12)`);
-    result = result.replaceAll(`@{${tokenPrefix}${key}.rgba16}`, `rgba(${r}, ${g}, ${b}, 0.16)`);
-    result = result.replaceAll(`@{${tokenPrefix}${key}.rgba24}`, `rgba(${r}, ${g}, ${b}, 0.24)`);
-    result = result.replaceAll(`@{${tokenPrefix}${key}.rgba32}`, `rgba(${r}, ${g}, ${b}, 0.32)`);
-    result = result.replaceAll(`@{${tokenPrefix}${key}.rgba50}`, `rgba(${r}, ${g}, ${b}, 0.5)`);
+    for (const token of ALPHA_TOKENS) {
+      const replacement =
+        alphaFormat === 'hex8'
+          ? `#${hexStripped}${token.hexByte}`
+          : `rgba(${r}, ${g}, ${b}, ${token.opacity})`;
+      result = result.replaceAll(`@{${tokenPrefix}${key}.${token.suffix}}`, replacement);
+    }
 
-    // HLS components
     result = result.replaceAll(`@{${tokenPrefix}${key}.hue}`, String(h));
     result = result.replaceAll(`@{${tokenPrefix}${key}.sat}`, String(s));
     result = result.replaceAll(`@{${tokenPrefix}${key}.light}`, String(l));

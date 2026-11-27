@@ -64,7 +64,15 @@ export interface MaterialSchemeColors {
   surfaceContainer: string;
   surfaceContainerHigh: string;
   surfaceContainerHighest: string;
+  tertiaryFixedDim: string;
   [key: string]: string;
+}
+
+export interface WallpaperImageStats {
+  brightness: number;
+  variance: number;
+  saturation: number;
+  averageRgb: [number, number, number];
 }
 
 export interface ExtensionConfig {
@@ -82,6 +90,16 @@ export interface ExtensionConfig {
   isGtk3Enabled: boolean;
   isGtk4Enabled: boolean;
   isShellThemeEnabled: boolean;
+  isTerminalThemingEnabled: boolean;
+  isGhosttyEnabled: boolean;
+  isVscodeEnabled: boolean;
+  isAntigravityAppEnabled: boolean;
+  isObsidianEnabled: boolean;
+  isFastfetchEnabled: boolean;
+  isFastfetchManageLayout: boolean;
+  isFastfetchLogoCycleEnabled: boolean;
+  fastfetchLogoDirectory: string;
+  isShellPromptEnabled: boolean;
   isPaused: boolean;
 }
 

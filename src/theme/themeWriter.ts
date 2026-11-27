@@ -7,6 +7,7 @@ import {
   copyDirectoryRecursive,
   getTargetHomeDirectories,
   readTextFile,
+  updateGtkSettingsIni,
   writeTextFile,
 } from './fileHelper.js';
 import { substituteTemplate } from './templateEngine.js';
@@ -40,22 +41,25 @@ export function writeGeneratedThemes(options: ThemeWriteOptions): void {
   for (const dir of getTargetHomeDirectories()) {
     themeBases.push(GLib.build_filenamev([dir, '.local', 'share', 'themes', themeName]));
     themeBases.push(GLib.build_filenamev([dir, '.themes', themeName]));
+    themeBases.push(GLib.build_filenamev([dir, '.local', 'share', 'themes', 'MeowterialYou']));
+    themeBases.push(GLib.build_filenamev([dir, '.themes', 'MeowterialYou']));
   }
   const gtkAssetsSrc = GLib.build_filenamev([dataDir, 'assets', themeName, 'gtk-3.0', 'assets']);
-  const iniContent = `[Settings]\ngtk-application-prefer-dark-theme=${options.isDark ? 1 : 0}\ngtk-theme-name=${themeName}\n`;
 
   // 1. GNOME Shell Theme
   if (options.isShellThemeEnabled) {
     const shellTemplate = options.isDark ? 'gnome-shell-dark.css' : 'gnome-shell.css';
     const shellRaw = readTextFile(GLib.build_filenamev([dataDir, 'templates', shellTemplate]));
-    let shellCss = substituteTemplate(shellRaw, options.scheme, options.wallpaperPath);
+    let shellCss = substituteTemplate(shellRaw, options.scheme, { wallpaperPath: options.wallpaperPath });
 
     if (options.isTransparentPanelEnabled) {
       const isPanelDark = options.isTopDark ?? options.isDark;
       const addon = isPanelDark ? 'shell_dark.css' : 'shell_light.css';
       const addonPath = GLib.build_filenamev([dataDir, 'templates', 'addons', 'transparent_panel', addon]);
       if (GLib.file_test(addonPath, GLib.FileTest.EXISTS)) {
-        shellCss += '\n' + substituteTemplate(readTextFile(addonPath), options.scheme, options.wallpaperPath);
+        shellCss +=
+          '\n' +
+          substituteTemplate(readTextFile(addonPath), options.scheme, { wallpaperPath: options.wallpaperPath });
       }
     }
 
@@ -73,9 +77,9 @@ export function writeGeneratedThemes(options: ThemeWriteOptions): void {
     const g4DarkRaw = readTextFile(GLib.build_filenamev([dataDir, 'templates', 'gtk4-dark.css']));
     const macLight = options.isMacButtonsEnabled ? loadMacAddon(dataDir, 'gtk_light.css') : '';
     const macDark = options.isMacButtonsEnabled ? loadMacAddon(dataDir, 'gtk_dark.css') : '';
-    let g4LightCss = substituteTemplate(g4LightRaw, options.lightScheme, '', 'light');
+    let g4LightCss = substituteTemplate(g4LightRaw, options.lightScheme, { prefix: 'light' });
     g4LightCss = substituteTemplate(g4LightCss, options.lightScheme) + macLight;
-    let g4DarkCss = substituteTemplate(g4DarkRaw, options.darkScheme, '', 'dark');
+    let g4DarkCss = substituteTemplate(g4DarkRaw, options.darkScheme, { prefix: 'dark' });
     g4DarkCss = substituteTemplate(g4DarkCss, options.darkScheme) + macDark;
     const activeG4Css = options.isDark ? g4DarkCss : g4LightCss;
 
@@ -83,7 +87,7 @@ export function writeGeneratedThemes(options: ThemeWriteOptions): void {
       const g4Dir = GLib.build_filenamev([targetDir, '.config', 'gtk-4.0']);
       writeTextFile(GLib.build_filenamev([g4Dir, 'gtk.css']), activeG4Css);
       writeTextFile(GLib.build_filenamev([g4Dir, 'gtk-dark.css']), g4DarkCss);
-      writeTextFile(GLib.build_filenamev([g4Dir, 'settings.ini']), iniContent);
+      updateGtkSettingsIni(GLib.build_filenamev([g4Dir, 'settings.ini']), themeName);
     }
 
     const chromeTmpl = options.isDark ? 'gtk_4_chrome_dark.css' : 'gtk_4_chrome_light.css';
@@ -114,7 +118,7 @@ export function writeGeneratedThemes(options: ThemeWriteOptions): void {
       const g3Dir = GLib.build_filenamev([targetDir, '.config', 'gtk-3.0']);
       writeTextFile(GLib.build_filenamev([g3Dir, 'gtk.css']), activeG3Css);
       writeTextFile(GLib.build_filenamev([g3Dir, 'gtk-dark.css']), g3DarkCss);
-      writeTextFile(GLib.build_filenamev([g3Dir, 'settings.ini']), iniContent);
+      updateGtkSettingsIni(GLib.build_filenamev([g3Dir, 'settings.ini']), themeName, options.isDark);
     }
 
     for (const base of themeBases) {

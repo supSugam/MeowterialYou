@@ -16,10 +16,6 @@ export function getTargetHomeDirectories(): string[] {
   if (!dirs.includes(realHome) && GLib.file_test(realHome, GLib.FileTest.IS_DIR)) {
     dirs.push(realHome);
   }
-  const profileHome = `/home/${username}/.config/antigravity-profiles/${username}.xd`;
-  if (!dirs.includes(profileHome) && GLib.file_test(profileHome, GLib.FileTest.IS_DIR)) {
-    dirs.push(profileHome);
-  }
   return dirs;
 }
 
@@ -81,4 +77,27 @@ export function copyDirectoryRecursive(sourcePath: string, destinationPath: stri
       childSource.copy(childDest, Gio.FileCopyFlags.OVERWRITE, null, null);
     }
   }
+}
+
+export function updateGtkSettingsIni(iniPath: string, themeName: string, preferDark?: boolean): void {
+  const keyFile = new GLib.KeyFile();
+  if (GLib.file_test(iniPath, GLib.FileTest.EXISTS)) {
+    try {
+      keyFile.load_from_file(iniPath, GLib.KeyFileFlags.KEEP_COMMENTS);
+    } catch {
+      // Overwrite invalid ini
+    }
+  }
+  keyFile.set_string('Settings', 'gtk-theme-name', themeName);
+  if (typeof preferDark === 'boolean') {
+    keyFile.set_integer('Settings', 'gtk-application-prefer-dark-theme', preferDark ? 1 : 0);
+  } else {
+    try {
+      keyFile.remove_key('Settings', 'gtk-application-prefer-dark-theme');
+    } catch {
+      // Key was not present
+    }
+  }
+  const [content] = keyFile.to_data();
+  if (content) writeTextFile(iniPath, content);
 }

@@ -1,0 +1,528 @@
+/*
+  MeowterialYou for Obsidian (1.x Full Token Integration)
+  Material You surfaces & wallpaper-harmonized semantic tokens in Light & Dark modes.
+*/
+
+.theme-light {
+  color-scheme: light;
+
+  /* ── Material 3 Base Neutral Scale (00 = brightest canvas, 100 = ink) ── */
+  --color-base-00: @light:surface.hex;
+  --color-base-05: @light:surfaceContainerLowest.hex;
+  --color-base-10: @light:surfaceContainerLow.hex;
+  --color-base-20: @light:surfaceContainer.hex;
+  --color-base-25: @light:surfaceContainerHigh.hex;
+  --color-base-30: @light:surfaceContainerHighest.hex;
+  --color-base-35: @light:base35.hex;
+  --color-base-40: @light:base40.hex;
+  --color-base-50: @light:base50.hex;
+  --color-base-60: @light:base60.hex;
+  --color-base-70: @light:base70.hex;
+  --color-base-100: @light:onSurface.hex;
+
+  /* ── Surface & Foreground Semantics ── */
+  --my-bg-deep-rgb: @light:surfaceContainerLowest.rgb;
+  --my-bg-sidebar-rgb: @light:surfaceContainerLow.rgb;
+  --my-bg-editor-rgb: @light:surface.rgb;
+  --my-bg-elevated-rgb: @light:surfaceContainer.rgb;
+  --my-bg-hover-rgb: @light:surfaceContainerHigh.rgb;
+  --my-bg-active-rgb: @light:surfaceContainerHighest.rgb;
+
+  --my-fg: @light:onSurface.hex;
+  --my-fg-muted: @light:onSurfaceVariant.hex;
+  --my-fg-faint: @light:outline.hex;
+  --my-border: @light:outlineVariant.hex;
+  --my-border-rgb: @light:outlineVariant.rgb;
+
+  /* ── Primary & Container Accents ── */
+  --accent-h: @light:primary.hue;
+  --accent-s: @light:primary.sat%;
+  --accent-l: @light:primary.light%;
+  --interactive-accent-hsl: var(--accent-h), var(--accent-s), var(--accent-l);
+  --interactive-accent: @light:primary.hex;
+  --interactive-accent-hover: hsl(var(--accent-h), var(--accent-s), calc(var(--accent-l) - 6%));
+  --color-accent: var(--interactive-accent);
+  --color-accent-1: var(--interactive-accent);
+  --color-accent-2: var(--interactive-accent-hover);
+  --text-on-accent: @light:onPrimary.hex;
+  --text-on-accent-inverted: @light:primary.hex;
+
+  --my-primary-rgb: @light:primary.rgb;
+  --my-primary-container: @light:primaryContainer.hex;
+  --my-primary-container-rgb: @light:primaryContainer.rgb;
+  --my-on-primary-container: @light:onPrimaryContainer.hex;
+  --my-secondary: @light:secondary.hex;
+  --my-secondary-rgb: @light:secondary.rgb;
+  --my-tertiary: @light:tertiary.hex;
+  --my-tertiary-rgb: @light:tertiary.rgb;
+
+  /* ── Harmonized Semantic Accents ── */
+  --color-red-rgb: @light:semRed.rgb;
+  --color-red: @light:semRed.hex;
+  --color-orange-rgb: @light:semOrange.rgb;
+  --color-orange: @light:semOrange.hex;
+  --color-yellow-rgb: @light:semYellow.rgb;
+  --color-yellow: @light:semYellow.hex;
+  --color-green-rgb: @light:semGreen.rgb;
+  --color-green: @light:semGreen.hex;
+  --color-teal-rgb: @light:semTeal.rgb;
+  --color-teal: @light:semTeal.hex;
+  --color-cyan-rgb: @light:semCyan.rgb;
+  --color-cyan: @light:semCyan.hex;
+  --color-blue-rgb: @light:semBlue.rgb;
+  --color-blue: @light:semBlue.hex;
+  --color-purple-rgb: @light:semPurple.rgb;
+  --color-purple: @light:semPurple.hex;
+  --color-pink-rgb: @light:semPink.rgb;
+  --color-pink: @light:semPink.hex;
+
+  --background-modifier-box-shadow: rgba(0, 0, 0, 0.08);
+  --shadow-s: 0 1px 2px rgba(0, 0, 0, 0.06);
+  --shadow-l: 0 8px 24px rgba(0, 0, 0, 0.12);
+}
+
+.theme-dark {
+  color-scheme: dark;
+
+  /* ── Material 3 Base Neutral Scale (00 = editor canvas, 05 = deep titlebar, 100 = ink) ── */
+  --color-base-00: @dark:surfaceContainerLow.hex;
+  --color-base-05: @dark:surfaceContainerLowest.hex;
+  --color-base-10: @dark:surface.hex;
+  --color-base-20: @dark:surfaceContainer.hex;
+  --color-base-25: @dark:surfaceContainerHigh.hex;
+  --color-base-30: @dark:surfaceContainerHighest.hex;
+  --color-base-35: @dark:base35.hex;
+  --color-base-40: @dark:base40.hex;
+  --color-base-50: @dark:base50.hex;
+  --color-base-60: @dark:base60.hex;
+  --color-base-70: @dark:base70.hex;
+  --color-base-100: @dark:onSurface.hex;
+
+  /* ── Surface & Foreground Semantics (Aligned with GTK4 dark surface tiers) ── */
+  --my-bg-deep-rgb: @dark:surfaceContainerLowest.rgb;
+  --my-bg-sidebar-rgb: @dark:surface.rgb;
+  --my-bg-editor-rgb: @dark:surfaceContainerLow.rgb;
+  --my-bg-elevated-rgb: @dark:surfaceContainer.rgb;
+  --my-bg-hover-rgb: @dark:surfaceContainerHigh.rgb;
+  --my-bg-active-rgb: @dark:surfaceContainerHighest.rgb;
+
+  --my-fg: @dark:onSurface.hex;
+  --my-fg-muted: @dark:onSurfaceVariant.hex;
+  --my-fg-faint: @dark:outline.hex;
+  --my-border: @dark:outlineVariant.hex;
+  --my-border-rgb: @dark:outlineVariant.rgb;
+
+  /* ── Primary & Container Accents ── */
+  --accent-h: @dark:primary.hue;
+  --accent-s: @dark:primary.sat%;
+  --accent-l: @dark:primary.light%;
+  --interactive-accent-hsl: var(--accent-h), var(--accent-s), var(--accent-l);
+  --interactive-accent: @dark:primary.hex;
+  --interactive-accent-hover: hsl(var(--accent-h), var(--accent-s), calc(var(--accent-l) + 6%));
+  --color-accent: var(--interactive-accent);
+  --color-accent-1: var(--interactive-accent);
+  --color-accent-2: var(--interactive-accent-hover);
+  --text-on-accent: @dark:onPrimary.hex;
+  --text-on-accent-inverted: @dark:primary.hex;
+
+  --my-primary-rgb: @dark:primary.rgb;
+  --my-primary-container: @dark:primaryContainer.hex;
+  --my-primary-container-rgb: @dark:primaryContainer.rgb;
+  --my-on-primary-container: @dark:onPrimaryContainer.hex;
+  --my-secondary: @dark:secondary.hex;
+  --my-secondary-rgb: @dark:secondary.rgb;
+  --my-tertiary: @dark:tertiary.hex;
+  --my-tertiary-rgb: @dark:tertiary.rgb;
+
+  /* ── Harmonized Semantic Accents ── */
+  --color-red-rgb: @dark:semRed.rgb;
+  --color-red: @dark:semRed.hex;
+  --color-orange-rgb: @dark:semOrange.rgb;
+  --color-orange: @dark:semOrange.hex;
+  --color-yellow-rgb: @dark:semYellow.rgb;
+  --color-yellow: @dark:semYellow.hex;
+  --color-green-rgb: @dark:semGreen.rgb;
+  --color-green: @dark:semGreen.hex;
+  --color-teal-rgb: @dark:semTeal.rgb;
+  --color-teal: @dark:semTeal.hex;
+  --color-cyan-rgb: @dark:semCyan.rgb;
+  --color-cyan: @dark:semCyan.hex;
+  --color-blue-rgb: @dark:semBlue.rgb;
+  --color-blue: @dark:semBlue.hex;
+  --color-purple-rgb: @dark:semPurple.rgb;
+  --color-purple: @dark:semPurple.hex;
+  --color-pink-rgb: @dark:semPink.rgb;
+  --color-pink: @dark:semPink.hex;
+
+  --background-modifier-box-shadow: rgba(0, 0, 0, 0.35);
+  --shadow-s: 0 1px 3px rgba(0, 0, 0, 0.25);
+  --shadow-l: 0 10px 30px rgba(0, 0, 0, 0.45);
+}
+
+/* ── Shared Obsidian 1.x Token Wiring ── */
+.theme-light,
+.theme-dark {
+  /* Core Backgrounds */
+  --background-primary: rgb(var(--my-bg-editor-rgb));
+  --background-primary-alt: rgb(var(--my-bg-elevated-rgb));
+  --background-secondary: rgb(var(--my-bg-sidebar-rgb));
+  --background-secondary-alt: rgb(var(--my-bg-deep-rgb));
+  --workspace-background-translucent: rgba(var(--my-bg-sidebar-rgb), 0.72);
+
+  /* Modifiers & Interactive States */
+  --background-modifier-hover: rgba(var(--my-bg-hover-rgb), 0.75);
+  --background-modifier-active-hover: rgba(var(--my-primary-rgb), 0.14);
+  --background-modifier-border: rgba(var(--my-border-rgb), 0.45);
+  --background-modifier-border-hover: rgba(var(--my-border-rgb), 0.75);
+  --background-modifier-border-focus: var(--interactive-accent);
+  --background-modifier-form-field: rgb(var(--my-bg-elevated-rgb));
+  --background-modifier-form-field-highlighted: rgb(var(--my-bg-hover-rgb));
+  --background-modifier-cover: rgba(var(--my-bg-deep-rgb), 0.75);
+  --background-modifier-message: rgb(var(--my-bg-hover-rgb));
+  --background-modifier-success: var(--color-green);
+  --background-modifier-success-rgb: var(--color-green-rgb);
+  --background-modifier-error: var(--color-red);
+  --background-modifier-error-rgb: var(--color-red-rgb);
+  --background-modifier-error-hover: rgba(var(--color-red-rgb), 0.85);
+
+  /* Interactive Controls */
+  --interactive-normal: rgb(var(--my-bg-elevated-rgb));
+  --interactive-hover: rgb(var(--my-bg-hover-rgb));
+  --interactive-success: var(--color-green);
+
+  /* Foreground & Selection */
+  --text-normal: var(--my-fg);
+  --text-muted: var(--my-fg-muted);
+  --text-faint: var(--my-fg-faint);
+  --text-accent: var(--interactive-accent);
+  --text-accent-hover: var(--interactive-accent-hover);
+  --text-error: var(--color-red);
+  --text-error-hover: var(--color-pink);
+  --text-success: var(--color-green);
+  --text-warning: var(--color-orange);
+  --text-selection: rgba(var(--my-primary-rgb), 0.28);
+  --text-highlight-bg: rgba(var(--color-yellow-rgb), 0.25);
+  --text-highlight-bg-active: rgba(var(--color-orange-rgb), 0.35);
+  --bold-color: var(--color-cyan);
+  --italic-color: var(--color-purple);
+  --caret-color: var(--interactive-accent);
+  --cursor-line-background: rgba(var(--my-bg-elevated-rgb), 0.55);
+
+  /* Workspace Chrome: Titlebar, Ribbon, Tabs, Dividers, Status Bar */
+  --titlebar-background: var(--background-secondary);
+  --titlebar-background-focused: var(--background-secondary);
+  --titlebar-text-color: var(--text-muted);
+  --titlebar-text-color-focused: var(--text-normal);
+
+  --ribbon-background: var(--background-secondary);
+  --ribbon-background-collapsed: var(--background-secondary-alt);
+  --ribbon-padding: var(--size-4-2) var(--size-4-1);
+
+  --tab-container-background: var(--background-secondary);
+  --tab-background-active: var(--background-primary);
+  --tab-text-color: var(--text-faint);
+  --tab-text-color-active: var(--text-muted);
+  --tab-text-color-focused: var(--text-muted);
+  --tab-text-color-focused-active: var(--text-normal);
+  --tab-text-color-focused-active-current: var(--interactive-accent);
+  --tab-outline-color: var(--background-modifier-border);
+  --tab-divider-color: rgba(var(--my-border-rgb), 0.3);
+
+  --divider-color: rgba(var(--my-border-rgb), 0.45);
+  --divider-color-hover: var(--interactive-accent);
+
+  --status-bar-background: var(--background-secondary);
+  --status-bar-text-color: var(--text-muted);
+  --status-bar-border-color: var(--divider-color);
+
+  /* Icons */
+  --icon-color: var(--text-muted);
+  --icon-color-hover: var(--text-normal);
+  --icon-color-active: var(--interactive-accent);
+  --icon-color-focused: var(--interactive-accent);
+
+  /* Modals, Prompts, Menus & Search */
+  --modal-background: rgb(var(--my-bg-elevated-rgb));
+  --modal-border-color: var(--background-modifier-border);
+  --prompt-background: rgb(var(--my-bg-elevated-rgb));
+  --prompt-border-color: var(--background-modifier-border);
+  --menu-background: rgb(var(--my-bg-elevated-rgb));
+  --menu-border-color: var(--background-modifier-border);
+  --search-clear-button-color: var(--text-muted);
+  --search-result-background: rgb(var(--my-bg-elevated-rgb));
+  --flashing-background: rgba(var(--my-primary-rgb), 0.22);
+
+  /* Inputs, Toggles, Sliders & Scrollbars */
+  --toggle-thumb-color: var(--color-base-00);
+  --toggle-border-width: 2px;
+  --slider-track-background: rgb(var(--my-bg-active-rgb));
+  --slider-thumb-border-color: var(--interactive-accent);
+  --scrollbar-bg: transparent;
+  --scrollbar-thumb-bg: rgba(var(--my-border-rgb), 0.55);
+  --scrollbar-active-thumb-bg: var(--text-faint);
+  --scrollbar-width: 7px;
+
+  /* Navigation Tree */
+  --nav-item-color: var(--text-muted);
+  --nav-item-color-hover: var(--text-normal);
+  --nav-item-color-active: var(--my-on-primary-container);
+  --nav-item-color-selected: var(--my-on-primary-container);
+  --nav-item-background-hover: var(--background-modifier-hover);
+  --nav-item-background-active: rgba(var(--my-primary-container-rgb), 0.72);
+  --nav-item-background-selected: rgba(var(--my-primary-container-rgb), 0.85);
+  --nav-indentation-guide-color: rgba(var(--my-border-rgb), 0.45);
+  --nav-collapse-icon-color: var(--text-faint);
+  --nav-collapse-icon-color-collapsed: var(--text-faint);
+  --nav-heading-color: var(--text-normal);
+  --nav-heading-color-hover: var(--interactive-accent);
+  --nav-file-tag: var(--my-secondary);
+
+  /* Headings */
+  --inline-title-color: var(--interactive-accent);
+  --h1-color: var(--color-red);
+  --h2-color: var(--color-orange);
+  --h3-color: var(--color-yellow);
+  --h4-color: var(--color-green);
+  --h5-color: var(--color-cyan);
+  --h6-color: var(--color-purple);
+
+  /* Links & Tags */
+  --link-color: var(--interactive-accent);
+  --link-color-hover: var(--interactive-accent-hover);
+  --link-unresolved-color: var(--text-muted);
+  --link-unresolved-opacity: 0.75;
+  --link-external-color: var(--color-blue);
+  --link-external-color-hover: var(--color-cyan);
+
+  --tag-color: var(--my-on-primary-container);
+  --tag-color-hover: var(--text-on-accent);
+  --tag-background: rgba(var(--my-primary-container-rgb), 0.65);
+  --tag-background-hover: var(--interactive-accent);
+  --tag-border-color: rgba(var(--my-primary-rgb), 0.25);
+  --tag-padding-x: 0.55em;
+  --tag-padding-y: 0.15em;
+  --tag-radius: 999px;
+
+  /* Markdown Prose, Lists & Blockquotes */
+  --hr-color: var(--divider-color);
+  --blockquote-color: var(--text-normal);
+  --blockquote-border-color: var(--interactive-accent);
+  --blockquote-background-color: rgba(var(--my-bg-elevated-rgb), 0.55);
+  --list-marker-color: var(--interactive-accent);
+  --list-marker-color-hover: var(--color-cyan);
+  --list-marker-color-collapsed: var(--color-purple);
+  --indentation-guide-color: rgba(var(--my-border-rgb), 0.4);
+  --indentation-guide-color-active: rgba(var(--my-primary-rgb), 0.6);
+
+  /* Code & Syntax Highlighting */
+  --code-normal: var(--text-normal);
+  --code-background: rgb(var(--my-bg-elevated-rgb));
+  --code-comment: var(--text-faint);
+  --code-function: var(--color-blue);
+  --code-important: var(--color-orange);
+  --code-keyword: var(--color-purple);
+  --code-operator: var(--color-cyan);
+  --code-property: var(--color-teal);
+  --code-punctuation: var(--text-muted);
+  --code-string: var(--color-green);
+  --code-tag: var(--color-red);
+  --code-value: var(--color-yellow);
+
+  /* Tables */
+  --table-background: transparent;
+  --table-header-background: rgb(var(--my-bg-elevated-rgb));
+  --table-header-background-hover: rgb(var(--my-bg-hover-rgb));
+  --table-row-even-background: rgba(var(--my-bg-elevated-rgb), 0.35);
+  --table-row-odd-background: transparent;
+  --table-row-background-hover: rgba(var(--my-bg-hover-rgb), 0.55);
+  --table-border-color: var(--background-modifier-border);
+  --table-header-color: var(--text-normal);
+
+  /* Embeds & Frontmatter Properties */
+  --embed-background: rgb(var(--my-bg-elevated-rgb));
+  --embed-border-start: 2px solid var(--interactive-accent);
+  --embed-border-end: none;
+  --embed-padding: 0.75rem 1rem;
+  --metadata-background: rgba(var(--my-bg-elevated-rgb), 0.45);
+  --metadata-property-background: transparent;
+  --metadata-property-background-hover: var(--background-modifier-hover);
+  --metadata-property-background-active: rgba(var(--my-primary-rgb), 0.12);
+  --metadata-label-text-color: var(--text-muted);
+  --metadata-input-text-color: var(--text-normal);
+  --metadata-divider-color: var(--divider-color);
+
+  /* Checkboxes & Tasks */
+  --checkbox-radius: 5px;
+  --checkbox-color: var(--interactive-accent);
+  --checkbox-color-hover: var(--interactive-accent-hover);
+  --checkbox-marker-color: var(--text-on-accent);
+  --checkbox-border-color: var(--text-faint);
+  --checkbox-border-color-hover: var(--interactive-accent);
+  --checklist-done-color: var(--text-muted);
+
+  /* Callouts (All 14 built-in semantic roles) */
+  --callout-default: var(--color-blue-rgb);
+  --callout-info: var(--color-blue-rgb);
+  --callout-summary: var(--color-cyan-rgb);
+  --callout-tip: var(--color-teal-rgb);
+  --callout-todo: var(--my-primary-rgb);
+  --callout-important: var(--color-purple-rgb);
+  --callout-success: var(--color-green-rgb);
+  --callout-question: var(--color-yellow-rgb);
+  --callout-warning: var(--color-orange-rgb);
+  --callout-danger: var(--color-red-rgb);
+  --callout-bug: var(--color-red-rgb);
+  --callout-error: var(--color-red-rgb);
+  --callout-fail: var(--color-pink-rgb);
+  --callout-example: var(--color-purple-rgb);
+  --callout-quote: var(--my-border-rgb);
+  --callout-radius: 10px;
+
+  /* Graph, Canvas & Mermaid */
+  --graph-line: rgba(var(--my-border-rgb), 0.7);
+  --graph-node: var(--text-normal);
+  --graph-node-unresolved: var(--text-faint);
+  --graph-node-focused: var(--interactive-accent);
+  --graph-node-tag: var(--color-green);
+  --graph-node-attachment: var(--color-yellow);
+  --graph-text: var(--text-normal);
+
+  --canvas-background: var(--background-primary);
+  --canvas-dot-pattern: rgba(var(--my-border-rgb), 0.55);
+  --canvas-color: var(--my-bg-active-rgb);
+  --canvas-color-1: var(--color-red-rgb);
+  --canvas-color-2: var(--color-orange-rgb);
+  --canvas-color-3: var(--color-yellow-rgb);
+  --canvas-color-4: var(--color-green-rgb);
+  --canvas-color-5: var(--color-cyan-rgb);
+  --canvas-color-6: var(--color-purple-rgb);
+
+  --mermaid-note: rgb(var(--my-bg-elevated-rgb));
+  --mermaid-actor: var(--text-normal);
+  --mermaid-loopline: var(--interactive-accent);
+
+  /* Calendar & Community Plugin Variables */
+  --date-color: var(--interactive-accent);
+  --date-background-color: rgba(var(--my-primary-rgb), 0.16);
+}
+
+/* ── Heading Accent Dividers (H1 & H2) ── */
+.markdown-rendered :is(h1, h2),
+.HyperMD-header-1,
+.HyperMD-header-2 {
+  position: relative;
+  padding-bottom: 6px;
+}
+
+.markdown-rendered h1::after,
+.HyperMD-header-1::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 2px;
+  opacity: 0.35;
+  background-image: linear-gradient(to right, var(--h1-color) 0%, transparent 85%);
+}
+
+.markdown-rendered h2::after,
+.HyperMD-header-2::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 1.5px;
+  opacity: 0.3;
+  background-image: linear-gradient(to right, var(--h2-color) 0%, transparent 75%);
+}
+
+/* ── Material 3 Workspace & Navigation Refinements ── */
+.nav-folder-title,
+.nav-file-title {
+  border-radius: 8px;
+  transition: background-color 120ms ease, color 120ms ease;
+}
+
+.workspace-tab-header.is-active {
+  background-color: var(--tab-background-active);
+  border-top: 2px solid var(--interactive-accent);
+}
+
+.suggestion-item.is-selected,
+.menu-item.selected:not(.is-disabled) {
+  background-color: rgba(var(--my-primary-container-rgb), 0.72);
+  color: var(--my-on-primary-container);
+}
+
+/* ── Callouts & Blockquotes ── */
+.callout {
+  border: 1px solid rgba(var(--callout-color), 0.28);
+  border-left: 3px solid rgb(var(--callout-color));
+  background-color: rgba(var(--callout-color), 0.08);
+  border-radius: var(--callout-radius);
+}
+
+.markdown-rendered blockquote {
+  background-color: var(--blockquote-background-color);
+  border-radius: 0 8px 8px 0;
+  padding: 0.5rem 1rem;
+}
+
+/* ── Checkboxes & Custom Task States ── */
+.task-list-item-checkbox {
+  border-radius: var(--checkbox-radius);
+  transition: background-color 120ms ease, border-color 120ms ease;
+}
+
+li[data-task="!"] > input.task-list-item-checkbox:checked {
+  background-color: var(--color-orange);
+  border-color: var(--color-orange);
+}
+
+li[data-task="?"] > input.task-list-item-checkbox:checked {
+  background-color: var(--color-purple);
+  border-color: var(--color-purple);
+}
+
+li[data-task="/"] > input.task-list-item-checkbox:checked {
+  background-color: var(--color-yellow);
+  border-color: var(--color-yellow);
+}
+
+li[data-task="-"] > input.task-list-item-checkbox:checked {
+  background-color: var(--text-faint);
+  border-color: var(--text-faint);
+}
+
+/* ── Code Blocks & Inline Code ── */
+.markdown-rendered code:not(pre > code),
+.cm-s-obsidian span.cm-inline-code {
+  background-color: var(--code-background);
+  color: var(--color-cyan);
+  border-radius: 5px;
+  padding: 0.1em 0.35em;
+}
+
+.markdown-rendered pre {
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 10px;
+}
+
+/* ── Calendar & Dataview Plugin Polish ── */
+.calendar .today {
+  color: var(--interactive-accent);
+  font-weight: 700;
+}
+
+.calendar .active,
+.calendar .active:hover {
+  background-color: var(--interactive-accent);
+  color: var(--text-on-accent);
+  border-radius: 8px;
+}
+
+.dataview.table-view-table > thead > tr > th {
+  border-bottom-color: var(--background-modifier-border);
+}

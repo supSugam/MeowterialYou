@@ -6,26 +6,31 @@ import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
 import { extractColorsFromWallpaper, type ExtractionResult } from '../color/wallpaperExtractor.js';
 import { generateMaterialScheme } from '../color/schemeGenerator.js';
+import type { MaterialSchemeColors } from '../types/theme.js';
+import { mapArgbToGnomeAccent } from '../color/accentColor.js';
 import { writeGeneratedThemes } from './themeWriter.js';
 import { applyGnomeSystemSettings, isColorSchemePulsing } from './systemReload.js';
 import { generateThemedIcons } from '../icons/iconGenerator.js';
+import { syncThemedCursors } from '../icons/cursorGenerator.js';
+import { applyAppThemes } from '../apps/appsManager.js';
 import { getCurrentWallpaperPath } from '../wallpaper/wallpaperHelper.js';
 import {
-  doesThemeExistOnDisk, getThemeCriteria, isCacheUpToDate,
-  loadThemeCache, saveThemeCache, toExtractionResult,
+  doesThemeExistOnDisk, getThemeCriteria, isCacheUpToDate, loadThemeCache, saveThemeCache, toExtractionResult,
 } from './themeCache.js';
+
+type ExtractionCallback = (extraction: ExtractionResult, isDark: boolean, scheme: MaterialSchemeColors) => void;
 
 export interface OrchestratorOptions {
   extensionDir: string;
   settings: Gio.Settings;
-  onExtractionCompleted?: (extraction: ExtractionResult, isDark: boolean) => void;
+  onExtractionCompleted?: ExtractionCallback;
 }
 
 export class ThemeOrchestrator {
   private _extensionDir: string;
   private _settings: Gio.Settings;
   private _interfaceSettings: Gio.Settings;
-  private _onExtractionCompleted?: (extraction: ExtractionResult, isDark: boolean) => void;
+  private _onExtractionCompleted?: ExtractionCallback;
   private _isApplying = false;
   private _reapplyPending = false;
   private _pendingForce = false;
@@ -82,9 +87,11 @@ export class ThemeOrchestrator {
       const cache = loadThemeCache();
 
       if (!force && isCacheUpToDate(cache, criteria) && doesThemeExistOnDisk(isDark)) {
-        this._onExtractionCompleted?.(toExtractionResult(cache!), isDark);
+        const cachedScheme = generateMaterialScheme(cache!.seedArgb, isDark, criteria.variant, cache!.isTopDark);
+        this._onExtractionCompleted?.(toExtractionResult(cache!), isDark, cachedScheme);
+        const cachedAccent = cache ? mapArgbToGnomeAccent(cache.seedArgb) : undefined;
         try {
-          applyGnomeSystemSettings(isDark, criteria.windowButtonPosition, false);
+          applyGnomeSystemSettings(isDark, criteria.windowButtonPosition, false, cachedAccent);
         } catch (error) {
           console.warn('MeowterialYou: Warning applying cached system settings', error);
         }
@@ -92,11 +99,11 @@ export class ThemeOrchestrator {
       }
 
       const extraction = await extractColorsFromWallpaper(wallpaperPath);
-      this._onExtractionCompleted?.(extraction, isDark);
       const { seedArgb, isTopDark } = extraction;
       const lightScheme = generateMaterialScheme(seedArgb, false, criteria.variant, isTopDark);
       const darkScheme = generateMaterialScheme(seedArgb, true, criteria.variant, isTopDark);
       const scheme = isDark ? darkScheme : lightScheme;
+      this._onExtractionCompleted?.(extraction, isDark, scheme);
 
       writeGeneratedThemes({
         extensionDir: this._extensionDir,
@@ -110,23 +117,20 @@ export class ThemeOrchestrator {
       });
 
       try {
-        applyGnomeSystemSettings(isDark, criteria.windowButtonPosition, true);
+        applyGnomeSystemSettings(isDark, criteria.windowButtonPosition, true, mapArgbToGnomeAccent(seedArgb));
       } catch (error) {
         console.warn('MeowterialYou: Warning applying system settings', error);
       }
 
       if (criteria.themedIconsEnabled) {
         try {
-          generateThemedIcons({
-            extensionDir: this._extensionDir,
-            scheme, isDark,
-            baseIconTheme: criteria.baseIconTheme,
-          });
+          generateThemedIcons({ extensionDir: this._extensionDir, scheme, isDark, baseIconTheme: criteria.baseIconTheme });
         } catch (error) {
           console.warn('MeowterialYou: Warning generating themed icons', error);
         }
       }
-
+      syncThemedCursors({ extensionDir: this._extensionDir, settings: this._settings, scheme, darkScheme });
+      applyAppThemes({ extensionDir: this._extensionDir, settings: this._settings, scheme, lightScheme, darkScheme, isDark, imageStats: extraction.imageStats });
       saveThemeCache({ ...criteria, ...extraction });
       return true;
     } catch (error) {
@@ -138,10 +142,7 @@ export class ThemeOrchestrator {
         this._reapplyPending = false;
         const pendingForce = this._pendingForce;
         this._pendingForce = false;
-        GLib.idle_add(GLib.PRIORITY_DEFAULT_IDLE, () => {
-          void this.applyTheme(pendingForce);
-          return GLib.SOURCE_REMOVE;
-        });
+        GLib.idle_add(GLib.PRIORITY_DEFAULT_IDLE, () => { void this.applyTheme(pendingForce); return GLib.SOURCE_REMOVE; });
       }
     }
   }

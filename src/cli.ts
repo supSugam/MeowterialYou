@@ -6,26 +6,40 @@ import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
 import { extractColorsFromWallpaper } from './color/wallpaperExtractor.js';
 import { generateMaterialScheme } from './color/schemeGenerator.js';
+import { mapArgbToGnomeAccent } from './color/accentColor.js';
 import { writeGeneratedThemes } from './theme/themeWriter.js';
 import { applyGnomeSystemSettings } from './theme/systemReload.js';
+import { applyAppThemes } from './apps/appsManager.js';
+import { syncThemedCursors } from './icons/cursorGenerator.js';
+import { syncBmsPopupSettingsFromInstalled } from './tweaks/blurMyShellDconf.js';
 import { getCurrentWallpaperPath } from './wallpaper/wallpaperHelper.js';
 import { getThemeCriteria, saveThemeCache } from './theme/themeCache.js';
 
-function main(): void {
-  const schemaSource = Gio.SettingsSchemaSource.get_default();
-  let settings: Gio.Settings;
-  if (schemaSource && schemaSource.lookup('org.gnome.shell.extensions.meowterialyou', true)) {
-    settings = new Gio.Settings({ schema: 'org.gnome.shell.extensions.meowterialyou' });
-  } else {
-    const cwd = GLib.get_current_dir();
-    const schemaPath = GLib.build_filenamev([cwd, 'schemas']);
-    const source = Gio.SettingsSchemaSource.new_from_directory(schemaPath, null, false);
+function loadCliSettings(scriptDir: string): Gio.Settings {
+  const localSchemaDir = GLib.build_filenamev([scriptDir, 'schemas']);
+  if (GLib.file_test(GLib.build_filenamev([localSchemaDir, 'gschemas.compiled']), GLib.FileTest.EXISTS)) {
+    const source = Gio.SettingsSchemaSource.new_from_directory(localSchemaDir, null, false);
     const schema = source.lookup('org.gnome.shell.extensions.meowterialyou', false);
-    if (!schema) {
-      throw new Error('Could not find meowterialyou schema');
-    }
-    settings = new Gio.Settings({ settings_schema: schema });
+    if (schema) return new Gio.Settings({ settings_schema: schema });
   }
+
+  const defaultSource = Gio.SettingsSchemaSource.get_default();
+  if (defaultSource?.lookup('org.gnome.shell.extensions.meowterialyou', true)) {
+    return new Gio.Settings({ schema: 'org.gnome.shell.extensions.meowterialyou' });
+  }
+
+  const fallbackSchemaDir = GLib.build_filenamev([GLib.get_current_dir(), 'schemas']);
+  const source = Gio.SettingsSchemaSource.new_from_directory(fallbackSchemaDir, null, false);
+  const schema = source.lookup('org.gnome.shell.extensions.meowterialyou', false);
+  if (!schema) {
+    throw new Error('Could not find meowterialyou schema');
+  }
+  return new Gio.Settings({ settings_schema: schema });
+}
+
+function main(): void {
+  const scriptPath = GLib.path_get_dirname(import.meta.url.replace('file://', ''));
+  const settings = loadCliSettings(scriptPath);
 
   const args = typeof ARGV !== 'undefined' ? (ARGV as string[]) : [];
   let isDark = settings.get_string('theme-mode') === 'dark';
@@ -51,8 +65,9 @@ function main(): void {
   const darkScheme = generateMaterialScheme(seedArgb, true, criteria.variant, isTopDark);
   const scheme = isDark ? darkScheme : lightScheme;
 
-  const scriptPath = GLib.path_get_dirname(import.meta.url.replace('file://', ''));
-  const extDir = GLib.path_get_dirname(scriptPath);
+  const extDir = GLib.file_test(GLib.build_filenamev([scriptPath, 'data']), GLib.FileTest.IS_DIR)
+    ? scriptPath
+    : GLib.path_get_dirname(scriptPath);
 
   writeGeneratedThemes({
     extensionDir: extDir,
@@ -69,7 +84,18 @@ function main(): void {
     isTransparentPanelEnabled: criteria.transparentPanel,
   });
 
-  applyGnomeSystemSettings(isDark, criteria.windowButtonPosition, true);
+  applyGnomeSystemSettings(isDark, criteria.windowButtonPosition, false, mapArgbToGnomeAccent(seedArgb));
+  syncThemedCursors({ extensionDir: extDir, settings, scheme, darkScheme, runSync: true });
+  syncBmsPopupSettingsFromInstalled(isDark);
+  applyAppThemes({
+    extensionDir: extDir,
+    settings,
+    scheme,
+    lightScheme,
+    darkScheme,
+    isDark,
+    imageStats: extraction.imageStats,
+  });
   saveThemeCache({ ...criteria, ...extraction });
   print(`Applied MeowterialYou theme (${isDark ? 'dark' : 'light'})`);
 }
