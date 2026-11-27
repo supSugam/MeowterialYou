@@ -1,0 +1,60 @@
+name: Release Extension
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Release tag name (optional if running manually)'
+        required: false
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install system build tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libglib2.0-dev-bin zip
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Typecheck and build
+        run: |
+          pnpm typecheck
+          pnpm build
+
+      - name: Package extension bundle
+        run: |
+          UUID="meowterialyou@supsugam.github.com"
+          (cd dist && zip -r "../${UUID}.shell-extension.zip" .)
+          sha256sum "${UUID}.shell-extension.zip" > "${UUID}.shell-extension.zip.sha256"
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            meowterialyou@supsugam.github.com.shell-extension.zip
+            meowterialyou@supsugam.github.com.shell-extension.zip.sha256
+          generate_release_notes: true

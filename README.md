@@ -1,195 +1,139 @@
-# MeowterialYou :cat:
+# MeowterialYou
 
-A fork of [Mitsugen](https://github.com/DimitrisMilonopoulos/mitsugen) by Dimitris Milonopoulos, bringing Material You theming to Linux desktops. This fork exists because the original repository is no longer actively maintained and had an ambiguous installation process.
+Native **GNOME Shell Extension** (GNOME `45`–`50`) bringing live Material You dynamic theming from your wallpaper to GNOME Shell, GTK3/GTK4, icons, cursors, terminals, editors, notes, and desktop widgets.
 
-Thanks to the original author for the foundation this project builds upon.
+![MeowterialYou Desktop](screenshots/image.png)
 
-![alt text](screenshots/image.png)
-
----
-
-## What Changed in This Fork
-
-- Rewrote the installation process with an interactive TUI, automatic dependency handling, and progress indicators
-- Fixed broken notification popups in GNOME Shell
-- Removed distracting background styles from system tray icons in the panel
-- Extended theming to gnome-terminal, native gnome apps sidebars, GNOME Shell popups, and Tiling Assistant tile previews
-- Added macOS-style circular window buttons with left/right positioning options
-- Added GTK4 theme support for Chrome and Chromium on Wayland
-- Integration with GNOME Routines for automatic theme updates when wallpaper changes
-- Renamed theme consistently to `MeowterialYou` to avoid confusion
-- Added single-command uninstall that cleans up all generated files
+> Looking for the older Python CLI version? Check out the [`legacy-python`](https://github.com/supSugam/MeowterialYou/tree/legacy-python) branch.
 
 ---
 
-## Installation
+## Install & Update
 
-### Installation
-
-Clone the repository and run the installer. The repository directory **IS** the installation, so keep it in a safe place (like `~/Repositories` or `~/MeowterialYou`).
+No repo cloning, Node toolchain, or manual installer scripts required. Run one command to install the latest release bundle or update an existing installation:
 
 ```bash
-git clone https://github.com/supSugam/MeowterialYou.git ~/MeowterialYou
-cd ~/MeowterialYou
-chmod +x install.sh
-./install.sh
+curl -fsSL https://raw.githubusercontent.com/supSugam/MeowterialYou/main/scripts/install.sh | bash
 ```
 
-> [!CAUTION]
-> **Do NOT delete this repository folder after installation!**
-> 
-> The theme regenerates from this repo every time your wallpaper changes. Deleting it will break theme updates. Only delete it if you want to completely uninstall MeowterialYou.
-
-The installer will alias the `meowterialyou` command to this directory. You can move the folder later, but you'll need to re-run `./install.sh` to update the alias.
-
-### System Requirements
-
-- Python 3.10+
-- GNOME Desktop Environment
-- PyGObject (installed automatically)
-
----
-
-## Usage
-
-### Apply Theme
+### Specific Version or Uninstall
 
 ```bash
-# Use current wallpaper
-meowterialyou
+# Install a specific release tag
+curl -fsSL https://raw.githubusercontent.com/supSugam/MeowterialYou/main/scripts/install.sh | bash -s -- --version v1.0.0
 
-# Specify wallpaper
-meowterialyou --wallpaper ~/Pictures/wallpaper.jpg
-
-# Light theme
-meowterialyou --theme light
-
-# macOS-style buttons on left
-meowterialyou --title-buttons mac --title-buttons-position left
+# Disable and uninstall completely
+curl -fsSL https://raw.githubusercontent.com/supSugam/MeowterialYou/main/scripts/install.sh | bash -s -- --uninstall
 ```
 
-### Command Reference
+### Manual Zip Install
 
-| Option | Description |
-|--------|-------------|
-| `--defaults` | Install with default settings (dark, native buttons) without prompts |
-| `--reapply` | **Reapply** using last saved configuration (silent, good for automation) |
-| `--wallpaper PATH` | Path to wallpaper image (default: current wallpaper) |
-| `--theme [system\|dark\|light]` | Theme mode (default: system, auto-detects from system) |
-| `--title-buttons [mac\|native]` | Window button style (default: native) |
-| `--title-buttons-position [left\|right]` | Button position (default: right) |
-| `--chrome-gtk4` | Install GTK4 theme for Chrome (default: false) |
-| `--ui-improvements` | Enable UI improvements addon (transparent tray icons) |
-| `--silent` | Disable desktop notifications |
-| `--uninstall` | Remove all theme files and aliases |
-| `--help` | Show all options |
-
----
-
-## Chrome/Chromium Support
-
-Chrome on Wayland uses GTK4 for window decorations. You have two options:
-
-**Option 1**: Install the GTK4 theme during setup
-```bash
-meowterialyou --chrome-gtk4
-```
-
-**Option 2**: Force Chrome to use GTK3 (no additional setup needed)
-```bash
-google-chrome --gtk-version=3
-```
-
-To make Option 2 permanent, edit your Chrome `.desktop` file and add `--gtk-version=3` to the `Exec` line.
-
----
-
-## Automatic Theme Updates
-
-Use [GNOME Routines](https://github.com/supSugam/gnome-routines) to automatically update your theme when the wallpaper changes:
-
-1. Install [GNOME Routines](https://github.com/supSugam/gnome-routines)
-2. Create a routine with:
-   - **Trigger**: Wallpaper changes
-   - **Action**: Run command
-   - **Command**: `meowterialyou --reapply`
-   
-   Using `--reapply` ensures the theme updates silently using your last saved configuration (dark/light, button style, etc.).
-
----
-
-## Supported Applications
-
-- GNOME Shell
-- GTK3 and GTK4 applications
-- VS Code (requires custom CSS extension)
-- Obsidian (with Adwaita theme)
-- Vivaldi
-- BetterDiscord
-- BetterDiscord (Experimental)
-
-### Known Issues / Experimental
-
-- **Spotify (Spicetify)**: Theming is currently **broken** or provides inconsistent results (washed out colors, poor contrast). It is **not recommended** to enable Spotify theming at this time unless you are willing to manually fix the configuration.
-
----
-
-## Recommended Ricing Guide
-
-### High Quality Media Thumbnails
-If you're using the media widget with Chromium-based browsers, you might notice that the album art looks blurry or low quality. This is because Chromium sends very low-resolution thumbnails via MPRIS by default.
-
-To fix this and get high-quality artwork:
-1. Install `plasma-browser-integration-host` from your package manager.
-2. Install the [Plasma Integration](https://chromewebstore.google.com/detail/plasma-integration/cimiefiiaegbelhefglklhhakcgmhkai?hl=en) Chrome extension.
-
-This integration provides the media widget with high-quality metadata and thumbnails, significantly improving the look of your desktop.
-
----
-
-## Uninstall
+Download `meowterialyou@supsugam.github.com.shell-extension.zip` from the [GitHub Releases](https://github.com/supSugam/MeowterialYou/releases/latest) page and install it directly:
 
 ```bash
-./install.sh --uninstall
+gnome-extensions install --force meowterialyou@supsugam.github.com.shell-extension.zip
+gnome-extensions enable meowterialyou@supsugam.github.com
 ```
 
-Or run the installer and select "Uninstall" from the menu.
+> [!NOTE]
+> On **Wayland**, log out and log back in once after installing or updating so GNOME Shell loads the new extension runtime. On **X11**, you can reload GNOME Shell with `Alt+F2` → `r`.
 
 ---
 
-## Troubleshooting
+## Requirements
 
-### User Themes Extension Error
+- **Required:** GNOME Shell `45`–`50`, `gnome-extensions` CLI (`gnome-shell`)
+- **Optional (for specific features):**
+  - `cava` — required only for the **Desktop Audio Visualizer** widget
+  - `python3` + `python3-numpy` — required only for **Use MeowterialYou Cursor** Xcursor repacking
+  - `fastfetch` — required only for **Fastfetch** theming & per-launch logo cycling
+  - **User Themes** extension — recommended if theming GNOME Shell chrome (`~/.local/share/themes/MeowterialYou-*`)
 
-If you encounter issues with the User Themes extension:
+---
+
+## Features & Preferences
+
+Open settings via the **top bar indicator** → **Preferences**, or run:
 
 ```bash
-sudo cp $HOME/.local/share/gnome-shell/extensions/user-theme@gnome-shell-extensions.gcampax.github.com/schemas/org.gnome.shell.extensions.user-theme.gschema.xml /usr/share/glib-2.0/schemas && sudo glib-compile-schemas /usr/share/glib-2.0/schemas
+gnome-extensions prefs meowterialyou@supsugam.github.com
 ```
 
-See [this gist](https://gist.github.com/atiensivu/fcc3183e9a6fd74ec1a283e3b9ad05f0) for more details.
+### General & Shell Theming
+- Live color extraction directly from your current dark or light wallpaper via `@material/material-color-utilities`
+- **9 Material You Scheme Variants:** `Tonal Spot`, `Neutral`, `Vibrant`, `Expressive`, `Rainbow`, `Fruit Salad`, `Content`, `Monochrome`, `Fidelity`
+- Synchronizes GNOME **dark/light** mode with system appearance (`color-scheme`), **GTK3**, **GTK4 / Libadwaita**, GNOME Shell popups, Quick Settings, Overview, and **Blur My Shell** popup styling
+- Optional **Transparent Top Bar** and top panel indicator with quick dark/light switch and force reapply
+- Automatic backup and clean restoration of your original GTK, Shell, Icon, Cursor, and window button settings when disabled
+
+### Appearance (Window Controls, Icons & Cursors)
+- **Window Controls:** Native or **macOS-style** circular buttons positioned on the left or right
+- **Folder Icons (`Meowaita`):** Dynamically recolors 34 folder/place SVGs to match your wallpaper accent, ships 235 bundled app icons, and falls back to your chosen base icon pack
+- **Use MeowterialYou Cursor:** Asynchronously repacks your selected Xcursor theme (e.g. `Bibata-Modern-Classic`, `Adwaita`, `Yaru`) into `~/.local/share/icons/MeowterialYou-Cursor` preserving all sizes, animations, and hotspots, with 3 color styles (`Tinted Fill + Crisp Outline`, `Vibrant Accent Fill`, `Dark Body + Accent Outline`)
+
+### Wallpaper Cycler
+- Rotate wallpapers automatically from a chosen folder at a configurable interval (minutes)
+- Cycle order: `Random`, `Alphabetical`, or `Date Modified`
+
+### App Integrations (`Apps` Tab)
+- **GNOME Terminal & GNOME Console:** Live palette theming
+- **Ghostty:** Dynamic theme generation with automatic light/dark switching (`window-theme = ghostty`)
+- **Shell Prompt & Colors (Bash/Zsh):** Auto-reloading `~/.config/meowterialyou/prompt.sh` with ANSI `PS1`, git branch status, `LS_COLORS`, `GCC_COLORS`, and `GREP_COLORS`
+- **VS Code, Forks & Antigravity:** Generates and updates Material You Light & Dark themes
+- **Obsidian:** Generates full `theme.css` palettes across discovered Obsidian vaults
+- **Fastfetch:** Material You colors in `~/.config/fastfetch/config.jsonc`, optional 3-section layout preset, aspect-calibrated logo sizing, and **per-launch logo rotation** across a selected logo folder
+
+### Widgets (`Widgets` Tab)
+- **Desktop Audio Visualizer:** Live CAVA spectrum layered above your wallpaper and behind all windows (`Bottom`, `Top`, `Left`, or `Right`)
+- Styles: `Bars`, `Mirrored`, `Wave` (smooth Bezier fill)
+- Color modes: `Base to Tip`, `Across Spectrum`, `Solid Accent`
+- Per-pixel customization: **Base Padding**, **Side Padding**, **Size**, **Bar Count**, **Bar Spacing**, **Corner Radius** (`0%` sharp → `100%` capsule), **Opacity**, fades cleanly on silence, and pauses automatically in fullscreen
+
+### Tweaks (`Tweaks` Tab)
+- Top bar visibility toggles (Workspace Indicator, Accessibility Menu, Keyboard Layout, Clock Notification Dot)
+- Configurable tray indicator gap spacing
+- **Type to Search** in Overview and optional hiding of overview window close buttons
 
 ---
 
-## Contributing
+## Screenshots
 
-Contributions are welcome. Please open an issue first to discuss what you would like to change.
+| Dark Shell | Light Shell |
+| :---: | :---: |
+| ![GNOME Dark](screenshots/gnome-dark.png) | ![GNOME Light](screenshots/gnome-light.png) |
 
-- **Bug Reports**: Use the [bug report template](.github/ISSUE_TEMPLATE/bug_report.md)
-- **Feature Requests**: Use the [feature request template](.github/ISSUE_TEMPLATE/feature_request.md)
-
----
-
-## Credits
-
-- [Mitsugen](https://github.com/DimitrisMilonopoulos/mitsugen) by Dimitris Milonopoulos (original project)
-- [Material Color Utilities Python](https://github.com/avanisubbiah/material-color-utilities-python)
-- [Obsidian Adwaita Theme](https://github.com/birneee/obsidian-adwaita-theme)
-- [Spicetify Themes](https://github.com/spicetify/spicetify-themes)
-- [Matugen](https://github.com/InioX/matugen)
+| Obsidian Dark | VS Code Dark |
+| :---: | :---: |
+| ![Obsidian Dark](screenshots/obsidian-dark.png) | ![VS Code Dark](screenshots/vscode-dark.png) |
 
 ---
 
-## License
+## Development & Releasing
 
-This project inherits the license from the original Mitsugen project.
+Requirements: Node.js `20+`, `pnpm`, `glib-compile-schemas` (`libglib2.0-dev-bin`), `gnome-extensions`.
+
+```bash
+pnpm install
+make typecheck
+make install       # compiles schemas, bundles dist/, symlinks to ~/.local/share/gnome-shell/extensions/
+make prefs         # opens extension preferences
+make pack          # builds dist/ and outputs meowterialyou@supsugam.github.com.shell-extension.zip
+```
+
+### Cutting a Release
+
+Tag pushes (`v*`) trigger [`.github/workflows/release.yml`](.github/workflows/release.yml) to typecheck, build, package `meowterialyou@supsugam.github.com.shell-extension.zip` (with SHA256), and publish a GitHub Release automatically:
+
+```bash
+./scripts/release.sh patch --push   # bumps package.json SemVer + metadata.json version integer, commits, tags, and pushes
+```
+
+---
+
+## Contributing & Credits
+
+Bug reports and feature ideas are welcome via [GitHub Issues](https://github.com/supSugam/MeowterialYou/issues).
+
+- [Google Material Color Utilities](https://github.com/material-foundation/material-color-utilities)
+- [Mitsugen](https://github.com/DimitrisMilonopoulos/mitsugen) (inspiration for the original legacy Python tool)
+- GNOME Shell, GTK4 & Libadwaita

@@ -12,6 +12,7 @@
   ],
   "url": "https://github.com/supSugam/MeowterialYou",
   "version": 1,
+  "version-name": "1.0.0",
   "session-modes": [
     "user",
     "unlock-dialog"

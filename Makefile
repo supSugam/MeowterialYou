@@ -13,10 +13,10 @@ prefs:
 	@./open-prefs.sh
 
 build: schemas
-	@PATH="/home/ctrlcat/.local/share/pnpm:/home/ctrlcat/.nvm/versions/node/v25.2.1/bin:$(PATH)" pnpm build
+	@PATH="$(HOME)/.local/share/pnpm:$(PATH)" pnpm build
 
 typecheck:
-	@PATH="/home/ctrlcat/.local/share/pnpm:/home/ctrlcat/.nvm/versions/node/v25.2.1/bin:$(PATH)" pnpm typecheck
+	@PATH="$(HOME)/.local/share/pnpm:$(PATH)" pnpm typecheck
 
 schemas:
 	glib-compile-schemas schemas/
@@ -37,12 +37,14 @@ uninstall:
 pack: build
 	@echo "Packaging extension..."
 	@cd dist && gnome-extensions pack --force \
+		--extra-source=cli.js \
 		--extra-source=data \
+		--extra-source=icons \
 		--extra-source=stylesheet.css \
 		--schema=schemas/org.gnome.shell.extensions.meowterialyou.gschema.xml \
 		--out-dir=.. \
 		.
-	@echo "Pack completed."
+	@echo "Pack completed -> $(UUID).shell-extension.zip"
 
 clean:
 	@rm -rf dist
